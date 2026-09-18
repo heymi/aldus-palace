@@ -80,6 +80,11 @@ createLLMProvider(resolveProviderConfig(process.env));  // auto: key if present,
 - [Domain schema](../../docs/DOMAIN-SCHEMA.md) — objects and invariants
 - [Examples](../../examples) — runnable, one per capability group
 
+## Module format
+
+ESM. `import` works everywhere; `require()` works on Node ≥ 22.12 via
+`require(esm)`.
+
 ## Status
 
 `0.x` — usable and tested; the API may still change between minor versions.

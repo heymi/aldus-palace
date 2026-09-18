@@ -1,5 +1,14 @@
 # @aldus-palace/mcp
 
+## 0.4.2
+
+### Patch Changes
+
+- Expose `./package.json` from the export map so tooling can read package metadata
+  without tripping over `ERR_PACKAGE_PATH_NOT_EXPORTED`.
+- Updated dependencies
+  - @aldus-palace/core@0.3.2
+
 ## 0.4.1
 
 ### Patch Changes
