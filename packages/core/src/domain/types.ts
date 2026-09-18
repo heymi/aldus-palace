@@ -101,6 +101,14 @@ export interface ActionCard {
   commitments: Array<Record<string, unknown>>;
   decisions: Array<Record<string, unknown>>;
   memory_candidates: Array<Record<string, unknown>>;
+  /** Candidates that contradict an already-confirmed memory (memory evolution). */
+  memory_conflicts?: Array<{
+    memory_id: string;
+    memory_type: string;
+    memory_content: string;
+    reason: string;
+    detector: "rule" | "model";
+  }>;
   clarifications: ClarificationDTO[];
   /** Matched existing project for this input (if any) */
   project_match?: {

@@ -1,5 +1,39 @@
 # @aldus-palace/core
 
+## 0.3.0
+
+### Minor Changes
+
+- Ecosystem release: memory evolution, work streams, and a capability-oriented
+  integration surface.
+
+  **core**
+
+  - Memory evolution: `supersedes_id` / `superseded_by_id` / `supersede_reason` and
+    `conflicts_with_id` / `conflict_reason`, with `detectMemoryConflict`,
+    `supersedeMemory`, `listMemoryVersions` and a derived `memoryState()`. A memory
+    is never overwritten: replacing one keeps the previous version readable.
+  - Conflict detection runs on rules offline (topic + polarity) and can be upgraded
+    to a model judge; capture reports `memory_conflicts` on the ActionCard.
+  - `listWorkStreams()` — grouping over commitments with urgency ordering and a
+    visible/total split.
+  - SQLite adapter: prepared-statement cache, `busy_timeout`, and a
+    `preparedStatementCount` diagnostic.
+  - `better-sqlite3` bumped to `^12.11.1` (fixes a Node 24 teardown abort).
+
+  **mcp**
+
+  - Tool sets via `ALDUS_PALACE_PROFILE` (`full` / `capture` / `today` /
+    `workstreams` / `memory`) and matching focused binaries.
+  - New `list_work_streams` tool; `list_memories` gains `state`; `confirm_memory`
+    gains `supersedes` + `reason`.
+  - `Backend.close()` so embedders and tests can release the database.
+
+  **docs**
+
+  - A capability-oriented documentation set: `INTEGRATION`, `CAPABILITIES`, nine
+    capability pages, `USE-CASES`, `POSITIONING`, `DEPLOYMENT`.
+
 ## 0.2.2
 
 ### Patch Changes

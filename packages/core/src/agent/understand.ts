@@ -41,6 +41,12 @@ import {
   normalizeMemoryKey,
 } from "../lib/memoryExtract.js";
 import {
+  detectMemoryConflict,
+  makeModelJudge,
+  type MemoryConflict,
+} from "../services/memoryEvolution.js";
+import { isRealLLMProvider } from "../providers/index.js";
+import {
   boostProjectMemories,
   formatMemoryContextBlock,
   formatProjectsContextBlock,
@@ -1090,9 +1096,25 @@ export async function processRawInput(
 
   const insertMemory = await db.prepare(
     `INSERT INTO memories
-     (id, user_id, type, content, project_id, status, confidence, importance, source, evidence, source_input_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 'candidate', ?, ?, ?, ?, ?, ?, ?)`
+     (id, user_id, type, content, project_id, status, confidence, importance, source, evidence,
+      source_input_id, conflicts_with_id, conflict_reason, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 'candidate', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
+
+  // Memory evolution: a candidate that contradicts a confirmed memory is still
+  // stored, but flagged so the user can replace, keep both, or discard it.
+  const conflictJudge = isRealLLMProvider(llm)
+    ? makeModelJudge((prompt) =>
+        llm.complete(
+          [
+            { role: "system", content: "You audit a personal knowledge base for contradictions." },
+            { role: "user", content: prompt },
+          ],
+          { json: true }
+        )
+      )
+    : undefined;
+  const memoryConflicts: MemoryConflict[] = [];
 
   for (const m of finalMems) {
     const type = normalizeMemoryType(m.type);
@@ -1138,8 +1160,22 @@ export async function processRawInput(
     const conceptNames = suggestConceptNamesForMemory(type, m.content);
     const importance =
       type === "principle" ? 0.9 : type === "preference" ? 0.8 : 0.7;
+
+    let conflict: MemoryConflict | null = null;
     try {
-      insertMemory.run(
+      conflict = await detectMemoryConflict(
+        db,
+        user.id,
+        { type, content: m.content },
+        { judge: conflictJudge }
+      );
+    } catch {
+      // Conflict detection must never block a capture.
+      conflict = null;
+    }
+
+    try {
+      await insertMemory.run(
         id,
         user.id,
         type,
@@ -1150,6 +1186,8 @@ export async function processRawInput(
         source,
         m.evidence ?? null,
         rawInputId,
+        conflict?.memory_id ?? null,
+        conflict?.reason ?? null,
         t0,
         t0
       );
@@ -1176,7 +1214,25 @@ export async function processRawInput(
       importance,
       source_input_id: rawInputId,
       concept_names: conceptNames,
+      conflicts_with: conflict?.memory_id ?? null,
+      conflict_reason: conflict?.reason ?? null,
     });
+    if (conflict) {
+      memoryConflicts.push(conflict);
+      warnings.push(
+        `这条记忆与你已确认的「${conflict.memory_content}」冲突（${conflict.reason}）：确认时可选择替换`
+      );
+      await writeActionLog(db, {
+        user_id: user.id,
+        actor: "agent",
+        action_type: "memory_conflict_detected",
+        summary: actionSummary("memory_conflict_detected", { type }),
+        reason: conflict.reason,
+        entity_type: "memory",
+        entity_id: id,
+        payload: { conflicts_with: conflict.memory_id, detector: conflict.detector },
+      });
+    }
     await writeActionLog(db, {
       user_id: user.id,
       actor: "agent",
@@ -1267,6 +1323,7 @@ export async function processRawInput(
     commitments: commitmentsOut,
     decisions: decisionsOut,
     memory_candidates: memoriesOut,
+    memory_conflicts: memoryConflicts,
     clarifications: clarificationsOut,
     project_match:
       contentProject.projectId && contentProject.matchName

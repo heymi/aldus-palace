@@ -5,7 +5,7 @@ import {
   observePlanningOutcome,
 } from "../src/services/adaptivePlanning.js";
 import { buildToday } from "../src/services/today.js";
-import { createTestDb } from "./support/db.js";
+import { createTestDb, finish } from "./support/db.js";
 import type { SqlDatabase } from "../src/db/port.js";
 
 function assert(condition: boolean, message: string): asserts condition {
@@ -886,4 +886,4 @@ await learnsRepeatedProjectSwitchWithinFifteenDays();
 await learnsSameProjectAndStoppedOutcomesWithinFifteenDays();
 await planningForeignKeysAllowInputDerivativeReplacement();
 await readingTodayDoesNotWrite();
-console.log("adaptive planning tests passed.");
+finish("adaptive planning tests passed.");

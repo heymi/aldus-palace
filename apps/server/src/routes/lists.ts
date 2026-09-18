@@ -6,6 +6,11 @@ import {
   commitmentTitleFromThought,
   conceptsForMemory,
   confirmMemory,
+  listMemoriesByState,
+  listMemoryVersions,
+  listWorkStreams,
+  memoryState,
+  type MemoryListState,
   getOrCreateConcept,
   isLowValueSummary,
   linkMemoryToConcepts,
@@ -753,18 +758,27 @@ export function createListRoutes(deps: AppDeps): Hono<{
 
   listRoutes.get("/memories", async (c) => {
     const user = await requireUser(c, db);
+    // `state` understands the derived lifecycle (a superseded memory is archived
+    // plus a pointer to its replacement); `status` stays the raw column.
+    const state = c.req.query("state");
     const status = c.req.query("status");
-    const rows = (status
-      ? await db
-          .prepare(
-            `SELECT * FROM memories WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT 100`
-          )
-          .all(user.id, status)
-      : await db
-          .prepare(
-            `SELECT * FROM memories WHERE user_id = ? AND status != 'archived' ORDER BY created_at DESC LIMIT 100`
-          )
-          .all(user.id)) as Array<Record<string, unknown>>;
+
+    let rows: Array<Record<string, unknown>>;
+    if (state) {
+      rows = await listMemoriesByState(db, user.id, state as MemoryListState, 100);
+    } else if (status) {
+      rows = (await db
+        .prepare(
+          `SELECT * FROM memories WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT 100`
+        )
+        .all(user.id, status)) as Array<Record<string, unknown>>;
+    } else {
+      rows = (await db
+        .prepare(
+          `SELECT * FROM memories WHERE user_id = ? AND status != 'archived' ORDER BY created_at DESC LIMIT 100`
+        )
+        .all(user.id)) as Array<Record<string, unknown>>;
+    }
 
     const items = await Promise.all(
       rows.map(async (r) => {
@@ -773,10 +787,32 @@ export function createListRoutes(deps: AppDeps): Hono<{
           concepts.length > 0
             ? concepts.map((x) => x.name)
             : suggestConceptNamesForMemory(String(r.type), String(r.content));
-        return { ...r, concepts, concept_names };
+        return { ...r, state: memoryState(r), concepts, concept_names };
       })
     );
     return c.json({ items });
+  });
+
+  /** The version chain of a memory: what it replaced, and what replaced it. */
+  listRoutes.get("/memories/:id/versions", async (c) => {
+    const user = await requireUser(c, db);
+    const id = c.req.param("id");
+    const versions = await listMemoryVersions(db, user.id, id);
+    return c.json({
+      versions: versions.map((row) => ({ ...row, state: memoryState(row) })),
+    });
+  });
+
+  /** Work streams — a rebuildable projection over commitments. */
+  listRoutes.get("/work-streams", async (c) => {
+    const user = await requireUser(c, db);
+    const limitPerGroup = Number(c.req.query("limit") ?? 3);
+    const result = await listWorkStreams(db, user.id, {
+      status: c.req.query("status") ?? undefined,
+      limitPerGroup: Number.isFinite(limitPerGroup) ? limitPerGroup : 3,
+      includeClosed: c.req.query("include_closed") === "true",
+    });
+    return c.json(result);
   });
 
   listRoutes.post("/memories/:id/confirm", async (c) => {
@@ -784,8 +820,14 @@ export function createListRoutes(deps: AppDeps): Hono<{
     const id = c.req.param("id");
     const body = (await c.req.json().catch(() => ({}))) as {
       concept_names?: string[];
+      /** Id of a confirmed memory this one replaces (memory evolution). */
+      supersedes?: string;
+      reason?: string;
     };
-    const result = await confirmMemory(db, user.id, id, body.concept_names);
+    const result = await confirmMemory(db, user.id, id, body.concept_names, {
+      supersedes: body.supersedes,
+      reason: body.reason,
+    });
     if (!result.ok) {
       return c.json(
         { error: result.error },

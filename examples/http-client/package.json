@@ -1,0 +1,21 @@
+{
+  "name": "@aldus-palace/example-http-client",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Drive Aldus Palace over HTTP: the same capabilities without the library.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aldus-palace/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.14.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

@@ -3,12 +3,21 @@
  * Aldus Palace MCP server (stdio).
  *
  * Configuration (environment):
+ *   ALDUS_PALACE_PROFILE     tool set: full | capture | today | workstreams | memory
  *   ALDUS_PALACE_API_URL     talk to a running server instead of the local DB
  *   ALDUS_PALACE_API_TOKEN   bearer token for the server (DEV_AUTH_TOKEN)
  *   ALDUS_PALACE_DB          SQLite path when running locally
  *                            (default ~/.aldus-palace/aldus.db)
  *   ALDUS_PALACE_USER_NAME / _TIMEZONE / _LANGUAGE
  *   LLM_PROVIDER + provider keys (see the core README); omit for offline rules
+ *
+ * Focused bins (same code, different default profile):
+ *   aldus-palace-mcp-capture · aldus-palace-mcp-today
+ *   aldus-palace-mcp-memory  · aldus-palace-mcp-workstreams
+ *
+ * Note: SQLite allows a single writer. If you run more than one server against
+ * the same file, point the extra ones at ALDUS_PALACE_API_URL instead — or use
+ * profiles, which run everything in one process.
  */
 
 import os from "node:os";
@@ -16,13 +25,39 @@ import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createBackend } from "./backend.js";
-import { registerPrompts, registerTools } from "./tools.js";
+import { isProfile, registerPrompts, registerTools, type Profile } from "./tools.js";
 
 export { createBackend } from "./backend.js";
-export type { Backend, BackendConfig, CaptureMode } from "./backend.js";
-export { registerTools, registerPrompts } from "./tools.js";
+export type { Backend, BackendConfig, CaptureMode, ConfirmMemoryArgs } from "./backend.js";
+export {
+  registerTools,
+  registerPrompts,
+  PROFILES,
+  isProfile,
+  type Profile,
+} from "./tools.js";
+
+const BIN_PROFILES: Record<string, Profile> = {
+  "aldus-palace-mcp": "full",
+  "aldus-palace-mcp-capture": "capture",
+  "aldus-palace-mcp-today": "today",
+  "aldus-palace-mcp-workstreams": "workstreams",
+  "aldus-palace-mcp-memory": "memory",
+};
+
+/** Explicit env wins; otherwise the bin name decides; otherwise everything. */
+export function resolveProfile(
+  env: Record<string, string | undefined> = process.env,
+  argv: NodeJS.Process["argv"] = process.argv
+): Profile {
+  const configured = env.ALDUS_PALACE_PROFILE?.trim().toLowerCase();
+  if (configured && isProfile(configured)) return configured;
+  const bin = path.basename(argv[1] ?? "");
+  return BIN_PROFILES[bin] ?? "full";
+}
 
 async function main(): Promise<void> {
+  const profile = resolveProfile();
   const backend = await createBackend({
     baseUrl: process.env.ALDUS_PALACE_API_URL,
     token: process.env.ALDUS_PALACE_API_TOKEN,
@@ -38,13 +73,15 @@ async function main(): Promise<void> {
 
   const server = new McpServer({
     name: "aldus-palace",
-    version: "0.1.0",
+    version: "0.4.0",
   });
-  registerTools(server, backend);
+  registerTools(server, backend, profile);
   registerPrompts(server);
 
   await server.connect(new StdioServerTransport());
-  console.error(`[aldus-palace-mcp] connected — backend: ${backend.description}`);
+  console.error(
+    `[aldus-palace-mcp] connected — profile: ${profile} — backend: ${backend.description}`
+  );
 }
 
 const isMain =

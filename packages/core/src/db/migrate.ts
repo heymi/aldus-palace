@@ -15,12 +15,25 @@ export type Migration = {
   up: (db: SqlDatabase) => Promise<void>;
 };
 
+async function tableExists(db: SqlDatabase, table: string): Promise<boolean> {
+  const row = await db
+    .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`)
+    .get(table);
+  return Boolean(row);
+}
+
+/**
+ * Add a column only when the table exists and the column is missing.
+ * Migrations patch databases that already have data; a partial/legacy schema
+ * that never had the table is left to `applySchema`.
+ */
 async function addColumnIfMissing(
   db: SqlDatabase,
   table: string,
   column: string,
   definition: string
 ): Promise<void> {
+  if (!(await tableExists(db, table))) return;
   const columns = (await db
     .prepare(`PRAGMA table_info(${table})`)
     .all()) as Array<{ name: string }>;
@@ -102,9 +115,21 @@ const progressiveCaptureColumns: Migration = {
   },
 };
 
+const memoryEvolution: Migration = {
+  version: "2026-09-19-memory-evolution",
+  async up(db) {
+    await addColumnIfMissing(db, "memories", "supersedes_id", "TEXT REFERENCES memories(id)");
+    await addColumnIfMissing(db, "memories", "superseded_by_id", "TEXT REFERENCES memories(id)");
+    await addColumnIfMissing(db, "memories", "supersede_reason", "TEXT");
+    await addColumnIfMissing(db, "memories", "conflicts_with_id", "TEXT REFERENCES memories(id)");
+    await addColumnIfMissing(db, "memories", "conflict_reason", "TEXT");
+  },
+};
+
 export const MIGRATIONS: Migration[] = [
   workClassificationV1,
   progressiveCaptureColumns,
+  memoryEvolution,
 ];
 
 /**

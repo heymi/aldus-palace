@@ -1,0 +1,17 @@
+# Everything the container does not need to install, build or run.
+# Note: workspace packages (packages/*, apps/*, examples/*) must stay — the
+# lockfile is only valid when every workspace package is present.
+.git
+.github
+node_modules
+**/node_modules
+**/dist
+**/.turbo
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example
+docs
+eval

@@ -13,13 +13,15 @@ import {
   createLLMProvider,
   ensureDevUser,
   listCommitments,
-  listMemoriesByStatus,
+  listMemoriesByState,
+  listWorkStreams,
   newId,
   nowIso,
   processRawInput,
   resolveProviderConfig,
   writeActionLog,
   confirmMemory as confirmMemoryCandidate,
+  type MemoryListState,
   type SqlDatabase,
   type User,
 } from "@aldus-palace/core";
@@ -34,14 +36,24 @@ export type CaptureOutcome = {
   action_card: unknown;
 };
 
+export type ConfirmMemoryArgs = {
+  conceptNames?: string[];
+  /** Id of a confirmed memory this one replaces (memory evolution). */
+  supersedes?: string;
+  reason?: string;
+};
+
 export interface Backend {
   /** Human-readable description used in tool output/errors. */
   readonly description: string;
   capture(content: string, mode: CaptureMode): Promise<CaptureOutcome>;
   listToday(): Promise<unknown>;
   listCommitments(status?: string): Promise<unknown>;
-  listMemories(status: "candidate" | "active"): Promise<unknown>;
-  confirmMemory(memoryId: string, conceptNames?: string[]): Promise<unknown>;
+  listWorkStreams(options?: { limitPerGroup?: number }): Promise<unknown>;
+  listMemories(state: MemoryListState): Promise<unknown>;
+  confirmMemory(memoryId: string, args?: ConfirmMemoryArgs): Promise<unknown>;
+  /** Release any resources the backend owns (a no-op for HTTP). */
+  close(): void;
 }
 
 // --------------------------------------------------------------------------
@@ -131,19 +143,34 @@ export class LocalBackend implements Backend {
     return listCommitments(this.db, this.user.id, status);
   }
 
-  async listMemories(status: "candidate" | "active"): Promise<unknown> {
-    return listMemoriesByStatus(this.db, this.user.id, status);
+  async listWorkStreams(options?: { limitPerGroup?: number }): Promise<unknown> {
+    return listWorkStreams(this.db, this.user.id, {
+      limitPerGroup: options?.limitPerGroup ?? 3,
+    });
   }
 
-  async confirmMemory(memoryId: string, conceptNames?: string[]): Promise<unknown> {
+  async listMemories(state: MemoryListState): Promise<unknown> {
+    return listMemoriesByState(this.db, this.user.id, state, 100);
+  }
+
+  async confirmMemory(memoryId: string, args: ConfirmMemoryArgs = {}): Promise<unknown> {
     const result = await confirmMemoryCandidate(
       this.db,
       this.user.id,
       memoryId,
-      conceptNames
+      args.conceptNames,
+      { supersedes: args.supersedes, reason: args.reason }
     );
     if (!result.ok) throw new Error(`memory ${memoryId}: ${result.error}`);
-    return result.memory;
+    return {
+      memory: result.memory,
+      ...(result.superseded ? { superseded: result.superseded } : {}),
+      ...(result.supersede_error ? { supersede_error: result.supersede_error } : {}),
+    };
+  }
+
+  close(): void {
+    (this.db as unknown as { close?: () => void }).close?.();
   }
 }
 
@@ -210,16 +237,28 @@ export class HttpBackend implements Backend {
     return this.request(`/v1/commitments${query}`);
   }
 
-  async listMemories(status: "candidate" | "active"): Promise<unknown> {
-    return this.request(`/v1/memories?status=${status}`);
+  async listWorkStreams(options?: { limitPerGroup?: number }): Promise<unknown> {
+    const query = options?.limitPerGroup ? `?limit=${options.limitPerGroup}` : "";
+    return this.request(`/v1/work-streams${query}`);
   }
 
-  async confirmMemory(memoryId: string, conceptNames?: string[]): Promise<unknown> {
-    const result = await this.request<{ memory: unknown }>(
-      `/v1/memories/${encodeURIComponent(memoryId)}/confirm`,
-      { method: "POST", body: conceptNames ? { concept_names: conceptNames } : {} }
-    );
-    return result.memory;
+  async listMemories(state: MemoryListState): Promise<unknown> {
+    return this.request(`/v1/memories?state=${state}`);
+  }
+
+  close(): void {
+    // HTTP backends own no local resources.
+  }
+
+  async confirmMemory(memoryId: string, args: ConfirmMemoryArgs = {}): Promise<unknown> {
+    const body: Record<string, unknown> = {};
+    if (args.conceptNames?.length) body.concept_names = args.conceptNames;
+    if (args.supersedes) body.supersedes = args.supersedes;
+    if (args.reason) body.reason = args.reason;
+    return this.request(`/v1/memories/${encodeURIComponent(memoryId)}/confirm`, {
+      method: "POST",
+      body,
+    });
   }
 }
 

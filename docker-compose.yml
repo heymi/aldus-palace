@@ -1,0 +1,31 @@
+# One command to self-host:  docker compose up --build
+#
+# Everything is stored in the `aldus-data` volume. Back it up by copying the
+# volume; upgrades are forward-only migrations applied on startup.
+services:
+  aldus-palace:
+    build: .
+    image: aldus-palace:local
+    ports:
+      - "8787:8787"
+    environment:
+      # CHANGE THIS before exposing the service anywhere.
+      DEV_AUTH_TOKEN: ${DEV_AUTH_TOKEN:-dev-local-token}
+      # dev = offline deterministic rules. Set to anthropic|deepseek|openai-compatible
+      # and provide a key for full understanding quality.
+      LLM_PROVIDER: ${LLM_PROVIDER:-dev}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OPENAI_COMPATIBLE_API_KEY: ${OPENAI_COMPATIBLE_API_KEY:-}
+      OPENAI_COMPATIBLE_BASE_URL: ${OPENAI_COMPATIBLE_BASE_URL:-}
+      OPENAI_COMPATIBLE_MODEL: ${OPENAI_COMPATIBLE_MODEL:-}
+      DEV_USER_NAME: ${DEV_USER_NAME:-Local User}
+      DEV_USER_TIMEZONE: ${DEV_USER_TIMEZONE:-UTC}
+      DEV_USER_LANGUAGE: ${DEV_USER_LANGUAGE:-en}
+    volumes:
+      - aldus-data:/data
+    restart: unless-stopped
+
+volumes:
+  aldus-data:

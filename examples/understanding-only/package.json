@@ -1,0 +1,22 @@
+{
+  "name": "@aldus-palace/example-understanding-only",
+  "version": "0.1.1",
+  "private": true,
+  "description": "The Understanding Agent on its own: free text -> structured objects, with all the gates.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aldus-palace/core": "workspace:*",
+    "better-sqlite3": "^12.11.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.14.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

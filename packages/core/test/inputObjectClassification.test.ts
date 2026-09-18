@@ -2,7 +2,7 @@ import { processRawInput } from "../src/agent/understand.js";
 import type { LLMProvider } from "../src/providers/types.js";
 import type { SqlDatabase } from "../src/db/port.js";
 import type { User } from "../src/domain/types.js";
-import { createTestDb } from "./support/db.js";
+import { createTestDb, finish } from "./support/db.js";
 
 function assert(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -194,4 +194,4 @@ assert(
   "responses without object_mode must still collapse duplicate task thoughts"
 );
 
-console.log("input object classification tests passed.");
+finish("input object classification tests passed.");

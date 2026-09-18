@@ -64,9 +64,11 @@ export * from "./services/commitmentClassification.js";
 export * from "./services/commitments.js";
 export * from "./services/enrichmentLease.js";
 export * from "./services/memoryLifecycle.js";
+export * from "./services/memoryEvolution.js";
 export * from "./services/planToday.js";
 export * from "./services/resolveClarification.js";
 export * from "./services/today.js";
+export * from "./services/workStreams.js";
 
 // Pure helpers that are useful to embedders and tests
 export * from "./lib/actionableWork.js";

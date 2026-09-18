@@ -1,4 +1,4 @@
-import { createTestDb } from "./support/db.js";
+import { createTestDb, finish } from "./support/db.js";
 import {
   claimEnrichment,
   recordEnrichmentFailure,
@@ -96,4 +96,4 @@ assert(
   "the active generation must release its lease while preserving local results"
 );
 
-console.log("enrichment lease test passed.");
+finish("enrichment lease test passed.");

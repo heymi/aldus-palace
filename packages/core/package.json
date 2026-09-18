@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/core",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Domain model, agent runtime and provider abstractions for Aldus Palace — a personal cognitive OS.",
   "license": "Apache-2.0",
   "type": "module",
@@ -71,12 +71,12 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.14.1",
-    "better-sqlite3": "^11.9.1",
+    "better-sqlite3": "^12.11.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   },
   "peerDependencies": {
-    "better-sqlite3": ">=9"
+    "better-sqlite3": ">=12"
   },
   "peerDependenciesMeta": {
     "better-sqlite3": {

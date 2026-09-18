@@ -47,10 +47,25 @@ class SqliteStatement implements SqlStatement {
 }
 
 export class SqliteDatabase implements SqlDatabase {
+  /**
+   * Prepared statements are cached per SQL string.
+   *
+   * Two reasons: preparing on every call is the single biggest cost in hot
+   * paths, and short-lived wrapper objects make the NativeStatement finalizer
+   * run during GC — which can abort the process if it happens while the V8
+   * environment is being torn down (observed under Node 24). Keeping them
+   * referenced for the lifetime of the database avoids both.
+   */
+  private readonly statements = new Map<string, SqliteStatement>();
+
   constructor(readonly handle: SqliteHandle) {}
 
   prepare(query: string): SqlStatement {
-    return new SqliteStatement(this.handle.prepare(query));
+    const cached = this.statements.get(query);
+    if (cached) return cached;
+    const statement = new SqliteStatement(this.handle.prepare(query));
+    this.statements.set(query, statement);
+    return statement;
   }
 
   async exec(query: string): Promise<void> {
@@ -60,6 +75,11 @@ export class SqliteDatabase implements SqlDatabase {
   /** Close the underlying handle. Safe to call once; tests call this on exit. */
   close(): void {
     this.handle.close?.();
+  }
+
+  /** Number of distinct SQL statements prepared so far (diagnostics/tests). */
+  get preparedStatementCount(): number {
+    return this.statements.size;
   }
 
   transaction<T>(callback: () => Promise<T>): () => Promise<T> {
@@ -112,6 +132,9 @@ export async function openSqliteDatabase(
 
   if (wal) handle.pragma("journal_mode = WAL");
   handle.pragma("foreign_keys = ON");
+  // Another process may hold the write lock (e.g. two MCP profiles, or the
+  // server plus an MCP client on the same file). Wait instead of failing.
+  handle.pragma("busy_timeout = 5000");
 
   const db = new SqliteDatabase(handle);
   if (migrate) await initialize(db);

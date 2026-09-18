@@ -98,7 +98,7 @@ operations is the whole trick:
 - **Crash recovery is automatic.** After `processing_lease_until`, the next
   attempt reclaims the work.
 - **Failures are observable.** The client sees `enriching` → `processed`, or a
-  terminal `failed` with a reason (`clients/macos/.../EnrichmentState.swift`).
+  terminal `failed` with a reason, which clients surface to the user.
 
 ## Tests that pin it
 

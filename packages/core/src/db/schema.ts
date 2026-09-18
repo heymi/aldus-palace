@@ -164,6 +164,14 @@ CREATE TABLE IF NOT EXISTS memories (
   source_input_id TEXT REFERENCES raw_inputs(id),
   source_decision_id TEXT REFERENCES decisions(id),
   confirmed_at TEXT,
+  -- Memory evolution (see docs/capabilities/05-memory.md):
+  -- a memory is never overwritten; a newer one supersedes an older one and
+  -- both stay readable, so the user can always see what changed and why.
+  supersedes_id TEXT REFERENCES memories(id),
+  superseded_by_id TEXT REFERENCES memories(id),
+  supersede_reason TEXT,
+  conflicts_with_id TEXT REFERENCES memories(id),
+  conflict_reason TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   CHECK (type IN ('preference', 'project_context', 'principle', 'decision', 'experience')),

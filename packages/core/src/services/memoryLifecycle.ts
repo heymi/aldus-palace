@@ -18,8 +18,21 @@ import { writeActionLog } from "../repos/actionLogs.js";
 export type MemoryRow = Record<string, unknown>;
 
 export type ConfirmMemoryResult =
-  | { ok: true; memory: MemoryRow }
+  | {
+      ok: true;
+      memory: MemoryRow;
+      /** Present when this confirmation replaced an older memory. */
+      superseded?: MemoryRow;
+      /** Set when a requested supersede could not be applied. */
+      supersede_error?: string;
+    }
   | { ok: false; error: "not_found" | "not_candidate" };
+
+export type ConfirmMemoryOptions = {
+  /** Id of a confirmed memory this one replaces (memory evolution). */
+  supersedes?: string;
+  reason?: string;
+};
 
 export async function getMemory(
   db: SqlDatabase,
@@ -39,16 +52,21 @@ export async function confirmMemory(
   db: SqlDatabase,
   userId: string,
   memoryId: string,
-  conceptNames?: string[]
+  conceptNames?: string[],
+  options: ConfirmMemoryOptions = {}
 ): Promise<ConfirmMemoryResult> {
   const existing = await getMemory(db, userId, memoryId);
   if (!existing) return { ok: false, error: "not_found" };
   if (existing.status !== "candidate") return { ok: false, error: "not_candidate" };
 
   const t = nowIso();
+  // Confirming a memory resolves any conflict flag it carried: the user has
+  // looked at the contradiction and made a call.
   await db
     .prepare(
-      `UPDATE memories SET status = 'active', confirmed_at = ?, updated_at = ?
+      `UPDATE memories
+       SET status = 'active', confirmed_at = ?, updated_at = ?,
+           conflicts_with_id = NULL, conflict_reason = NULL
        WHERE id = ? AND user_id = ?`
     )
     .run(t, t, memoryId, userId);
@@ -69,8 +87,26 @@ export async function confirmMemory(
     payload: { concepts: linked, concept_count: linked.length },
   });
 
+  let superseded: MemoryRow | undefined;
+  let supersede_error: string | undefined;
+  if (options.supersedes) {
+    const { supersedeMemory } = await import("./memoryEvolution.js");
+    const result = await supersedeMemory(db, userId, {
+      oldId: options.supersedes,
+      newId: memoryId,
+      reason: options.reason,
+    });
+    if (result.ok) superseded = result.superseded;
+    else supersede_error = result.error;
+  }
+
   const row = await getMemory(db, userId, memoryId);
-  return { ok: true, memory: { ...(row ?? {}), concepts: await conceptsForMemory(db, memoryId) } };
+  return {
+    ok: true,
+    memory: { ...(row ?? {}), concepts: await conceptsForMemory(db, memoryId) },
+    ...(superseded ? { superseded } : {}),
+    ...(supersede_error ? { supersede_error } : {}),
+  };
 }
 
 /**

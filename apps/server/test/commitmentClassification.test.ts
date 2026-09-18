@@ -8,7 +8,7 @@ import {
   rebuildCommitmentClassifications,
   type LLMProvider,
 } from "@aldus-palace/core";
-import { createTestDb, SqliteTestDatabase, TEST_NOW } from "./support/db.js";
+import { createTestDb, finish, SqliteTestDatabase, TEST_NOW } from "./support/db.js";
 
 function assert(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -620,4 +620,4 @@ assert(
   "the lease owner must atomically publish the finished projection"
 );
 
-console.log("commitment classification API test passed.");
+finish("commitment classification API test passed.");

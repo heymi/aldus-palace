@@ -45,3 +45,24 @@ export async function createTestDb(): Promise<SqliteDatabase> {
 }
 
 export const TEST_NOW = "2026-07-19T04:00:00.000Z";
+
+/**
+ * End a suite.
+ *
+ * Closing the databases and calling `process.exit` explicitly avoids a native
+ * abort in better-sqlite3's finalizers, which can run while Node is tearing the
+ * V8 environment down (reproducible under Node 24). A passing suite must exit
+ * deterministically, not depending on GC timing.
+ */
+export function finish(message: string): never {
+  for (const handle of openHandles) {
+    try {
+      handle.close?.();
+    } catch {
+      // nothing useful to do while exiting
+    }
+  }
+  console.log(message);
+  process.exit(0);
+}
+

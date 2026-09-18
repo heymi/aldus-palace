@@ -47,7 +47,8 @@ packages/core/src
 ├── db/migrate.ts        applySchema / migrate / initialize (forward-only)
 ├── providers/           LLMProvider implementations + config resolution
 ├── lib/                 pure helpers (time, titles, matching, memory filters)
-├── services/            domain services (planning, classification, today, leases)
+├── services/            domain services (planning, classification, today, work
+│                        streams, memory lifecycle & evolution, enrichment leases)
 ├── repos/               thin data access (users, action log)
 └── agent/understand.ts  the Understanding Agent: input → objects → ActionCard
 ```
@@ -71,6 +72,19 @@ engines and therefore resolve immediately:
 
 - `apps/server/src/db/local.ts` — `better-sqlite3`
 - `apps/server/src/db/durableObject.ts` — Cloudflare Durable Object SQLite
+
+## Services are independent
+
+Every service in `packages/core/src/services` depends only on the storage port,
+the domain types and pure helpers — **there are no dependencies between the
+services themselves**:
+
+```
+services/*  ←  domain/types · db/port · lib/* · repos/actionLogs
+```
+
+That is what makes "use just one capability" true rather than aspirational, and
+it is what keeps the module boundaries honest as the project grows.
 
 ## Agent responsibilities
 

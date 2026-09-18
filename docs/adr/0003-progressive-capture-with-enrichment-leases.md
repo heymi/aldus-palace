@@ -41,7 +41,6 @@ leased background enrich), `sync` (model inline; used by non-UI clients), or
 - Captures are instant and always produce a usable ActionCard.
 - Enrichment is idempotent under retries and concurrent callers.
 - Failed enrichment is observable (`processing_status = 'failed'`, `error_message`)
-  and is exposed to clients as a terminal state
-  (`clients/macos/.../EnrichmentState.swift`).
+  and is exposed to clients as a terminal state.
 - The runtime owns a small state machine that every storage adapter must support;
   it is covered by `packages/core/test/enrichmentLease.test.ts`.

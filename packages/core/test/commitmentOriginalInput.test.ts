@@ -1,4 +1,4 @@
-import { createTestDb } from "./support/db.js";
+import { createTestDb, finish } from "./support/db.js";
 import { listCommitments } from "../src/services/commitments.js";
 
 function assert(condition: boolean, message: string): asserts condition {
@@ -65,4 +65,4 @@ assert(
   "legacy tasks must not invent optimized content"
 );
 
-console.log("commitment original input test passed.");
+finish("commitment original input test passed.");

@@ -42,7 +42,9 @@ No API key is required: `LLM_PROVIDER=dev` runs the deterministic rule engine
 | POST | `/v1/inputs/:id/process` | retry processing |
 | GET | `/v1/inputs/:id` | raw input + linked objects |
 | GET | `/v1/thoughts`, `/v1/commitments`, `/v1/memories`, `/v1/concepts` | lists |
-| POST | `/v1/memories/:id/confirm` \| `/reject` | one-tap memory confirmation |
+| GET | `/v1/work-streams` | grouped, rebuildable projection over commitments |
+| POST | `/v1/memories/:id/confirm` \| `/reject` | one-tap confirmation; `{ supersedes? }` replaces an older memory |
+| GET | `/v1/memories/:id/versions` | the history of a belief |
 | GET | `/v1/today` | Today projection |
 | GET | `/v1/activity` | action log |
 | GET/POST | `/v1/projects` | context containers |

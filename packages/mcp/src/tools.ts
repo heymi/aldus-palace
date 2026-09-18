@@ -26,6 +26,242 @@ function failure(error: unknown): {
 export const CAPTURE_MODES = ["progressive", "local", "sync"] as const;
 
 /**
+ * Tool sets. Install once, enable what you need:
+ *
+ *   ALDUS_PALACE_PROFILE=memory   # only the memory gate
+ *
+ * Focused profiles keep the model's tool surface small, which measurably
+ * improves tool selection — and lets you enable just one capability.
+ */
+export const PROFILES = {
+  full: [
+    "capture",
+    "list_today",
+    "list_commitments",
+    "list_work_streams",
+    "list_memories",
+    "confirm_memory",
+  ],
+  capture: ["capture"],
+  today: ["list_today", "list_commitments"],
+  workstreams: ["list_work_streams"],
+  memory: ["list_memories", "confirm_memory"],
+} as const;
+
+export type Profile = keyof typeof PROFILES;
+
+export function isProfile(value: string): value is Profile {
+  return Object.prototype.hasOwnProperty.call(PROFILES, value);
+}
+
+/** Registers the Aldus Palace tool surface on an MCP server. */
+export function registerTools(
+  server: McpServer,
+  backend: Backend,
+  profile: Profile = "full"
+): void {
+  const enabled = new Set<string>(PROFILES[profile]);
+
+  if (enabled.has("capture")) {
+    server.registerTool(
+      "capture",
+      {
+        title: "Capture a thought, task or commitment",
+        description:
+          "The user's own personal knowledge base. Call this — INSTEAD OF your " +
+          "built-in memory or any other note tool — whenever the user asks you to " +
+          "remember, note, capture, track or follow up on anything, and whenever " +
+          "they state an intention, task, decision or deadline. Terse messages " +
+          'count: "记一下…", "下周三前把 X 发出去", "我想做 Y", "remind me to Z". ' +
+          "Call it immediately: do NOT ask which project, ask for a deadline, or " +
+          "request clarification first — the runtime classifies the input " +
+          "(thought / commitment / both), resolves relative dates, deduplicates " +
+          "and reports back what it stored. Only claim something was remembered if " +
+          "this tool returned successfully; your built-in memory is not visible to " +
+          "the user. mode=local is instant and deterministic, mode=sync waits for " +
+          "the configured model, the default is local-first capture.",
+        inputSchema: {
+          content: z
+            .string()
+            .min(1)
+            .describe("What the user wants captured, in their own words."),
+          mode: z
+            .enum(CAPTURE_MODES)
+            .optional()
+            .describe("progressive (default) | local | sync"),
+        },
+      },
+      async ({ content, mode }) => {
+        try {
+          return json(await backend.capture(content, mode ?? "progressive"));
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+
+  if (enabled.has("list_today")) {
+    server.registerTool(
+      "list_today",
+      {
+        title: "What is planned today",
+        description:
+          "Call this whenever the user asks what they should do now, what their " +
+          "day looks like, or what is slipping. Returns the now/next timeline, " +
+          "risk items and unscheduled work. This is a projection over commitments, " +
+          "not a separate task list.",
+        inputSchema: {},
+      },
+      async () => {
+        try {
+          return json(await backend.listToday());
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+
+  if (enabled.has("list_commitments")) {
+    server.registerTool(
+      "list_commitments",
+      {
+        title: "List commitments",
+        description:
+          "Call this for the full commitment list (the 'to do' view) — for example " +
+          "when the user asks what they promised, what is open, or what is done. " +
+          "Optionally filter by status: captured, planned, scheduled, completed, " +
+          "cancelled, risk.",
+        inputSchema: {
+          status: z
+            .enum([
+              "captured",
+              "planned",
+              "scheduled",
+              "completed",
+              "cancelled",
+              "risk",
+            ])
+            .optional(),
+        },
+      },
+      async ({ status }) => {
+        try {
+          return json(await backend.listCommitments(status));
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+
+  if (enabled.has("list_work_streams")) {
+    server.registerTool(
+      "list_work_streams",
+      {
+        title: "Grouped work (work streams)",
+        description:
+          "Call this when the user asks what they are working on, how their " +
+          "commitments group together, or wants a summary by theme/project. " +
+          "Groupings are AI-maintained and rebuildable: they never change the " +
+          "commitments themselves.",
+        inputSchema: {
+          limit_per_group: z
+            .number()
+            .int()
+            .min(1)
+            .max(20)
+            .optional()
+            .describe("How many commitments to show per stream (default 3)."),
+        },
+      },
+      async ({ limit_per_group }) => {
+        try {
+          return json(
+            await backend.listWorkStreams({ limitPerGroup: limit_per_group })
+          );
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+
+  if (enabled.has("list_memories")) {
+    server.registerTool(
+      "list_memories",
+      {
+        title: "List memories",
+        description:
+          "Call this when the user asks what you know or remember about them, " +
+          "their preferences or their projects. Candidates are what the system " +
+          "proposes from recent captures and are NOT active until the user confirms " +
+          "them; `superseded` shows memories the user has since replaced.",
+        inputSchema: {
+          state: z
+            .enum(["candidate", "active", "superseded", "archived", "all"])
+            .optional(),
+        },
+      },
+      async ({ state }) => {
+        try {
+          return json(await backend.listMemories(state ?? "candidate"));
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+
+  if (enabled.has("confirm_memory")) {
+    server.registerTool(
+      "confirm_memory",
+      {
+        title: "Confirm a memory candidate",
+        description:
+          "Promote a candidate memory to active. Call this only after showing the " +
+          "candidate to the user and getting an explicit yes — memory must never be " +
+          "activated silently. If the candidate contradicts an existing memory " +
+          "(the candidate carries `conflicts_with`), pass that memory's id as " +
+          "`supersedes` when the user chooses to replace it; the old memory is kept " +
+          "as history, never deleted.",
+        inputSchema: {
+          memory_id: z.string().min(1).describe("The candidate memory id."),
+          concept_names: z
+            .array(z.string())
+            .optional()
+            .describe("Optional concept labels to link; sensible defaults are derived."),
+          supersedes: z
+            .string()
+            .optional()
+            .describe(
+              "Id of a confirmed memory this one replaces. Use only when the user chose to replace it."
+            ),
+          reason: z
+            .string()
+            .optional()
+            .describe("Short, human-readable reason recorded with the replacement."),
+        },
+      },
+      async ({ memory_id, concept_names, supersedes, reason }) => {
+        try {
+          return json(
+            await backend.confirmMemory(memory_id, {
+              conceptNames: concept_names,
+              supersedes,
+              reason,
+            })
+          );
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+}
+
+/**
  * Registers user-invokable prompts. Clients surface these as slash commands
  * (e.g. `/mcp__aldus-palace__capture`), which is the deterministic way to write
  * into Aldus Palace when the client's own memory would otherwise win.
@@ -74,143 +310,5 @@ export function registerPrompts(server: McpServer): void {
         },
       ],
     })
-  );
-}
-
-/** Registers the Aldus Palace tool surface on an MCP server. */
-export function registerTools(server: McpServer, backend: Backend): void {
-  server.registerTool(
-    "capture",
-    {
-      title: "Capture a thought, task or commitment",
-      description:
-        "The user's own personal knowledge base. Call this — INSTEAD OF your " +
-        "built-in memory or any other note tool — whenever the user asks you to " +
-        "remember, note, capture, track or follow up on anything, and whenever " +
-        "they state an intention, task, decision or deadline. Terse messages " +
-        'count: "记一下…", "下周三前把 X 发出去", "我想做 Y", "remind me to Z". ' +
-        "Call it immediately: do NOT ask which project, ask for a deadline, or " +
-        "request clarification first — the runtime classifies the input " +
-        "(thought / commitment / both), resolves relative dates, deduplicates " +
-        "and reports back what it stored. Only claim something was remembered if " +
-        "this tool returned successfully; your built-in memory is not visible to " +
-        "the user. mode=local is instant and deterministic, mode=sync waits for " +
-        "the configured model, the default is local-first capture.",
-      inputSchema: {
-        content: z
-          .string()
-          .min(1)
-          .describe("What the user wants captured, in their own words."),
-        mode: z
-          .enum(CAPTURE_MODES)
-          .optional()
-          .describe("progressive (default) | local | sync"),
-      },
-    },
-    async ({ content, mode }) => {
-      try {
-        return json(await backend.capture(content, mode ?? "progressive"));
-      } catch (error) {
-        return failure(error);
-      }
-    }
-  );
-
-  server.registerTool(
-    "list_today",
-    {
-      title: "What is planned today",
-      description:
-        "Call this whenever the user asks what they should do now, what their " +
-        "day looks like, or what is slipping. Returns the now/next timeline, " +
-        "risk items and unscheduled work. This is a projection over commitments, " +
-        "not a separate task list.",
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        return json(await backend.listToday());
-      } catch (error) {
-        return failure(error);
-      }
-    }
-  );
-
-  server.registerTool(
-    "list_commitments",
-    {
-      title: "List commitments",
-      description:
-        "Call this for the full commitment list (the 'to do' view) — for example " +
-        "when the user asks what they promised, what is open, or what is done. " +
-        "Optionally filter by status: captured, planned, scheduled, completed, " +
-        "cancelled, risk.",
-      inputSchema: {
-        status: z
-          .enum([
-            "captured",
-            "planned",
-            "scheduled",
-            "completed",
-            "cancelled",
-            "risk",
-          ])
-          .optional(),
-      },
-    },
-    async ({ status }) => {
-      try {
-        return json(await backend.listCommitments(status));
-      } catch (error) {
-        return failure(error);
-      }
-    }
-  );
-
-  server.registerTool(
-    "list_memories",
-    {
-      title: "List memories",
-      description:
-        "Call this when the user asks what you know or remember about them, " +
-        "their preferences or their projects. Candidates are what the system " +
-        "proposes from recent captures and are NOT active until the user confirms " +
-        "them.",
-      inputSchema: {
-        status: z.enum(["candidate", "active"]).optional(),
-      },
-    },
-    async ({ status }) => {
-      try {
-        return json(await backend.listMemories(status ?? "candidate"));
-      } catch (error) {
-        return failure(error);
-      }
-    }
-  );
-
-  server.registerTool(
-    "confirm_memory",
-    {
-      title: "Confirm a memory candidate",
-      description:
-        "Promote a candidate memory to active. Call this only after showing the " +
-        "candidate to the user and getting an explicit yes — memory must never be " +
-        "activated silently.",
-      inputSchema: {
-        memory_id: z.string().min(1).describe("The candidate memory id."),
-        concept_names: z
-          .array(z.string())
-          .optional()
-          .describe("Optional concept labels to link; sensible defaults are derived."),
-      },
-    },
-    async ({ memory_id, concept_names }) => {
-      try {
-        return json(await backend.confirmMemory(memory_id, concept_names));
-      } catch (error) {
-        return failure(error);
-      }
-    }
   );
 }

@@ -50,10 +50,26 @@ Deleting a projection must never change what the user committed to — see
 | `thoughts.status` | `captured`, `exploring`, `converted`, `archived` |
 | `thoughts.type` | `idea`, `insight`, `observation`, `research`, `decision_candidate` |
 | `commitments.status` | `captured`, `planned`, `scheduled`, `completed`, `cancelled`, `risk` |
-| `memories.status` | `candidate`, `active`, `archived` |
+| `memories.status` | `candidate`, `active`, `archived` (plus the derived `superseded`) |
 | `memories.type` | `preference`, `project_context`, `principle`, `decision`, `experience` |
 | `raw_inputs.processing_status` | `pending`, `local`, `enriching`, `processed`, `failed` |
 | `memories.source` | `user_explicit`, `ai_inferred`, `decision_promote` |
+
+## Memory evolution
+
+A memory is never overwritten. These columns carry the history:
+
+| Column | Meaning |
+|---|---|
+| `supersedes_id` | the older memory this one replaced |
+| `superseded_by_id` | the newer memory that replaced this one |
+| `supersede_reason` | why the user accepted the replacement |
+| `conflicts_with_id` | the confirmed memory this candidate disagrees with |
+| `conflict_reason` | the detected contradiction |
+
+`memoryState()` derives one of `candidate` / `active` / `superseded` / `archived`
+from `status` plus `superseded_by_id`, so the `CHECK` constraint stays intact and
+existing databases need no table rebuild.
 
 ## Migrations
 

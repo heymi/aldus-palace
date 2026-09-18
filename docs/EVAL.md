@@ -18,6 +18,9 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `enrichmentLease` | concurrent enrichment and supersede semantics |
 | `commitmentOriginalInput` | optimized content vs original input |
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |
+| `memoryEvolution` | rule-based conflict detection, supersede, version chains |
+| `actionableWork` | English imperatives, Chinese build verbs, non-work cases |
+| `providers` | request shaping for Anthropic and OpenAI-compatible providers |
 | `llm-config` | wrangler and code agree on the default model |
 
 ```bash
