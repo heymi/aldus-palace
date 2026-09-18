@@ -1,5 +1,13 @@
 # @aldus-palace/core
 
+## 0.2.1
+
+### Patch Changes
+
+- Export `AnthropicProvider`, `AnthropicOptions` and `DEFAULT_ANTHROPIC_MODEL`
+  from the package root as well as `@aldus-palace/core/providers`, matching the
+  existing OpenAI-compatible exports.
+
 ## 0.2.0
 
 ### Minor Changes

@@ -39,13 +39,16 @@ export {
   isRealLLMProvider,
   DevLLMProvider,
   OpenAICompatibleProvider,
+  AnthropicProvider,
   ProviderConfigError,
   DEFAULT_OPENAI_COMPATIBLE_MODEL,
+  DEFAULT_ANTHROPIC_MODEL,
   type LLMProvider,
   type ChatMessage,
   type ProviderConfig,
   type ProviderKind,
   type OpenAICompatibleOptions,
+  type AnthropicOptions,
 } from "./providers/index.js";
 
 // Repositories
