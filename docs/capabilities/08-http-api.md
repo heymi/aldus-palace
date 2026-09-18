@@ -58,7 +58,7 @@ curl -X POST localhost:8787/v1/inputs \
 - **In your process** — `createApp({ db, llm, config })` mounts the routes on your
   own Hono server.
 
-→ [Deployment](DEPLOYMENT.md)
+→ [Deployment](../DEPLOYMENT.md)
 
 ## Proof
 

@@ -5,8 +5,8 @@ frozen MVP decisions, the object schema, acceptance scenarios, the engineering
 breakdown, and the longer vision/architecture essays.
 
 **They are history, not the spec.** Where they disagree with the code or with
-[`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) /
-[`docs/DOMAIN-SCHEMA.md`](../DOMAIN-SCHEMA.md), the English docs and the code win.
+[`docs/ARCHITECTURE.md`](../../ARCHITECTURE.md) /
+[`docs/DOMAIN-SCHEMA.md`](../../DOMAIN-SCHEMA.md), the English docs and the code win.
 
 They are kept because they explain *why* the domain model looks the way it does —
 the reasoning is often more useful than the conclusion.

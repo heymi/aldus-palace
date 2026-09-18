@@ -1,7 +1,7 @@
 # Roadmap
 
 This is a public summary. Detailed design history lives in
-[`docs/design-archive`](docs/design-archive).
+[`docs/design-archive`](docs/internal/design-archive).
 
 ## v0.1 — public foundation (current)
 
