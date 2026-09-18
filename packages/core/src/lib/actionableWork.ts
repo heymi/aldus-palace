@@ -54,6 +54,14 @@ const WORK_SIGNAL_RES: Array<{ re: RegExp; reason: string; weight: number }> = [
     weight: 0.3,
   },
 
+  // Imperative opener (EN): "Fix the bug", "Set up CI" — verbs in command form.
+  // Kept separate from the build verb list so noun uses ("I took a test") do not match.
+  {
+    re: /^\s*(?:please\s+)?(test|write|draft|design|review|migrate|upgrade|update|set ?up|wire ?up|port|document|prepare|investigate|research|explore|validate|clean ?up|build|add|create|implement|ship|launch|fix|refactor|integrate|support|plan|audit|benchmark|profile|optimi[sz]e|remove|delete|rename|split|merge|deploy|configure|instrument)\b/i,
+    reason: "build_en_imperative",
+    weight: 0.4,
+  },
+
   // Build / ship / change product
   {
     re: /实现|开发|做成|做一个|加一个|加上|新增|创建|改成|改掉|修复|优化|强化|重构|接入|支持|上线|发版|发布|首发|出一版|推进/i,
@@ -61,7 +69,7 @@ const WORK_SIGNAL_RES: Array<{ re: RegExp; reason: string; weight: number }> = [
     weight: 0.4,
   },
   {
-    re: /\b(implement|build|add|create|ship|launch|release|fix|improve|enhance|refactor|integrate|support|roll out|mvp|v1)\b/i,
+    re: /\b(implement|build|add|create|ship|launch|release|fix|improve|enhance|refactor|integrate|support|roll out|mvp|v1|write|draft|design|spec(?:ify)?|review|migrate|upgrade|update|set ?up|wire ?up|port|document|prepare|investigate|validate|clean ?up)\b/i,
     reason: "build_en",
     weight: 0.4,
   },
@@ -78,7 +86,7 @@ const WORK_SIGNAL_RES: Array<{ re: RegExp; reason: string; weight: number }> = [
     weight: 0.2,
   },
   {
-    re: /\b(feature|page|screen|module|api|flow|button|settings?|search|filter|notification|sync|login|auth|pay(ment)?)\b/i,
+    re: /\b(feature|page|screen|module|api|flow|button|settings?|search|filter|notification|sync|login|auth|pay(ment)?|docs?|documentation|tests?|specs?|prs?|pull request|database|db|migration|release notes|bug|issue|endpoint|dashboard|landing page|website|onboarding|parser|cli|sdk|package|library|benchmark|readme|architecture|design|pipeline|ci|infra(?:structure)?|deploy(?:ment)?|monitoring|logging|config(?:uration)?|schema|auth flow)\b/i,
     reason: "feature_noun_en",
     weight: 0.2,
   },

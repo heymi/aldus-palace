@@ -1,5 +1,18 @@
 # @aldus-palace/core
 
+## 0.2.2
+
+### Patch Changes
+
+- Recognise English imperative captures in the deterministic provider.
+
+  `Write the architecture doc`, `Review the pull request`, `Migrate the database`,
+  `Set up the CI pipeline` and similar commands now produce commitments instead of
+  being filed as thoughts, while noun uses (`I took a test yesterday`) and bare
+  research (`Research X`) stay thoughts — research aimed at a concrete artifact
+  (`Research the notification API`) is work. Covered by the new
+  `actionableWork` suite.
+
 ## 0.2.1
 
 ### Patch Changes
