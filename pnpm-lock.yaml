@@ -18,7 +18,7 @@ importers:
   apps/server:
     dependencies:
       '@aldus-palace/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../packages/core
       '@hono/node-server':
         specifier: ^1.14.1
@@ -55,7 +55,7 @@ importers:
   examples/capture-cli:
     dependencies:
       '@aldus-palace/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../packages/core
       better-sqlite3:
         specifier: ^11.9.1
@@ -105,7 +105,7 @@ importers:
   packages/mcp:
     dependencies:
       '@aldus-palace/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.20.0

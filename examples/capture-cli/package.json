@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@aldus-palace/core": "workspace:*",
+    "@aldus-palace/core": "workspace:^",
     "better-sqlite3": "^11.9.1"
   },
   "devDependencies": {

@@ -1,5 +1,12 @@
 # @aldus-palace/mcp
 
+## 0.2.2
+
+### Patch Changes
+
+- Depend on `@aldus-palace/core` with a caret range (`workspace:^`) instead of a
+  pinned exact version, so a core patch release no longer forces an MCP release.
+
 ## 0.2.1
 
 ### Patch Changes

@@ -16,7 +16,7 @@
     "test": "tsx test/run-tests.ts"
   },
   "dependencies": {
-    "@aldus-palace/core": "workspace:*",
+    "@aldus-palace/core": "workspace:^",
     "@hono/node-server": "^1.14.1",
     "better-sqlite3": "^11.9.1",
     "dotenv": "^16.5.0",

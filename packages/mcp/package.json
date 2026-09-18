@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/mcp",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Model Context Protocol server for Aldus Palace — capture thoughts and read your Today plan from Claude Desktop, Claude Code or any MCP client.",
   "license": "Apache-2.0",
   "type": "module",
@@ -43,7 +43,7 @@
     "test": "tsx test/tools.test.ts"
   },
   "dependencies": {
-    "@aldus-palace/core": "workspace:*",
+    "@aldus-palace/core": "workspace:^",
     "@modelcontextprotocol/sdk": "^1.20.0",
     "better-sqlite3": "^11.9.1",
     "zod": "^3.24.3"
