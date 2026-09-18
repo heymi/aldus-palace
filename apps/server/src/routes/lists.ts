@@ -2,9 +2,10 @@ import { Hono } from "hono";
 import {
   actionSummary,
   buildToday,
-  commitmentTitleFromThought,
   commitmentsAreNearDuplicate,
+  commitmentTitleFromThought,
   conceptsForMemory,
+  confirmMemory,
   getOrCreateConcept,
   isLowValueSummary,
   linkMemoryToConcepts,
@@ -23,6 +24,7 @@ import {
   rebuildCommitmentClassifications,
   reconcileTodayPlan,
   recordUserTodayArrangement,
+  rejectMemory,
   removeFromToday,
   resolveClarificationByOption,
   suggestConceptNamesForMemory,
@@ -783,66 +785,22 @@ export function createListRoutes(deps: AppDeps): Hono<{
     const body = (await c.req.json().catch(() => ({}))) as {
       concept_names?: string[];
     };
-    const t = nowIso();
-    const mem = (await db
-      .prepare(`SELECT * FROM memories WHERE id = ? AND user_id = ?`)
-      .get(id, user.id)) as Record<string, unknown> | undefined;
-    if (!mem) return c.json({ error: "not_found" }, 404);
-    if (mem.status !== "candidate") {
-      return c.json({ error: "not_candidate" }, 400);
+    const result = await confirmMemory(db, user.id, id, body.concept_names);
+    if (!result.ok) {
+      return c.json(
+        { error: result.error },
+        result.error === "not_found" ? 404 : 400
+      );
     }
-
-    await db
-      .prepare(
-        `UPDATE memories SET status = 'active', confirmed_at = ?, updated_at = ?
-         WHERE id = ? AND user_id = ?`
-      )
-      .run(t, t, id, user.id);
-
-    const names =
-      body.concept_names?.length
-        ? body.concept_names
-        : suggestConceptNamesForMemory(String(mem.type), String(mem.content));
-    const linked = await linkMemoryToConcepts(db, user.id, id, names);
-
-    await writeActionLog(db, {
-      user_id: user.id,
-      actor: "user",
-      action_type: "memory_confirmed",
-      summary: actionSummary("memory_confirmed", { concept_count: linked.length }),
-      entity_type: "memory",
-      entity_id: id,
-      payload: { concepts: linked, concept_count: linked.length },
-    });
-
-    const row = (await db.prepare(`SELECT * FROM memories WHERE id = ?`).get(id)) as
-      | Record<string, unknown>
-      | undefined;
-    return c.json({
-      memory: { ...(row ?? {}), concepts: await conceptsForMemory(db, id) },
-    });
+    return c.json({ memory: result.memory });
   });
 
   listRoutes.post("/memories/:id/reject", async (c) => {
     const user = await requireUser(c, db);
     const id = c.req.param("id");
-    const t = nowIso();
-    const result = await db
-      .prepare(
-        `UPDATE memories SET status = 'archived', updated_at = ?
-         WHERE id = ? AND user_id = ? AND status = 'candidate'`
-      )
-      .run(t, id, user.id);
-    if (result.changes === 0) return c.json({ error: "not_found_or_not_candidate" }, 404);
-    await writeActionLog(db, {
-      user_id: user.id,
-      actor: "user",
-      action_type: "memory_rejected",
-      summary: actionSummary("memory_rejected"),
-      entity_type: "memory",
-      entity_id: id,
-    });
-    return c.json({ ok: true });
+    const result = await rejectMemory(db, user.id, id);
+    if (!result.ok) return c.json({ error: "not_found_or_not_candidate" }, 404);
+    return c.json({ success: true });
   });
 
   /**

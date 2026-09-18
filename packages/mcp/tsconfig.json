@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "paths": {
+      "@aldus-palace/core": ["../core/src/index.ts"],
+      "@aldus-palace/core/db/port": ["../core/src/db/port.ts"],
+      "@aldus-palace/core/db/sqlite": ["../core/src/db/sqlite.ts"],
+      "@aldus-palace/core/providers": ["../core/src/providers/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

@@ -60,6 +60,7 @@ export * from "./services/adaptivePlanning.js";
 export * from "./services/commitmentClassification.js";
 export * from "./services/commitments.js";
 export * from "./services/enrichmentLease.js";
+export * from "./services/memoryLifecycle.js";
 export * from "./services/planToday.js";
 export * from "./services/resolveClarification.js";
 export * from "./services/today.js";

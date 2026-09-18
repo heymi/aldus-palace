@@ -13,6 +13,9 @@
       ],
       "@aldus-palace/core/providers": [
         "../../packages/core/src/providers/index.ts"
+      ],
+      "@aldus-palace/core/db/sqlite": [
+        "../../packages/core/src/db/sqlite.ts"
       ]
     }
   },

@@ -12,16 +12,14 @@ This is a public summary. Detailed design history lives in
 - [x] Two-tier tests: deterministic suites + acceptance fixtures (offline)
 - [x] `spec/schema.sql` generated from the canonical schema
 - [x] SwiftUI reference client (best effort)
-- [ ] Anthropic provider
-- [ ] MCP server (`capture`, `list_today`, `confirm_memory`) so Claude Desktop
-      and Claude Code can capture directly
+## v0.2 — ecosystem (current)
+
+- [x] Anthropic provider (Messages API) alongside DeepSeek / OpenAI-compatible
+- [x] `@aldus-palace/mcp` — capture, today, commitments and memory tools over stdio
+- [x] Local SQLite adapter published as `@aldus-palace/core/db/sqlite`
+- [x] [Technical write-up](docs/PROGRESSIVE-CAPTURE.md) on the enrichment lease
+- [x] `claude mcp add` / Claude Desktop integration documented and smoke-tested
 - [ ] Published to npm with a release pipeline
-
-## v0.2 — ecosystem
-
-- [ ] `@aldus-palace/core` published, with a documented stability policy
-- [ ] Integration example: embed the runtime in your own app
-- [ ] A technical write-up on progressive capture and enrichment leases
 - [ ] More acceptance fixtures contributed by users
 
 ## Later

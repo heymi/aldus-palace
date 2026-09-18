@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "pnpm --filter @aldus-palace/core build",
+    "build": "pnpm -r build",
     "dev": "pnpm --filter @aldus-palace/core build && pnpm --filter @aldus-palace/server dev",
     "start": "pnpm --filter @aldus-palace/server start",
     "typecheck": "pnpm -r typecheck",

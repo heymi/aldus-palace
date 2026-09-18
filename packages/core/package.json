@@ -1,7 +1,7 @@
 {
   "name": "@aldus-palace/core",
   "version": "0.1.0",
-  "description": "Domain model, agent runtime and provider abstractions for Aldus Palace — a personal cognitive OS.",
+  "description": "Domain model, agent runtime and provider abstractions for Aldus Palace \u2014 a personal cognitive OS.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {
@@ -45,11 +45,17 @@
     "./domain": {
       "types": "./dist/domain/types.d.ts",
       "import": "./dist/domain/types.js"
+    },
+    "./db/sqlite": {
+      "types": "./dist/db/sqlite.d.ts",
+      "import": "./dist/db/sqlite.js"
     }
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -68,5 +74,13 @@
     "better-sqlite3": "^11.9.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "better-sqlite3": ">=9"
+  },
+  "peerDependenciesMeta": {
+    "better-sqlite3": {
+      "optional": true
+    }
   }
 }

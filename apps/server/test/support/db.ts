@@ -1,71 +1,47 @@
 /**
- * Test-only SQLite adapter.
+ * Test-only helpers.
  *
- * Wraps better-sqlite3 (synchronous) in the asynchronous storage port so the
- * tests exercise exactly the same contract as production adapters.
+ * The suites exercise the same `SqliteDatabase` adapter that production uses,
+ * so the port contract is covered by every test.
+ *
+ * better-sqlite3 handles are closed on process exit: the native finalizer can
+ * abort after the V8 environment is torn down (observed under Node 24), and
+ * closing explicitly is both cheaper and deterministic.
  */
 
 import Database from "better-sqlite3";
-import { initialize } from "@aldus-palace/core";
-import type {
-  SqlDatabase,
-  SqlRunResult,
-  SqlStatement,
-} from "@aldus-palace/core/db/port";
+import {
+  SqliteDatabase,
+  openSqliteDatabase,
+  type SqliteHandle,
+} from "@aldus-palace/core/db/sqlite";
 
-class SqliteStatement implements SqlStatement {
-  constructor(private readonly statement: Database.Statement) {}
+export { SqliteDatabase as SqliteTestDatabase };
 
-  async all(...bindings: unknown[]): Promise<unknown[]> {
-    return this.statement.all(...bindings) as unknown[];
-  }
+const openHandles: Array<{ close?: () => void }> = [];
 
-  async get(...bindings: unknown[]): Promise<unknown> {
-    return this.statement.get(...bindings);
-  }
-
-  async run(...bindings: unknown[]): Promise<SqlRunResult> {
-    const result = this.statement.run(...bindings);
-    return { changes: result.changes };
-  }
+function track<T extends { close?: () => void }>(handle: T): T {
+  openHandles.push(handle);
+  return handle;
 }
 
-export class SqliteTestDatabase implements SqlDatabase {
-  constructor(readonly sqlite: Database.Database) {}
-
-  prepare(query: string): SqlStatement {
-    return new SqliteStatement(this.sqlite.prepare(query));
+process.on("exit", () => {
+  for (const handle of openHandles) {
+    try {
+      handle.close?.();
+    } catch {
+      // nothing useful to do while exiting
+    }
   }
+});
 
-  async exec(query: string): Promise<void> {
-    this.sqlite.exec(query);
-  }
-
-  transaction<T>(callback: () => Promise<T>): () => Promise<T> {
-    return async () => {
-      this.sqlite.exec("BEGIN");
-      try {
-        const result = await callback();
-        this.sqlite.exec("COMMIT");
-        return result;
-      } catch (error) {
-        try {
-          this.sqlite.exec("ROLLBACK");
-        } catch {
-          // ignore rollback failures; the original error is more useful
-        }
-        throw error;
-      }
-    };
-  }
+/** A raw better-sqlite3 handle, for tests that need to build a partial schema. */
+export function rawSqlite(path = ":memory:"): SqliteHandle {
+  return track(new Database(path)) as unknown as SqliteHandle;
 }
 
-export async function createTestDb(): Promise<SqliteTestDatabase> {
-  const sqlite = new Database(":memory:");
-  sqlite.pragma("foreign_keys = ON");
-  const db = new SqliteTestDatabase(sqlite);
-  await initialize(db);
-  return db;
+export async function createTestDb(): Promise<SqliteDatabase> {
+  return track(await openSqliteDatabase(":memory:", { wal: false }));
 }
 
 export const TEST_NOW = "2026-07-19T04:00:00.000Z";

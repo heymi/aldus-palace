@@ -25,9 +25,9 @@ Three things make it unusual:
    background AI pass replaces it under an enrichment lease — generation IDs make
    the hand-off idempotent and supersede-safe (see
    [ADR 0003](docs/adr/0003-progressive-capture-with-enrichment-leases.md)).
-3. **Provider-agnostic.** `LLMProvider` is a 9-line interface; DeepSeek and any
-   OpenAI-compatible endpoint ship today, and the runtime never reads
-   `process.env` behind your back.
+3. **Provider-agnostic.** `LLMProvider` is a 9-line interface; Anthropic,
+   DeepSeek and any OpenAI-compatible endpoint ship today, and the runtime never
+   reads `process.env` behind your back.
 
 ## Quick start (no API key)
 
@@ -56,10 +56,21 @@ curl -X POST http://127.0.0.1:8787/v1/inputs \
   -d '{"content":"Ship the onboarding page next week","mode":"sync"}'
 ```
 
+## Use it from Claude (MCP)
+
+```bash
+npm install -g @aldus-palace/mcp
+```
+
+Then add it to `claude_desktop_config.json` (or `claude mcp add`) and Claude can
+`capture` thoughts into your own database and read your `list_today` plan.
+Details in [`packages/mcp/README.md`](packages/mcp/README.md).
+
 ## Repository layout
 
 ```
 packages/core          domain model, agent runtime, storage port, migrations, providers
+packages/mcp           Model Context Protocol server (capture / today / memories)
 apps/server            Hono reference server (local SQLite + Cloudflare Durable Object)
 examples/capture-cli   smallest possible embedder
 clients/macos          SwiftUI reference client (best effort)
@@ -75,6 +86,7 @@ docs/                  architecture, domain schema, eval guide, ADRs
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | agent runtime, module boundaries, storage port, runtime targets |
 | [docs/DOMAIN-SCHEMA.md](docs/DOMAIN-SCHEMA.md) | the objects, their fields and invariants |
 | [docs/EVAL.md](docs/EVAL.md) | how to run and extend the acceptance fixtures |
+| [docs/PROGRESSIVE-CAPTURE.md](docs/PROGRESSIVE-CAPTURE.md) | the design behind the enrichment lease |
 | [docs/adr/](docs/adr) | architecture decision records |
 | [AGENTS.md](AGENTS.md) | how this repo is developed agent-natively |
 | [CONTEXT.md](CONTEXT.md) | ubiquitous language for planning behaviour |

@@ -36,6 +36,13 @@ Every pull request runs, with **no secrets**:
 4. `pnpm build`
 5. `pnpm spec:check` — `spec/schema.sql` matches the canonical schema
 
+## Published package contents
+
+`packages/core` and `packages/mcp` are published to npm. Because npm only
+auto-includes a `LICENSE` that sits in the package directory, `LICENSE` and
+`NOTICE` are copied into each package. If you change the root license, update
+those copies too.
+
 ## Pull requests
 
 - Keep the diff focused; one concern per PR.

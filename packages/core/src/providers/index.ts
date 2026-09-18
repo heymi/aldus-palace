@@ -1,3 +1,4 @@
+import { AnthropicProvider } from "./anthropic.js";
 import { DevLLMProvider } from "./dev.js";
 import { OpenAICompatibleProvider } from "./openai_compatible.js";
 import type { LLMProvider } from "./types.js";
@@ -6,10 +7,17 @@ export type { LLMProvider, ChatMessage } from "./types.js";
 export { DevLLMProvider } from "./dev.js";
 export { OpenAICompatibleProvider } from "./openai_compatible.js";
 export type { OpenAICompatibleOptions } from "./openai_compatible.js";
+export { AnthropicProvider } from "./anthropic.js";
+export type { AnthropicOptions } from "./anthropic.js";
 
 export const DEFAULT_OPENAI_COMPATIBLE_MODEL = "deepseek-chat";
+export const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5";
 
-export type ProviderKind = "dev" | "deepseek" | "openai-compatible";
+export type ProviderKind =
+  | "dev"
+  | "deepseek"
+  | "openai-compatible"
+  | "anthropic";
 
 export type ProviderConfig = {
   /** Backend to use. `dev` is deterministic and needs no network. */
@@ -19,6 +27,10 @@ export type ProviderConfig = {
   model?: string;
   /** Display name for logs/errors (defaults to the kind). */
   name?: string;
+  /** Anthropic API version header (anthropic only). */
+  version?: string;
+  /** Max output tokens (anthropic only). */
+  maxTokens?: number;
   /** Sink for diagnostics; defaults to `console`. */
   log?: (message: string) => void;
 };
@@ -49,6 +61,19 @@ export function createLLMProvider(config: ProviderConfig): LLMProvider {
     throw new ProviderConfigError(
       `provider "${config.kind}" requires an apiKey (set the corresponding env var or fall back to kind="dev")`
     );
+  }
+
+  if (config.kind === "anthropic") {
+    const model = config.model?.trim() || DEFAULT_ANTHROPIC_MODEL;
+    log(`[llm] provider=anthropic model=${model}`);
+    return new AnthropicProvider({
+      apiKey,
+      model,
+      baseUrl: config.baseUrl,
+      version: config.version,
+      maxTokens: config.maxTokens,
+      name: config.name ?? "anthropic",
+    });
   }
 
   const baseUrl =
@@ -92,26 +117,59 @@ export function resolveProviderConfig(
   env: Record<string, string | undefined>
 ): ProviderConfig {
   const mode = (env.LLM_PROVIDER ?? "auto").toLowerCase();
-  const apiKey = env.OPENAI_COMPATIBLE_API_KEY ?? env.DEEPSEEK_API_KEY;
+  const anthropicKey = env.ANTHROPIC_API_KEY;
+  const compatibleKey = env.OPENAI_COMPATIBLE_API_KEY ?? env.DEEPSEEK_API_KEY;
 
-  if (mode === "dev" || (mode === "auto" && !apiKey)) {
-    return { kind: "dev" };
-  }
-  if (mode === "deepseek" || mode === "auto") {
+  if (mode === "dev") return { kind: "dev" };
+
+  if (mode === "anthropic") {
     return {
-      kind: apiKey ? "deepseek" : "dev",
-      apiKey,
+      kind: anthropicKey ? "anthropic" : "dev",
+      apiKey: anthropicKey,
+      baseUrl: env.ANTHROPIC_BASE_URL,
+      model: env.ANTHROPIC_MODEL,
+      maxTokens: env.ANTHROPIC_MAX_TOKENS
+        ? Number(env.ANTHROPIC_MAX_TOKENS)
+        : undefined,
+    };
+  }
+
+  if (mode === "openai-compatible") {
+    return {
+      kind: compatibleKey ? "openai-compatible" : "dev",
+      apiKey: compatibleKey,
+      baseUrl: env.OPENAI_COMPATIBLE_BASE_URL,
+      model: env.OPENAI_COMPATIBLE_MODEL,
+      name: env.LLM_PROVIDER,
+    };
+  }
+
+  if (mode === "deepseek") {
+    return {
+      kind: compatibleKey ? "deepseek" : "dev",
+      apiKey: compatibleKey,
       baseUrl: env.DEEPSEEK_BASE_URL ?? env.OPENAI_COMPATIBLE_BASE_URL,
       model: env.DEEPSEEK_MODEL ?? env.OPENAI_COMPATIBLE_MODEL,
     };
   }
-  return {
-    kind: "openai-compatible",
-    apiKey,
-    baseUrl: env.OPENAI_COMPATIBLE_BASE_URL,
-    model: env.OPENAI_COMPATIBLE_MODEL,
-    name: env.LLM_PROVIDER,
-  };
+
+  // auto: prefer whichever key is configured, otherwise run offline.
+  if (anthropicKey) {
+    return {
+      kind: "anthropic",
+      apiKey: anthropicKey,
+      model: env.ANTHROPIC_MODEL,
+    };
+  }
+  if (compatibleKey) {
+    return {
+      kind: "deepseek",
+      apiKey: compatibleKey,
+      baseUrl: env.DEEPSEEK_BASE_URL ?? env.OPENAI_COMPATIBLE_BASE_URL,
+      model: env.DEEPSEEK_MODEL ?? env.OPENAI_COMPATIBLE_MODEL,
+    };
+  }
+  return { kind: "dev" };
 }
 
 export function isRealLLMProvider(provider: LLMProvider): boolean {

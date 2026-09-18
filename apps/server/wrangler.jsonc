@@ -28,7 +28,7 @@
     "DEV_USER_LANGUAGE": "en"
   },
   "secrets": {
-    "required": ["DEV_AUTH_TOKEN", "DEEPSEEK_API_KEY", "OPENAI_COMPATIBLE_API_KEY"]
+    "required": ["DEV_AUTH_TOKEN", "DEEPSEEK_API_KEY", "OPENAI_COMPATIBLE_API_KEY", "ANTHROPIC_API_KEY"]
   },
   "observability": {
     "enabled": true,

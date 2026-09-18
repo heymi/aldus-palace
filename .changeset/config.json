@@ -7,8 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@aldus-palace/server",
-    "@aldus-palace/example-capture-cli"
-  ]
+  "ignore": []
 }
