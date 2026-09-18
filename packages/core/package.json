@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Domain model, agent runtime and provider abstractions for Aldus Palace — a personal cognitive OS.",
   "license": "Apache-2.0",
   "type": "module",
@@ -24,31 +24,38 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./providers": {
       "types": "./dist/providers/index.d.ts",
-      "import": "./dist/providers/index.js"
+      "import": "./dist/providers/index.js",
+      "default": "./dist/providers/index.js"
     },
     "./db/port": {
       "types": "./dist/db/port.d.ts",
-      "import": "./dist/db/port.js"
+      "import": "./dist/db/port.js",
+      "default": "./dist/db/port.js"
     },
     "./db/migrate": {
       "types": "./dist/db/migrate.d.ts",
-      "import": "./dist/db/migrate.js"
+      "import": "./dist/db/migrate.js",
+      "default": "./dist/db/migrate.js"
     },
     "./db/schema": {
       "types": "./dist/db/schema.d.ts",
-      "import": "./dist/db/schema.js"
+      "import": "./dist/db/schema.js",
+      "default": "./dist/db/schema.js"
     },
     "./domain": {
       "types": "./dist/domain/types.d.ts",
-      "import": "./dist/domain/types.js"
+      "import": "./dist/domain/types.js",
+      "default": "./dist/domain/types.js"
     },
     "./db/sqlite": {
       "types": "./dist/db/sqlite.d.ts",
-      "import": "./dist/db/sqlite.js"
+      "import": "./dist/db/sqlite.js",
+      "default": "./dist/db/sqlite.js"
     }
   },
   "files": [

@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/mcp",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Model Context Protocol server for Aldus Palace — capture thoughts and read your Today plan from Claude Desktop, Claude Code or any MCP client.",
   "license": "Apache-2.0",
   "type": "module",
@@ -31,7 +31,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [

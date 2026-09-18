@@ -1,5 +1,12 @@
 # @aldus-palace/core
 
+## 0.3.1
+
+### Patch Changes
+
+- Add a `default` export condition so CommonJS consumers can `require()` the
+  packages on Node ≥ 22.12 (`require(esm)`), not just `import` them.
+
 ## 0.3.0
 
 ### Minor Changes
