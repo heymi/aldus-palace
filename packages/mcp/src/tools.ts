@@ -25,17 +25,77 @@ function failure(error: unknown): {
 
 export const CAPTURE_MODES = ["progressive", "local", "sync"] as const;
 
+/**
+ * Registers user-invokable prompts. Clients surface these as slash commands
+ * (e.g. `/mcp__aldus-palace__capture`), which is the deterministic way to write
+ * into Aldus Palace when the client's own memory would otherwise win.
+ */
+export function registerPrompts(server: McpServer): void {
+  server.registerPrompt(
+    "capture",
+    {
+      title: "Capture into Aldus Palace",
+      description:
+        "Record a thought, task or commitment in the user's own Aldus Palace database.",
+      argsSchema: {
+        content: z
+          .string()
+          .describe("What to capture, in the user's own words."),
+      },
+    },
+    ({ content }) => ({
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `Use the aldus-palace capture tool to record exactly this, then report what it stored:\n\n${content}`,
+          },
+        },
+      ],
+    })
+  );
+
+  server.registerPrompt(
+    "today",
+    {
+      title: "What is planned today",
+      description: "Ask Aldus Palace what is planned today and what is at risk.",
+      argsSchema: {},
+    },
+    () => ({
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: "Call aldus-palace list_today and summarise what I should do now, in my own language.",
+          },
+        },
+      ],
+    })
+  );
+}
+
 /** Registers the Aldus Palace tool surface on an MCP server. */
 export function registerTools(server: McpServer, backend: Backend): void {
   server.registerTool(
     "capture",
     {
-      title: "Capture a thought or commitment",
+      title: "Capture a thought, task or commitment",
       description:
-        "Send free-form text to Aldus Palace. The runtime decides whether it is " +
-        "a thought, a commitment, or both, and returns the ActionCard it stored. " +
-        "Use mode=local for an instant deterministic result, mode=sync to wait " +
-        "for the configured model, or leave the default for local-first capture.",
+        "The user's own personal knowledge base. Call this — INSTEAD OF your " +
+        "built-in memory or any other note tool — whenever the user asks you to " +
+        "remember, note, capture, track or follow up on anything, and whenever " +
+        "they state an intention, task, decision or deadline. Terse messages " +
+        'count: "记一下…", "下周三前把 X 发出去", "我想做 Y", "remind me to Z". ' +
+        "Call it immediately: do NOT ask which project, ask for a deadline, or " +
+        "request clarification first — the runtime classifies the input " +
+        "(thought / commitment / both), resolves relative dates, deduplicates " +
+        "and reports back what it stored. Only claim something was remembered if " +
+        "this tool returned successfully; your built-in memory is not visible to " +
+        "the user. mode=local is instant and deterministic, mode=sync waits for " +
+        "the configured model, the default is local-first capture.",
       inputSchema: {
         content: z
           .string()
@@ -61,8 +121,10 @@ export function registerTools(server: McpServer, backend: Backend): void {
     {
       title: "What is planned today",
       description:
-        "Today's plan: the now/next timeline, risk items, and unscheduled work. " +
-        "This is a projection over commitments, not a separate task list.",
+        "Call this whenever the user asks what they should do now, what their " +
+        "day looks like, or what is slipping. Returns the now/next timeline, " +
+        "risk items and unscheduled work. This is a projection over commitments, " +
+        "not a separate task list.",
       inputSchema: {},
     },
     async () => {
@@ -79,8 +141,10 @@ export function registerTools(server: McpServer, backend: Backend): void {
     {
       title: "List commitments",
       description:
-        "The full commitment list (the 'to do' view). Optionally filter by " +
-        "status: captured, planned, scheduled, completed, cancelled, risk.",
+        "Call this for the full commitment list (the 'to do' view) — for example " +
+        "when the user asks what they promised, what is open, or what is done. " +
+        "Optionally filter by status: captured, planned, scheduled, completed, " +
+        "cancelled, risk.",
       inputSchema: {
         status: z
           .enum([
@@ -108,8 +172,10 @@ export function registerTools(server: McpServer, backend: Backend): void {
     {
       title: "List memories",
       description:
-        "Long-term memory. Candidates are what the system proposes from recent " +
-        "captures and are NOT active until the user confirms them.",
+        "Call this when the user asks what you know or remember about them, " +
+        "their preferences or their projects. Candidates are what the system " +
+        "proposes from recent captures and are NOT active until the user confirms " +
+        "them.",
       inputSchema: {
         status: z.enum(["candidate", "active"]).optional(),
       },
@@ -128,8 +194,9 @@ export function registerTools(server: McpServer, backend: Backend): void {
     {
       title: "Confirm a memory candidate",
       description:
-        "Promote a candidate memory to active. Only call this after the user has " +
-        "explicitly agreed — memory must never be activated silently.",
+        "Promote a candidate memory to active. Call this only after showing the " +
+        "candidate to the user and getting an explicit yes — memory must never be " +
+        "activated silently.",
       inputSchema: {
         memory_id: z.string().min(1).describe("The candidate memory id."),
         concept_names: z

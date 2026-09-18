@@ -16,11 +16,11 @@ import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createBackend } from "./backend.js";
-import { registerTools } from "./tools.js";
+import { registerPrompts, registerTools } from "./tools.js";
 
 export { createBackend } from "./backend.js";
 export type { Backend, BackendConfig, CaptureMode } from "./backend.js";
-export { registerTools } from "./tools.js";
+export { registerTools, registerPrompts } from "./tools.js";
 
 async function main(): Promise<void> {
   const backend = await createBackend({
@@ -41,6 +41,7 @@ async function main(): Promise<void> {
     version: "0.1.0",
   });
   registerTools(server, backend);
+  registerPrompts(server);
 
   await server.connect(new StdioServerTransport());
   console.error(`[aldus-palace-mcp] connected — backend: ${backend.description}`);

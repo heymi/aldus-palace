@@ -1,5 +1,20 @@
 # @aldus-palace/mcp
 
+## 0.3.0
+
+### Minor Changes
+
+- Make the MCP surface actually get used.
+
+  - `capture` and the other tools now say _when_ to call them, and `capture`
+    explicitly claims the "remember this" intent — including "do not answer from
+    your built-in memory instead" and "only claim something was remembered if this
+    tool returned successfully".
+  - New user-invokable prompts, surfaced by clients as slash commands
+    (`/mcp__aldus-palace__capture`, `/mcp__aldus-palace__today`), so writing into
+    Aldus Palace is deterministic even when the client's own memory would win.
+  - Tests cover the prompt surface and its arguments.
+
 ## 0.2.2
 
 ### Patch Changes

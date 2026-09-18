@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { LocalBackend } from "../src/backend.js";
-import { registerTools } from "../src/tools.js";
+import { registerPrompts, registerTools } from "../src/tools.js";
 
 function assert(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -26,6 +26,7 @@ assert(backend.description.startsWith("local SQLite"), "local backend selected")
 
 const server = new McpServer({ name: "aldus-palace-test", version: "0.0.0" });
 registerTools(server, backend);
+registerPrompts(server);
 
 const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 await server.connect(serverTransport);
@@ -51,6 +52,22 @@ assert(
 for (const tool of tools) {
   assert(!!tool.description, `${tool.name} must document itself`);
 }
+
+const { prompts } = await client.listPrompts();
+const promptNames = prompts.map((prompt) => prompt.name).sort();
+assert(
+  JSON.stringify(promptNames) === JSON.stringify(["capture", "today"]),
+  `unexpected prompt surface: ${promptNames.join(", ")}`
+);
+const capturePrompt = await client.getPrompt({
+  name: "capture",
+  arguments: { content: "Ship the onboarding page" },
+});
+const promptText = (capturePrompt.messages[0]!.content as { text: string }).text;
+assert(
+  promptText.includes("capture") && promptText.includes("Ship the onboarding page"),
+  "the capture prompt must instruct the model and carry the user input"
+);
 
 // --- capture ---------------------------------------------------------------
 
