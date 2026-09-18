@@ -1,0 +1,9 @@
+{
+  "id": "S09",
+  "input": "产品方向有点乱",
+  "expect": {
+    "thoughts_min": 1,
+    "commitments_max": 0,
+    "forbidden": ["recurrence"]
+  }
+}

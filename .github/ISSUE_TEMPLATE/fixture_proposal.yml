@@ -1,0 +1,24 @@
+name: Behaviour fixture proposal
+description: Pin a user-visible understanding behaviour with an eval fixture
+labels: [eval, good first issue]
+body:
+  - type: textarea
+    id: input
+    attributes:
+      label: Example input
+      description: The natural-language capture (any language).
+    validations:
+      required: true
+  - type: textarea
+    id: expectation
+    attributes:
+      label: What must hold?
+      description: e.g. "at most one commitment", "no memory candidate", "must produce a clarification".
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does this matter?
+    validations:
+      required: true

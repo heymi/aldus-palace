@@ -1,0 +1,44 @@
+# OS
+.DS_Store
+*.swp
+*~
+
+# Node
+node_modules/
+.pnpm-store/
+.wrangler/
+dist/
+build/
+*.log
+coverage/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Local data
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Xcode / Swift / local app builds
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+apps/macos/*/build/
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Python
+__pycache__/
+.venv/

@@ -1,0 +1,9 @@
+{
+  "id": "S25",
+  "input": "我不喜欢复杂的软件，界面要简单",
+  "expect": {
+    "memory_candidates_min": 1,
+    "memory_active_max": 0,
+    "memory_types_allowed": ["preference", "project_context", "principle", "decision"]
+  }
+}

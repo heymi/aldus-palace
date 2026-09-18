@@ -1,0 +1,8 @@
+# Everything is currently owned by the maintainer.
+* @heymi
+
+# Contract surfaces that need an ADR when changed:
+packages/core/src/db/schema.ts   @heymi
+packages/core/src/db/migrate.ts  @heymi
+docs/adr/                        @heymi
+eval/fixtures/                   @heymi

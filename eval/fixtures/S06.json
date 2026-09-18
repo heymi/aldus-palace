@@ -1,0 +1,10 @@
+{
+  "id": "S06",
+  "input": "想做 iOS 版，下个月研究一下可行性",
+  "expect": {
+    "thoughts_min": 1,
+    "commitments_min": 1,
+    "memory_active_max": 0,
+    "forbidden": ["recurrence", "thought_type:principle"]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "S04",
+  "input": "最近觉得 AI 产品都太吵了，干扰太多",
+  "expect": {
+    "thoughts_min": 1,
+    "commitments_max": 0,
+    "thought_types_allowed": ["idea", "insight", "observation", "research", "decision_candidate"],
+    "forbidden": ["thought_type:principle", "recurrence"]
+  }
+}

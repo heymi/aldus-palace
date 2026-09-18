@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "aldus-palace-api",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-07-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ALDUS_PALACE",
+        "class_name": "AldusPalaceBackend"
+      }
+    ]
+  },
+  "exports": {
+    "AldusPalaceBackend": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "vars": {
+    "LLM_PROVIDER": "deepseek",
+    "DEEPSEEK_BASE_URL": "https://api.deepseek.com",
+    "DEEPSEEK_MODEL": "deepseek-chat",
+    "DEV_USER_NAME": "Local User",
+    "DEV_USER_TIMEZONE": "UTC",
+    "DEV_USER_LANGUAGE": "en"
+  },
+  "secrets": {
+    "required": ["DEV_AUTH_TOKEN", "DEEPSEEK_API_KEY", "OPENAI_COMPATIBLE_API_KEY"]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

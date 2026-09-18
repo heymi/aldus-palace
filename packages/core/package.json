@@ -1,0 +1,72 @@
+{
+  "name": "@aldus-palace/core",
+  "version": "0.1.0",
+  "description": "Domain model, agent runtime and provider abstractions for Aldus Palace — a personal cognitive OS.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heymi/aldus-palace.git",
+    "directory": "packages/core"
+  },
+  "keywords": [
+    "agent",
+    "llm",
+    "personal-knowledge",
+    "sqlite",
+    "cloudflare-durable-objects"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./providers": {
+      "types": "./dist/providers/index.d.ts",
+      "import": "./dist/providers/index.js"
+    },
+    "./db/port": {
+      "types": "./dist/db/port.d.ts",
+      "import": "./dist/db/port.js"
+    },
+    "./db/migrate": {
+      "types": "./dist/db/migrate.d.ts",
+      "import": "./dist/db/migrate.js"
+    },
+    "./db/schema": {
+      "types": "./dist/db/schema.d.ts",
+      "import": "./dist/db/schema.js"
+    },
+    "./domain": {
+      "types": "./dist/domain/types.d.ts",
+      "import": "./dist/domain/types.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx test/run-tests.ts",
+    "eval": "tsx test/run-fixtures.ts"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.20",
+    "nanoid": "^5.1.5",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.14.1",
+    "better-sqlite3": "^11.9.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

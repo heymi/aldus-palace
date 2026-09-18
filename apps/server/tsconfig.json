@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@aldus-palace/core": [
+        "../../packages/core/src/index.ts"
+      ],
+      "@aldus-palace/core/db/port": [
+        "../../packages/core/src/db/port.ts"
+      ],
+      "@aldus-palace/core/providers": [
+        "../../packages/core/src/providers/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "worker-configuration.d.ts"
+  ]
+}
