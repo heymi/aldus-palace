@@ -108,10 +108,10 @@ function renderToday() {
        </div>`
     : "";
 
-  const later = timeline.length
+  const laterItems = timeline.filter((item) => !now || item.id !== now.id);
+  const later = laterItems.length
     ? `<span class="list-label">${now ? "Then" : "Scheduled"}</span>
-       <div class="stack">${timeline
-         .filter((item) => !now || item.id !== now.id)
+       <div class="stack">${laterItems
          .map(
            (item) => `
          <div class="line">
