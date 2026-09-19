@@ -22,6 +22,10 @@ export function segmentForSearch(text: string): string {
     .trim();
 }
 
+/** Bound the expression: a long input must not become a huge OR chain. */
+const MAX_QUERY_CHARS = 512;
+const MAX_TERMS = 24;
+
 /**
  * Turn a user query into an FTS5 MATCH expression.
  *
@@ -32,7 +36,7 @@ export function segmentForSearch(text: string): string {
  * re-ranks after it. Quotes are stripped so the expression stays valid.
  */
 export function toMatchQuery(query: string): string {
-  const cleaned = query.replace(/"/g, " ").trim();
+  const cleaned = query.replace(/"/g, " ").trim().slice(0, MAX_QUERY_CHARS);
   if (!cleaned) return "";
   const terms = cleaned
     .split(/[\s,，。！？、；;:：]+/)
@@ -53,5 +57,5 @@ export function toMatchQuery(query: string): string {
         .filter(Boolean)
         .map((term) => `${term}*`);
     });
-  return [...new Set(terms)].join(" OR ");
+  return [...new Set(terms)].slice(0, MAX_TERMS).join(" OR ");
 }
