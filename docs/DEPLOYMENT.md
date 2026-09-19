@@ -56,23 +56,50 @@ pnpm cf:deploy
 Point clients at the worker URL with the same bearer token. See
 [`apps/server/CLOUDFLARE_DEPLOYMENT.md`](../apps/server/CLOUDFLARE_DEPLOYMENT.md).
 
+### Public demo worker
+
+`apps/server/wrangler.demo.jsonc` ships the reference client and the API in one
+Worker: assets for the page, `/api/*` proxied with the token injected, and a
+private Durable Object per visitor selected by an httpOnly cookie. It runs the
+offline provider, so it needs no model key and costs nothing:
+
+```bash
+cd apps/server
+printf '%s' "$(openssl rand -hex 32)" | wrangler secret put DEV_AUTH_TOKEN -c wrangler.demo.jsonc
+pnpm cf:deploy:demo
+```
+
+The hosted instance is <https://aldus-palace-demo.iheymi.workers.dev>; the client
+is in [`examples/reference-client`](../examples/reference-client).
+
 ## 3. Embedded
 
-Mount the routes on your own Hono app, or skip HTTP entirely and call the library:
+Mount the routes on your own Hono app, or skip HTTP entirely and call the
+library. The reference app lives in `apps/server` and is not published, so this
+runs inside the repo; an embedder outside it uses `@aldus-palace/core` and its
+own server. A cloud provider must be built with the privacy guard — the dev
+provider needs none:
 
 ```ts
-import { createApp } from "@aldus-palace/server";
-import { openLocalDb } from "@aldus-palace/server/db/local";
+import { createApp } from "../../apps/server/src/app.js";
+import { openLocalDb } from "../../apps/server/src/db/local.js";
+import { createMessageGuard, ensureDevUser, localeOf, resolvePrivacyLevel } from "@aldus-palace/core";
 import { createLLMProvider, resolveProviderConfig } from "@aldus-palace/core/providers";
 
 const db = await openLocalDb("./data/aldus.db");
+const userConfig = { name: "Local User", timezone: "UTC", language: "en" };
+const user = await ensureDevUser(db, userConfig);
+
 const app = createApp({
   db,
-  llm: createLLMProvider(resolveProviderConfig(process.env)),
-  config: {
-    devAuthToken: process.env.DEV_AUTH_TOKEN ?? "",
-    user: { name: "Local User", timezone: "UTC", language: "en" },
-  },
+  llm: createLLMProvider(
+    resolveProviderConfig(process.env),
+    createMessageGuard(db, user.id, {
+      level: resolvePrivacyLevel(process.env),
+      locale: localeOf(user.language),
+    })
+  ),
+  config: { devAuthToken: process.env.DEV_AUTH_TOKEN ?? "", user: userConfig },
 });
 ```
 

@@ -38,6 +38,16 @@ assert(
   "a hyphen breaks into terms, so FTS5 does not read a column"
 );
 assert(toMatchQuery('say "hi"') === "say* OR hi*", "quotes are stripped");
+assert(
+  toMatchQuery("? hello") === "hello*",
+  `punctuation-only words leave no dangling OR, got ${toMatchQuery("? hello")}`
+);
+assert(
+  toMatchQuery("hello ()") === "hello*",
+  `a trailing punctuation word is dropped, got ${toMatchQuery("hello ()")}`
+);
+assert(toMatchQuery("😀 hello") === "hello*", "an emoji word is dropped");
+assert(toMatchQuery("😀") === "", "a query of only emoji has no expression");
 
 // --- the retriever over the real schema -------------------------------------
 

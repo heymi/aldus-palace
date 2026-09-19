@@ -37,3 +37,19 @@ bearer token.
   `env.DEV_AUTH_TOKEN` typed.
 - Point-in-time recovery and observability are handled by the platform
   (`observability.enabled`).
+
+## Public demo
+
+`wrangler.demo.jsonc` deploys a separate Worker (`aldus-palace-demo`) that
+serves the reference client as static assets and routes `/api/*` to the same
+backend:
+
+```bash
+printf '%s' "$(openssl rand -hex 32)" | wrangler secret put DEV_AUTH_TOKEN -c wrangler.demo.jsonc
+pnpm cf:deploy:demo
+```
+
+`DEMO_MODE=true` gives every visitor their own Durable Object, chosen by an
+httpOnly cookie, and the Worker injects the bearer token so it never reaches the
+browser. `LLM_PROVIDER=dev` keeps it keyless and free; add a key as a secret and
+set `LLM_PROVIDER` to use a real model. Run it locally with `pnpm cf:dev:demo`.

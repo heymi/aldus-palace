@@ -34,22 +34,24 @@ export function segmentForSearch(text: string): string {
 export function toMatchQuery(query: string): string {
   const cleaned = query.replace(/"/g, " ").trim();
   if (!cleaned) return "";
-  const groups = cleaned
+  const terms = cleaned
     .split(/[\s,，。！？、；;:：]+/)
     .filter(Boolean)
-    .map((word) => {
+    .flatMap((word) => {
       if (hasCjk(word)) {
-        return `"${segmentForSearch(word).split(/\s+/).join(" ")}"`;
+        const phrase = segmentForSearch(word).split(/\s+/).filter(Boolean).join(" ");
+        return phrase ? [`"${phrase}"`] : [];
       }
       // Break a Latin word on characters FTS5 reads as syntax (a hyphen reads
       // as a column filter: "Mac-only" would look for a column named only).
+      // A word with no letters or digits left ("?" or an emoji) yields nothing,
+      // so the expression never starts or ends with a dangling OR.
       return word
         .toLowerCase()
         .replace(/[^\p{L}\p{N}_]+/gu, " ")
         .split(/\s+/)
         .filter(Boolean)
-        .map((term) => `${term}*`)
-        .join(" OR ");
+        .map((term) => `${term}*`);
     });
-  return [...new Set(groups)].join(" OR ");
+  return [...new Set(terms)].join(" OR ");
 }

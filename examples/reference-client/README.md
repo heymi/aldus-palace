@@ -1,7 +1,11 @@
 # reference-client
 
-A minimal browser client for the HTTP API. One page, five reads of the same
-context:
+A minimal browser client for the HTTP API.
+
+**Online demo:** <https://aldus-palace-demo.iheymi.workers.dev> — each visitor
+gets a private context, so what you capture is yours alone.
+
+One page, five reads of the same context:
 
 | Panel | Route | What it shows |
 |---|---|---|
@@ -49,3 +53,22 @@ Two sentences show every panel:
 
 `⌘↵` (or `Ctrl↵`) files the current sentence. Clicking a memory shows the raw
 input it came from.
+
+## Deploy the online demo
+
+The same page runs on Cloudflare Workers with a private Durable Object per
+visitor. The Worker serves these files and proxies `/api/*`, so the token never
+reaches the browser:
+
+```bash
+cd apps/server
+printf '%s' "$(openssl rand -hex 32)" | wrangler secret put DEV_AUTH_TOKEN -c wrangler.demo.jsonc
+pnpm cf:deploy:demo
+```
+
+`wrangler.demo.jsonc` points the assets binding at this directory and sets
+`DEMO_MODE=true` and `LLM_PROVIDER=dev`, so the demo needs no model key and costs
+nothing to run. To use a real model, add its key as a secret and set
+`LLM_PROVIDER` in that config.
+
+For a local run of the same demo: `pnpm cf:dev:demo`.

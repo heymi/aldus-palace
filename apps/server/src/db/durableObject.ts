@@ -42,20 +42,8 @@ export class DurableObjectDatabase implements SqlDatabase {
   }
 
   transaction<T>(callback: () => Promise<T>): () => Promise<T> {
-    return async () => {
-      this.storage.sql.exec("BEGIN");
-      try {
-        const result = await callback();
-        this.storage.sql.exec("COMMIT");
-        return result;
-      } catch (error) {
-        try {
-          this.storage.sql.exec("ROLLBACK");
-        } catch {
-          // ignore rollback failures; surface the original error
-        }
-        throw error;
-      }
-    };
+    // Durable Object SQLite rejects raw BEGIN/COMMIT/SAVEPOINT; its storage
+    // transaction API owns the atomicity and rolls back on a throw.
+    return () => this.storage.transaction(async () => callback());
   }
 }
