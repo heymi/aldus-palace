@@ -16,6 +16,7 @@ import {
   prepareCloudPayload,
   purgeUserData,
   removeDependency,
+  replanAfterChange,
   revokeAction,
   revokeScope,
   setAutonomyCeiling,
@@ -528,7 +529,15 @@ export function createListRoutes(deps: AppDeps): Hono<{
       return await db.prepare(`SELECT * FROM commitments WHERE id = ?`).get(id);
     });
     const row = await complete();
-    return c.json({ commitment: row });
+    // Finishing early re-derives the day; a planning failure does not fail the
+    // completion.
+    const replan = await replanAfterChange(
+      db,
+      user.id,
+      user.timezone,
+      "commitment_completed"
+    );
+    return c.json({ commitment: row, replan });
   });
 
   listRoutes.post("/commitments/:id/arrange-today", async (c) => {

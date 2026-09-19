@@ -30,6 +30,7 @@ The shared vocabulary. Planning-specific terms live in
 | **Dependency** | a commitment that waits on another; the planner skips it while a blocker is open, and cycles are refused |
 | **Now score** | urgency, importance, time fit and context match decide the current action; the reason travels with it |
 | **Core / optional / deferred** | the morning classification: must happen, fits the remaining capacity, or waits |
+| **Replanning** | re-deriving the day after a change — a completion, a new task, a removal; a planning failure never fails the change |
 | **Status** | `captured → planned → scheduled → completed`, plus `risk` and `cancelled` |
 
 ## Memory lifecycle

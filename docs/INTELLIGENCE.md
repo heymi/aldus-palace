@@ -154,6 +154,9 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
   current action, and the reason travels with it.
 - **A morning plan** (`lib/dayPlan.ts`): the day is classified into core,
   optional and deferred.
+- **Replanning on change** (`services/replan.ts`): finishing something
+  re-derives the day; a new task and a removal already did. A planning failure
+  never fails the change that triggered it.
 - **The day view**: Now (exactly one thing), timeline, risks (what replaces
   overdue), unscheduled, and a rest suggestion when the day is full.
 - **Adaptive limits**: automatic additions stop at 5, or 10 after a deliberate

@@ -201,7 +201,7 @@ context        active memories and projects feed the next capture
 | Engine | Shipped today | Designed next |
 |---|---|---|
 | **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, graded levels with decay and a value score, ranked retrieval into the next capture | more kinds and extraction signals, an identity level, a memory graph |
-| **Planning** | four kinds of time, constraint handling (deadline, window, preference, blocked-by dependencies), priority scoring, slot search, duration estimation from project history, a daily buffer, migration for slipped flexible work, a scored Now with context match, a morning core/optional/deferred plan, Today, risk, adaptive limits, a learned behaviour model | soft-constraint trade-offs, a blended priority score, a rhythm-aware Now, event-driven replanning |
+| **Planning** | four kinds of time, constraint handling (deadline, window, preference, blocked-by dependencies), priority scoring, slot search, duration estimation from project history, a daily buffer, migration for slipped flexible work, a scored Now with context match, a morning core/optional/deferred plan, replanning after a change, Today, risk, adaptive limits, a learned behaviour model | soft-constraint trade-offs, a blended priority score, a rhythm-aware Now, an events surface for meetings |
 | **Trust & autonomy** | an Action Gate (low and medium run, high waits, critical needs two), a trust score with levels 0–4, and permission evolution capped by a user ceiling | proactive rules |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
@@ -405,6 +405,7 @@ If you cannot run the repository, the real output is committed:
 | A blocked commitment is never scheduled | `packages/core/test/dependencies.test.ts` | the planner skips it; completing the blocker releases it; cycles are refused |
 | Now is the best current action, not the first in line | `packages/core/test/planningIntelligence.test.ts` | the context match wins, and the reason travels with it |
 | The day is classified into core, optional and deferred | `packages/core/test/planningIntelligence.test.ts` | a risk item is core, work that fits is optional, the rest is deferred |
+| Finishing early refills the day | `packages/core/test/planningIntelligence.test.ts` | a completion replans and the next candidate is scheduled |
 | A fresh principle outranks an old experience | `packages/core/test/memoryValue.test.ts` | levels, decay and the value score rank retrieval |
 | A cloud call can be redacted before it leaves | `packages/core/test/privacy.test.ts` | names, money and emails become placeholders; level 4 stays local |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
@@ -870,6 +871,9 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
   current action, and the reason travels with it.
 - **A morning plan** (`lib/dayPlan.ts`): the day is classified into core,
   optional and deferred.
+- **Replanning on change** (`services/replan.ts`): finishing something
+  re-derives the day; a new task and a removal already did. A planning failure
+  never fails the change that triggered it.
 - **The day view**: Now (exactly one thing), timeline, risks (what replaces
   overdue), unscheduled, and a rest suggestion when the day is full.
 - **Adaptive limits**: automatic additions stop at 5, or 10 after a deliberate
@@ -1342,7 +1346,7 @@ it, the doc that explains it and the suite that pins it.
 | Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
 | Progressive capture | `packages/core/src/services/enrichmentLease.ts` | [04](capabilities/04-progressive-capture.md) | `packages/core/test/enrichmentLease.test.ts` |
 | Memory | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `lib/memoryValue.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` | [05](capabilities/05-memory.md) | `memoryActivation.test.ts`, `memoryEvolution.test.ts`, `memoryValue.test.ts` |
-| Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `lib/nowScore.ts`, `lib/dayPlan.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts`, `planningIntelligence.test.ts` |
+| Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `services/replan.ts`, `lib/nowScore.ts`, `lib/dayPlan.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts`, `planningIntelligence.test.ts` |
 | Work streams | `services/workStreams.ts`, `services/commitmentClassification.ts` | [07](capabilities/07-work-streams.md) | `apps/server/test/commitmentClassification.test.ts` |
 | HTTP API | `apps/server/src/` | [08](capabilities/08-http-api.md) | `apps/server/test/` |
 | MCP server | `packages/mcp/src/` | [09](capabilities/09-mcp.md) | `packages/mcp/test/tools.test.ts` |
@@ -1409,6 +1413,7 @@ The shared vocabulary. Planning-specific terms live in
 | **Dependency** | a commitment that waits on another; the planner skips it while a blocker is open, and cycles are refused |
 | **Now score** | urgency, importance, time fit and context match decide the current action; the reason travels with it |
 | **Core / optional / deferred** | the morning classification: must happen, fits the remaining capacity, or waits |
+| **Replanning** | re-deriving the day after a change — a completion, a new task, a removal; a planning failure never fails the change |
 | **Status** | `captured → planned → scheduled → completed`, plus `risk` and `cancelled` |
 
 ## Memory lifecycle
@@ -1581,8 +1586,9 @@ it:
 - [x] **A scored Now.** Urgency, importance, whether the work fits the time left
   and the context match decide the current action; the reason travels with it.
 - [ ] **A rhythm-aware Now** — energy match and a user rhythm are not read yet.
-- [ ] **Event-driven replanning** — react to a postponed meeting, a new task,
-  finishing early, or a change in state.
+- [x] **Event-driven replanning.** Finishing something re-derives the day
+  (`replanAfterChange`); a new task and a removal already did. A postponed
+  meeting still needs an events surface.
 - [ ] **Buffer management** — keep a share of the day free.
 - [ ] **Task migration** — flexible, unstarted work can move forward on its own,
   and repeated deferrals surface for a decision.

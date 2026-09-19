@@ -66,8 +66,9 @@ it:
 - [x] **A scored Now.** Urgency, importance, whether the work fits the time left
   and the context match decide the current action; the reason travels with it.
 - [ ] **A rhythm-aware Now** — energy match and a user rhythm are not read yet.
-- [ ] **Event-driven replanning** — react to a postponed meeting, a new task,
-  finishing early, or a change in state.
+- [x] **Event-driven replanning.** Finishing something re-derives the day
+  (`replanAfterChange`); a new task and a removal already did. A postponed
+  meeting still needs an events surface.
 - [ ] **Buffer management** — keep a share of the day free.
 - [ ] **Task migration** — flexible, unstarted work can move forward on its own,
   and repeated deferrals surface for a decision.

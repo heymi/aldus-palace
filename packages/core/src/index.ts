@@ -71,6 +71,7 @@ export * from "./services/memoryEvolution.js";
 export * from "./services/permissions.js";
 export * from "./services/privacyGateway.js";
 export * from "./services/planToday.js";
+export * from "./services/replan.js";
 export * from "./services/resolveClarification.js";
 export * from "./services/today.js";
 export * from "./services/workMigration.js";

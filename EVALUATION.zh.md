@@ -48,6 +48,7 @@ spec/schema.sql is up to date.
 | 被依赖阻塞的任务不会被排期 | `packages/core/test/dependencies.test.ts` | 规划器跳过；阻塞项完成后自动释放；循环依赖被拒绝 |
 | Now 是当下最合适的行动，而不是排在最前的 | `packages/core/test/planningIntelligence.test.ts` | 上下文匹配胜出，理由随结果返回 |
 | 一天被分为 core / optional / deferred | `packages/core/test/planningIntelligence.test.ts` | 风险项进入 core，装得下的进入 optional，其余 deferred |
+| 提前完成会重排当天 | `packages/core/test/planningIntelligence.test.ts` | 完成后自动重排，下一个候选被排入 |
 | 新原则的权重高于旧经历 | `packages/core/test/memoryValue.test.ts` | 等级、衰减与价值评分决定检索排序 |
 | 云端调用可在离开前脱敏 | `packages/core/test/privacy.test.ts` | 名称、金额、邮箱变占位符；Level 4 不出本机 |
 | 未经授权时 Memory 保持私有 | `packages/core/test/privacy.test.ts` | 默认权限不含 memory；可收回 |

@@ -1,6 +1,8 @@
 import { classifyDay } from "../src/lib/dayPlan.js";
 import { scoreNow } from "../src/lib/nowScore.js";
 import { buildToday } from "../src/services/today.js";
+import { reconcileTodayPlan } from "../src/services/adaptivePlanning.js";
+import { replanAfterChange } from "../src/services/replan.js";
 import { createTestDb, finish } from "./support/db.js";
 import type { SqlDatabase } from "../src/db/port.js";
 
@@ -140,6 +142,65 @@ assert(
   (scored.plan?.core.length ?? 0) + (scored.plan?.optional.length ?? 0) + (scored.plan?.deferred.length ?? 0) ===
     scored.timeline.length,
   "the plan covers the timeline"
+);
+
+// --- replanning after a completion ------------------------------------------
+
+const replanDb = await createTestDb();
+await replanDb
+  .prepare(
+    `INSERT INTO users (id, name, timezone, language, created_at, updated_at)
+     VALUES ('u2', 'Tester', 'Asia/Shanghai', 'en', ?, ?)`
+  )
+  .run(AT.toISOString(), AT.toISOString());
+
+async function addWork(id: string, title: string, slotStart?: string, slotEnd?: string) {
+  await replanDb
+    .prepare(
+      `INSERT INTO commitments
+       (id, user_id, title, status, duration_minutes, ai_slot_start, ai_slot_end,
+        created_at, updated_at)
+       VALUES (?, 'u2', ?, ?, 30, ?, ?, ?, ?)`
+    )
+    .run(
+      id,
+      title,
+      slotStart ? "scheduled" : "captured",
+      slotStart ?? null,
+      slotEnd ?? null,
+      AT.toISOString(),
+      AT.toISOString()
+    );
+}
+
+await addWork("scheduled", "Already on the day", "2026-07-19T05:00:00.000Z", "2026-07-19T06:00:00.000Z");
+await addWork("c1", "Candidate one");
+await addWork("c2", "Candidate two");
+await addWork("c3", "Candidate three");
+
+const first = await reconcileTodayPlan(replanDb, "u2", "Asia/Shanghai", {
+  at: AT,
+  planVersion: "2026-07-19:replan-1",
+});
+assert(first.picked.length === 2, `the day fills to the cap, got ${first.picked.length}`);
+assert(
+  first.picked.some((item) => item.id === "c1"),
+  "the first candidate is scheduled"
+);
+
+await replanDb
+  .prepare(
+    `UPDATE commitments SET status = 'completed', completed_at = ? WHERE id = 'c1'`
+  )
+  .run(AT.toISOString());
+
+const replan = await replanAfterChange(replanDb, "u2", "Asia/Shanghai", "commitment_completed", {
+  at: AT,
+});
+assert(replan.replanned, "the completion triggers a replan");
+assert(
+  replan.result?.picked.some((item) => item.id === "c2") === true,
+  `finishing early refills the day, got ${replan.result?.picked.map((item) => item.id).join(",")}`
 );
 
 finish("planning intelligence tests passed.");
