@@ -26,6 +26,7 @@ const state = {
 };
 
 let t = translator(state.lang);
+let languageReady = Promise.resolve();
 
 function esc(value) {
   return String(value ?? "").replace(
@@ -433,6 +434,8 @@ function renderReceipt(card, noteKey) {
 async function capture(content) {
   if (state.captureBusy) return;
   state.captureBusy = true;
+  // The first capture must not race the language alignment.
+  await languageReady;
   const button = $("file-button");
   button.disabled = true;
   $("capture-hint").textContent = t("capture.reading");
@@ -531,7 +534,7 @@ $("actions").addEventListener("click", async (event) => {
 });
 
 applyChrome();
-void syncServerLanguage();
+languageReady = syncServerLanguage();
 refresh().catch((error) => {
   $("status").textContent = t("status.offline", { message: error.message });
   $("now").innerHTML = `<p class="empty">${esc(t("api.unreachable", { message: error.message }))}</p>`;
