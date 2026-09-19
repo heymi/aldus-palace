@@ -1,5 +1,15 @@
 # @aldus-palace/mcp
 
+## 0.6.2
+
+### Patch Changes
+
+- README: the comparison table comes back with a "What you use today" column, so
+  each of the nine dimensions shows the contrast side by side with what the system
+  does.
+- Updated dependencies
+  - @aldus-palace/core@0.5.2
+
 ## 0.6.1
 
 ### Patch Changes

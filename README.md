@@ -48,19 +48,19 @@ inferred it.
 **It follows you.** One file, one API. Claude, Cursor, your own frontend, a script
 you write.
 
-## What makes it different
+## How this compares
 
-| The dimension | Aldus Palace |
-|---|---|
-| **What you give it** | A sentence, in your own words. A paragraph works too, and yields several records. |
-| **Who decides the shape** | The runtime. You state intent; it files the thought, the commitment, the decision and the memory. |
-| **How time works** | Four kinds, held apart: a deadline, an availability window, an AI-suggested slot, and unscheduled work. A missed date becomes a risk you can move. |
-| **How memory behaves** | A confident memory takes effect on capture. Each one carries the sentence it came from and a note that says whether you stated it or the system inferred it. Contradictions arrive as a question, and a replacement keeps the old version readable, with a reason. |
-| **How your words are kept** | Your sentence stays in the file as you wrote it, and the system records its own reading beside it, so the two can be compared. |
-| **What today answers** | What to do now, what is at risk, what is unscheduled. A clear day gets suggestions; a full day gets a rest suggestion. |
-| **How you reach it** | MCP, HTTP and a library over one record: Claude, Cursor, your own frontend and a script share one state. |
-| **Where the record lives** | One SQLite file you own, or a Cloudflare Worker. Copy it, back it up, hand it to another assistant. |
-| **How you check it** | A deterministic provider runs the whole pipeline with no network and no API key. 15 test suites and 11 acceptance fixtures replay the same way each run. |
+| The dimension | What you use today | Aldus Palace |
+|---|---|---|
+| **What you give it** | a form: project, due date, priority, tags | a sentence in your own words; a paragraph yields several records |
+| **Who decides the shape** | you classify, prioritize and schedule | the runtime files the thought, the commitment, the decision and the memory |
+| **How time works** | one due date, and a red label when it passes | four kinds held apart — deadline, availability window, suggested slot, unscheduled — and a missed date becomes a risk you can move |
+| **How memory behaves** | the assistant infers and stores inside that app | confident memories take effect on capture, and each one carries the sentence it came from plus a note saying why it is active |
+| **Where your words live** | summarized into a task or a chat log | kept as you wrote them, with the system's own reading beside them |
+| **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
+| **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
+| **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 15 suites and 11 fixtures replay each run |
 
 ## Designed scope
 
