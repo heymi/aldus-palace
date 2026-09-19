@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aldus — reference client</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="masthead reveal" style="--i: 0">
+      <h1>Aldus</h1>
+      <p class="deck">
+        A trustworthy context layer. Write a sentence and watch what it
+        becomes, what it remembers, and what it asks before it acts.
+      </p>
+      <p class="status" id="status">connecting…</p>
+    </header>
+
+    <main>
+      <section class="capture reveal" style="--i: 1">
+        <h2>Capture</h2>
+        <form id="capture-form">
+          <textarea
+            id="input"
+            rows="2"
+            placeholder="Ship the onboarding page today"
+            aria-label="A sentence to capture"
+          ></textarea>
+          <div class="row">
+            <button type="submit" class="primary">File it</button>
+            <span class="hint" id="capture-hint">⌘↵ to file · try “I prefer simple tools and fewer settings”</span>
+          </div>
+        </form>
+        <div id="receipt" class="receipt" hidden></div>
+      </section>
+
+      <section class="now reveal" style="--i: 2">
+        <h2>Now</h2>
+        <div id="now" class="stack"><p class="empty">Nothing planned yet.</p></div>
+      </section>
+
+      <section class="memory reveal" style="--i: 3">
+        <h2>Memory</h2>
+        <div id="memory" class="stack"><p class="empty">Nothing remembered yet.</p></div>
+      </section>
+
+      <aside class="evidence reveal" style="--i: 4">
+        <h2>Evidence</h2>
+        <div id="evidence">
+          <p class="empty">
+            Choose a memory to see the sentence it came from.
+          </p>
+        </div>
+      </aside>
+
+      <section class="actions reveal" style="--i: 5">
+        <h2>Waiting for you</h2>
+        <div id="actions" class="stack">
+          <p class="empty">Nothing needs a decision.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Local-first. The client talks to <code>/api</code>; the token stays on
+        the host, not in this page.
+      </p>
+    </footer>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

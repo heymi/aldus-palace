@@ -128,9 +128,15 @@ current posture. The privacy architecture takes shape in these pieces:
   built with the guard attached, so a call cannot leave unredacted
   (`providers/guard.ts`, ADR 0011).
 
+## Clients
+
+- [x] **A reference client** — one browser page over the HTTP API: capture, Now,
+  memory with evidence, and the action-approval queue
+  (`examples/reference-client`).
+- [ ] A SwiftUI reference client (`clients/` is a placeholder today)
+
 ## Later
 
-- [ ] A SwiftUI reference client (`clients/` is a placeholder today)
 - [ ] Postgres adapter behind the existing async port (the port was designed for it)
 - [ ] Cognitive-map exploration UI
 - [ ] Planning engine beyond Today (horizon, dependencies, energy patterns)

@@ -1,0 +1,11 @@
+{
+  "name": "@aldus-palace/example-reference-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A minimal reference client: capture, Now, memory with evidence, and action approval.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}
