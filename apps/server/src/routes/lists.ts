@@ -3,6 +3,7 @@ import {
   actionSummary,
   buildToday,
   decideAction,
+  getAutonomyState,
   listActionProposals,
   revokeAction,
   commitmentsAreNearDuplicate,
@@ -952,6 +953,13 @@ export function createListRoutes(deps: AppDeps): Hono<{
     const user = await requireUser(c, db);
     const items = await listActionLogs(db, user.id, 100);
     return c.json({ items });
+  });
+
+  /** The trust score and autonomy level derived from decided actions. */
+  listRoutes.get("/autonomy", async (c) => {
+    const user = await requireUser(c, db);
+    const state = await getAutonomyState(db, user.id);
+    return c.json(state);
   });
 
   /** The Action Gate: proposed, waiting and decided agent actions. */

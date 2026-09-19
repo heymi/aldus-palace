@@ -75,6 +75,100 @@ export function initialStatus(risk: ActionRisk): ActionStatus {
   return "proposed";
 }
 
+// --------------------------------------------------------------------------
+// Trust and autonomy
+// --------------------------------------------------------------------------
+
+export type AutonomyLevel = 0 | 1 | 2 | 3 | 4;
+
+export type TrustScore = {
+  /** Laplace-smoothed approval rate, 0..1. No history starts at 0.5. */
+  score: number;
+  approvals: number;
+  rejections: number;
+  samples: number;
+};
+
+export type AutonomyState = TrustScore & { level: AutonomyLevel };
+
+const AUTONOMY_THRESHOLDS: Array<{ level: AutonomyLevel; minSamples: number; minScore: number }> = [
+  { level: 4, minSamples: 20, minScore: 0.95 },
+  { level: 3, minSamples: 10, minScore: 0.85 },
+  { level: 2, minSamples: 5, minScore: 0.7 },
+  { level: 1, minSamples: 3, minScore: 0.5 },
+];
+
+/** The trust score from explicit decisions: approvals against rejections. */
+export function trustScoreFrom(approvals: number, rejections: number): TrustScore {
+  const samples = approvals + rejections;
+  return {
+    score: (approvals + 1) / (samples + 2),
+    approvals,
+    rejections,
+    samples,
+  };
+}
+
+/** Level 0 until there is evidence; each level needs more of it. */
+export function autonomyLevelFor(score: number, samples: number): AutonomyLevel {
+  for (const threshold of AUTONOMY_THRESHOLDS) {
+    if (samples >= threshold.minSamples && score >= threshold.minScore) {
+      return threshold.level;
+    }
+  }
+  return 0;
+}
+
+/** What runs without asking at a given autonomy level. */
+export function effectiveStatusFor(risk: ActionRisk, level: AutonomyLevel): ActionStatus {
+  const rank: Record<ActionRisk, number> = { low: 0, medium: 1, high: 2, critical: 3 };
+  const allowed = level === 0 ? -1 : level === 1 ? 0 : level === 2 ? 1 : level === 3 ? 2 : 3;
+  if (rank[risk] > allowed) return "proposed";
+  if (risk === "medium" || (risk === "critical" && level >= 4)) return "notified";
+  return "approved";
+}
+
+/**
+ * Read the trust score from the proposals the user decided in the window.
+ * Automatic (low and medium) runs carry no `decided_at`, so they do not count:
+ * trust grows from decisions, not from silence.
+ */
+export async function computeTrustScore(
+  db: SqlDatabase,
+  userId: string,
+  options: { days?: number; at?: Date } = {}
+): Promise<TrustScore> {
+  const at = options.at ?? new Date();
+  const days = options.days ?? 90;
+  const since = new Date(at.getTime() - days * 24 * 3600 * 1000).toISOString();
+  const rows = (await db
+    .prepare(
+      `SELECT status, COUNT(*) AS count FROM action_proposals
+       WHERE user_id = ? AND decided_at IS NOT NULL AND decided_at >= ?
+       GROUP BY status`
+    )
+    .all(userId, since)) as Array<{ status: string; count: number }>;
+
+  let approvals = 0;
+  let rejections = 0;
+  for (const row of rows) {
+    if (row.status === "approved") approvals += Number(row.count);
+    else if (row.status === "rejected" || row.status === "revoked") {
+      rejections += Number(row.count);
+    }
+  }
+  return trustScoreFrom(approvals, rejections);
+}
+
+export async function getAutonomyState(
+  db: SqlDatabase,
+  userId: string,
+  options: { days?: number; at?: Date } = {}
+): Promise<AutonomyState> {
+  const trust = await computeTrustScore(db, userId, options);
+  return { ...trust, level: autonomyLevelFor(trust.score, trust.samples) };
+}
+
 async function getProposal(
   db: SqlDatabase,
   userId: string,
@@ -137,11 +231,16 @@ export async function proposeAction(
     actor?: ActionActor;
     reason?: string;
     locale?: Locale;
+    /** When provided, this autonomy level decides what runs without asking. */
+    autonomyLevel?: AutonomyLevel;
   }
 ): Promise<ProposeActionResult> {
   const actor = input.actor ?? "agent";
   const { risk, reason } = assessActionRisk(input.action_type);
-  const status = initialStatus(risk);
+  const status =
+    input.autonomyLevel === undefined
+      ? initialStatus(risk)
+      : effectiveStatusFor(risk, input.autonomyLevel);
   const id = newId("act");
   const t = nowIso();
 
@@ -297,6 +396,7 @@ export async function runGatedAction<T>(
     actor?: ActionActor;
     reason?: string;
     locale?: Locale;
+    autonomyLevel?: AutonomyLevel;
   },
   execute: () => Promise<T>
 ): Promise<ProposeActionResult & { ran: boolean; result?: T }> {

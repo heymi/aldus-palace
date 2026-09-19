@@ -93,6 +93,7 @@ const meta = {
   "POST /v1/clarifications/{id}/resolve": { summary: "Answer a time clarification", tag: "Clarifications" },
   "GET /v1/activity": { summary: "The action log", tag: "Activity", response: "ActionLog" },
   "GET /v1/actions": { summary: "Agent actions proposed, waiting and decided", tag: "Actions", response: "ActionProposal" },
+  "GET /v1/autonomy": { summary: "The trust score and autonomy level derived from decided actions", tag: "Actions", response: "AutonomyState" },
   "POST /v1/actions/{id}/decide": {
     summary: "Approve or reject a waiting action; a critical action needs two approvals",
     tag: "Actions",
@@ -302,6 +303,17 @@ const spec = {
           reason: { type: ["string", "null"] },
           created_at: { type: "string", format: "date-time" },
         },
+      },
+      AutonomyState: {
+        type: "object",
+        properties: {
+          score: { type: "number", description: "Laplace-smoothed approval rate, 0..1." },
+          approvals: { type: "integer" },
+          rejections: { type: "integer" },
+          samples: { type: "integer" },
+          level: { type: "integer", minimum: 0, maximum: 4 },
+        },
+        required: ["score", "level"],
       },
       ActionProposal: {
         type: "object",

@@ -489,6 +489,46 @@
         }
       }
     },
+    "/v1/autonomy": {
+      "get": {
+        "summary": "The trust score and autonomy level derived from decided actions",
+        "tags": [
+          "Actions"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutonomyState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/clarifications": {
       "get": {
         "summary": "Open time clarifications",
@@ -2461,6 +2501,33 @@
             "format": "date-time"
           }
         }
+      },
+      "AutonomyState": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "number",
+            "description": "Laplace-smoothed approval rate, 0..1."
+          },
+          "approvals": {
+            "type": "integer"
+          },
+          "rejections": {
+            "type": "integer"
+          },
+          "samples": {
+            "type": "integer"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "score",
+          "level"
+        ]
       },
       "ActionProposal": {
         "type": "object",

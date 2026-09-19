@@ -20,6 +20,14 @@ export type ActionProposalView = {
   reason?: unknown;
 };
 
+/** The slice of the autonomy state these builders read. */
+export type AutonomyView = {
+  score?: unknown;
+  level?: unknown;
+  approvals?: unknown;
+  rejections?: unknown;
+};
+
 /** The slice of the Today payload these builders read. */
 export type TodayViewLike = {
   date_key?: unknown;
@@ -126,7 +134,8 @@ function actionState(status: string, locale: Locale): string {
 /** The Action Gate queue: what is waiting, and how it was decided. */
 export function formatActionProposals(
   proposals: ActionProposalView[],
-  locale: Locale = DEFAULT_LOCALE
+  locale: Locale = DEFAULT_LOCALE,
+  autonomy?: AutonomyView
 ): string {
   const waiting = proposals.filter(
     (row) => row.status === "proposed" || row.status === "pending_second"
@@ -146,6 +155,19 @@ export function formatActionProposals(
     const reason = text(row.reason);
     lines.push(
       `  ${risk.padEnd(8)}  ${text(row.action_type)}  ·  ${state}${reason ? `  ·  ${reason}` : ""}`
+    );
+  }
+  if (autonomy) {
+    const score = Number(autonomy.score ?? 0).toFixed(2);
+    const level = Number(autonomy.level ?? 0);
+    const approvals = Number(autonomy.approvals ?? 0);
+    const rejections = Number(autonomy.rejections ?? 0);
+    lines.push(
+      pick(
+        locale,
+        `Trust ${score} · level ${level} · ${approvals} approved / ${rejections} rejected`,
+        `信任 ${score} · 等级 ${level} · 已批准 ${approvals} / 已拒绝 ${rejections}`
+      )
     );
   }
   return lines.join("\n");

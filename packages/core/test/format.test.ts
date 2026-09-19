@@ -107,4 +107,22 @@ assert(proposalsZh.includes("待二次确认"), "Chinese second-approval state")
 const noneEn = formatActionProposals([], "en");
 assert(noneEn === "Actions · 0 recorded", `an empty queue is quiet, got: ${noneEn}`);
 
+const withTrust = formatActionProposals(proposals, "en", {
+  score: 0.86,
+  level: 3,
+  approvals: 10,
+  rejections: 1,
+});
+assert(
+  withTrust.includes("Trust 0.86 · level 3 · 10 approved / 1 rejected"),
+  `the autonomy footer is appended, got: ${withTrust}`
+);
+const withTrustZh = formatActionProposals([], "zh-CN", {
+  score: 0.5,
+  level: 0,
+  approvals: 0,
+  rejections: 0,
+});
+assert(withTrustZh.includes("信任 0.50 · 等级 0"), `Chinese trust footer, got: ${withTrustZh}`);
+
 console.log("format tests passed.");
