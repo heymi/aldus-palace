@@ -133,8 +133,14 @@ toolchain.
 
 ## The system behind it
 
-The runtime runs as four engines. A model can contribute to understanding and to
-conflict detection, and each engine has a path that runs without one.
+The runtime runs as a pipeline, and the Core Intelligence Layer organises it into
+four engines. Understanding — the capture front end in `agent/understand.ts` —
+turns a sentence into typed objects; the engines decide what is kept, what
+happens next, what the system may do on its own, and which model is used. A model
+can contribute to understanding and to conflict detection, and every engine has a
+path that runs without one. Each engine ships today and has a designed
+extension — the shipped parts name the file they live in, and the full design is
+mapped in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
 
 ```
 user / environment
@@ -152,10 +158,28 @@ context        active memories and projects feed the next capture
 
 | Engine | Its job | Where it lives |
 |---|---|---|
-| **Understanding** | reads a sentence, decides the object mode, resolves dates, skips duplicates, falls back when a model fails | `agent/understand.ts` |
 | **Memory** | proposes candidates, filters noise, detects contradictions, versions beliefs, retrieves context | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` |
 | **Planning** | holds four kinds of time apart, assembles Today, flags risk, adapts the daily limit | `services/today.ts`, `planToday.ts`, `adaptivePlanning.ts` |
-| **Model** | one provider interface, three implementations, configuration resolved by the caller | `providers/` |
+| **Trust & autonomy** | decides what the system may do without asking, and widens that as trust is earned | designed — [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md) |
+| **Model orchestration** | one provider interface, three implementations, configuration resolved by the caller | `providers/` |
+
+### Memory Intelligence Engine
+
+*Understand a person over years, not store a chat log.*
+
+**Shipped today** — extraction reads durability markers ("from now on", "as a
+rule") and repeated behaviour; evaluation drops a temporary state, a one-off
+creative fragment and a low-confidence guess; activation follows one published
+rule (`confidence >= 0.8` and `importance >= 0.8`); every row carries the
+evidence it came from; duplicates collapse; contradictions surface; a replaced
+belief is `superseded`, never deleted; active memories are injected into the next
+capture and every injection is logged. Five kinds ship.
+
+**Designed next** — a graded model (raw experience → observation → preference →
+principle → identity), decay by kind, the full value score (explicitness +
+frequency + impact + scope + future relevance), the remaining kinds (goal,
+relationship, knowledge, habit, episode), the two unread extraction signals
+(impact and scope), and a memory graph with retrieval ranking.
 
 ### The memory pipeline
 
@@ -174,6 +198,71 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 1. **A mood does not become a profile entry.** "I'm tired today" is dropped before storage.
 2. **One inference does not make a principle.** A principle the system inferred waits for confirmation, whatever its score.
 3. **Every memory carries evidence.** The sentence it came from, a confidence value, and a note that says whether you stated it or the system inferred it.
+
+### Planning Intelligence Engine
+
+*Turn understanding into things happening — when and in what order work occurs in
+the real world, without a pretty calendar to maintain.*
+
+**Shipped today** — planning works on Commitments and reads the calendar and a
+learned behaviour model. Four kinds of time stay apart (deadline, availability
+window, suggested slot, unscheduled; there is no `overdue`). Priority scoring
+combines risk, deadline proximity, recent-project continuity, importance and
+learned preferences. `findSlot` generates real candidate windows and scheduling
+writes the slot with a reason. Execution is monitored as feedback episodes and a
+reconcile pass replans. A day gets Now, timeline, risks, unscheduled, and
+adaptive limits (5, or 10) with stall detection and a rest suggestion.
+`today.ts` · `planToday.ts` · `adaptivePlanning.ts`
+
+**Designed next** — the full pipeline (constraint analysis → priority → time
+windows → schedule optimization → conflict resolution → replanning); a constraint
+model (hard, soft, preference, dependency); a dynamic priority score (impact ×
+urgency × dependency × goal alignment × risk); duration estimation from history;
+schedule optimization with an explicit context-switch cost; a morning core /
+optional / deferred plan; Now as the best current action (priority × available
+time × energy match × context match); replanning triggers; a 20–30% daily buffer;
+and task migration (automatic for flexible, unstarted work, confirmation after
+three deferrals).
+
+### Trust & Autonomy Engine
+
+*Widen what the system may do on its own, safely.*
+
+**Shipped today** — one fixed rule: a capture lands on its own, a principle the
+user states takes effect, and everything else waits for the user.
+
+**Designed next** — an action risk model, autonomy levels 0–4, a trust score
+accumulated from outcomes, and permission evolution.
+
+### Model Orchestration Engine
+
+*Use the right model for each job, instead of one model for every call.*
+
+**Shipped today** — one `LLMProvider` interface and three implementations (dev,
+OpenAI-compatible, Anthropic); configuration is resolved by the caller.
+`providers/`
+
+**Designed next** — routing by task: a fast model for classification, a reasoning
+model for planning and conflict, embeddings for memory retrieval, and a local
+model for sensitive input.
+
+### Privacy is the architecture
+
+*The system touches work, decisions, relationships and habits; privacy is the
+shape of it, not a feature on top.*
+
+**Shipped today** — a SQLite file you own (or one Cloudflare Durable Object), a
+single-user runtime, immutable `raw_inputs`, model output validated and gated, an
+`action_log` entry on every mutation, and a memory gate that confident, stated
+memories pass on capture while an inference waits for you. [`SECURITY.md`](SECURITY.md)
+records the posture and the current threat model.
+
+**Designed next** — three principles (you own the context; minimum data exposure;
+local first); five data levels; a local intelligence layer; a Privacy Gateway
+with redaction; local encrypted storage (Keychain / Secure Enclave); progressive,
+fine-grained permissions with Memory private by default; an Action Gate with four
+risk levels and a viewable, revocable audit log; and a delete policy that reaches
+the local database, cloud sync and vector indexes.
 
 ## Where the difficulty lives
 
@@ -266,6 +355,7 @@ API key and no network.
 | [USE-CASES.md](docs/USE-CASES.md) | five things people build with this |
 | [POSITIONING.md](docs/POSITIONING.md) | differentiation, and the designed scope |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | the runtime, module boundaries, storage port |
+| [INTELLIGENCE.md](docs/INTELLIGENCE.md) | the four engines and the privacy design, shipped vs planned |
 | [DOMAIN-SCHEMA.md](docs/DOMAIN-SCHEMA.md) | objects, invariants, memory evolution |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | local, edge, embedded, backups |
 | [EVAL.md](docs/EVAL.md) | the acceptance fixtures, and how to add one |

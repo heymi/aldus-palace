@@ -1,6 +1,8 @@
 # Roadmap
 
-This is a public summary. Detailed design history lives in
+This is a public summary. The design each item comes from — with what ships
+today marked against what does not — is in
+[`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md). Detailed design history lives in
 [`docs/design-archive`](docs/internal/design-archive).
 
 ## v0.1 — public foundation (current)
@@ -55,6 +57,25 @@ code yet:
   The design routes work by task: a fast model for classification, a reasoning
   model for planning and conflict, embeddings for memory retrieval, and a local
   model for sensitive input.
+
+## Privacy & local intelligence
+
+The shipped runtime is local-first and single-user, and `SECURITY.md` records the
+current posture. The privacy architecture is designed, not built:
+
+- [ ] **A Local Intelligence Layer** — input parsing, sensitive detection, Memory
+  indexing and basic planning stay on device.
+- [ ] **A Privacy Gateway** with redaction, so a cloud call receives only
+  temporary context (`input → sensitive detection → redaction → permission check
+  → cloud`).
+- [ ] **Local encrypted storage** for Memory — Keychain plus an encrypted
+  database on macOS, Secure Enclave plus encrypted storage on iOS.
+- [ ] **Progressive, fine-grained permissions** — calendar first, then mail, then
+  files; read / create / modify separated; Memory private by default.
+- [ ] **An Action Gate** with four risk levels (low automatic, medium notified,
+  high confirmed, critical confirmed again) and a viewable, revocable audit log.
+- [ ] **A delete policy** that reaches the local database, cloud sync and vector
+  indexes — deletion is real, not a flag.
 
 ## Later
 

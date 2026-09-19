@@ -31,6 +31,14 @@ public and change `DEV_AUTH_TOKEN` from the example value first.
 - Memory is never activated without user confirmation.
 - Every mutation writes an `action_log` entry with a reason.
 
+## Forward-looking design
+
+The privacy architecture this project is being built toward — data levels, a
+Privacy Gateway with redaction, local encrypted storage, progressive permissions,
+an Action Gate and a real delete policy — is in
+[`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md). It is design, not the current
+posture described above.
+
 ## Reporting a vulnerability
 
 Please do not open a public issue. Use GitHub's private vulnerability reporting
