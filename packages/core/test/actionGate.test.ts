@@ -256,4 +256,55 @@ assert(executionTypes.includes("action_executed"), "execution is logged");
 assert(executionTypes.includes("action_execution_failed"), "a failure is logged");
 assert(executionTypes.includes("action_execution_skipped"), "a skip is logged");
 
+// --- gated runs are recorded, and decisions are linearizable -----------------
+
+// A run through runGatedAction is recorded, so a later execute does not repeat it.
+let inlineRan = 0;
+const inline = await runGatedAction(
+  db,
+  "u1",
+  { action_type: "capture" },
+  async () => {
+    inlineRan += 1;
+    return "inline";
+  }
+);
+const repeated = await executeApprovedAction(db, "u1", String(inline.proposal.id), {
+  capture: async () => {
+    inlineRan += 1;
+    return "again";
+  },
+});
+assert(
+  repeated.ok && !repeated.executed && repeated.reason === "already_succeeded",
+  "an inline gated run is recorded and not repeated"
+);
+assert(inlineRan === 1, "the effect ran once");
+
+// Two decisions racing on one proposal: only one applies.
+const raced = await proposeAction(db, "u1", { action_type: "external_communication" });
+const [decisionA, decisionB] = await Promise.all([
+  decideAction(db, "u1", String(raced.proposal.id), "approve"),
+  decideAction(db, "u1", String(raced.proposal.id), "approve"),
+]);
+assert(
+  [decisionA, decisionB].filter((result) => result.ok).length === 1,
+  "only one of two racing decisions applies"
+);
+
+// A revoked approval does not run.
+const revokedRun = await proposeAction(db, "u1", { action_type: "memory_deleted" });
+await decideAction(db, "u1", String(revokedRun.proposal.id), "approve");
+await revokeAction(db, "u1", String(revokedRun.proposal.id));
+const afterRevoke = await executeApprovedAction(
+  db,
+  "u1",
+  String(revokedRun.proposal.id),
+  executors
+);
+assert(
+  !afterRevoke.ok && afterRevoke.error === "not_approved",
+  "a revoked proposal does not run"
+);
+
 finish("action gate tests passed.");
