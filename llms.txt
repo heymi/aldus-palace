@@ -6,7 +6,8 @@
 > usable over MCP, HTTP, a library or a typed client.
 
 Start with the evaluation guide: it maps every public claim to the command or
-file that proves it, and lists what is not built yet.
+file that proves it. What is designed but not built yet is tracked in ROADMAP.md
+and docs/INTELLIGENCE.md.
 
 - [Evaluation guide](EVALUATION.md): claim → proof, and how to verify in five minutes.
 - [README](README.md): what it does, how it compares, current scope.

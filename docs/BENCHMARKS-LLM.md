@@ -34,6 +34,6 @@ resolves free text with the same server rules the deterministic path uses, and
 drops a past date when the words point at the future; resolution reached 100%.
 Locked by `packages/core/test/modelDateNormalization.test.ts`.
 
-The one remaining miss is a commitment the model created for "Keep Mac only, no
-Windows version", where the corpus expects a decision. It is reported, not
+The one remaining miss is "Keep Mac only, no Windows version": the model created
+a commitment and two memories where the corpus allows none. It is reported, not
 hidden.

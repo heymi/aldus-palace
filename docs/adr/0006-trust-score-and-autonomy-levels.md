@@ -38,7 +38,7 @@ widen with demonstrated reliability. Nothing represented earned trust.
 
 - "Authority grows with reliability" is now a mechanism with numbers, not a
   design sentence.
-- A product can expose the level as a user setting; applying it automatically
-  (permission evolution) remains a follow-up.
+- A product can expose the level as a user setting; permission evolution now
+  applies it automatically, capped by the user's ceiling (ADR 0007).
 - The score is explainable: approvals and rejections are rows the user can read.
 - Covered by `packages/core/test/trustScore.test.ts` and the MCP tool test.

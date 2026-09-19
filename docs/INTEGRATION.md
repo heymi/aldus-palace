@@ -42,11 +42,12 @@ claude mcp add aldus-palace -- node /path/to/node_modules/@aldus-palace/mcp/dist
 
 | Profile | Tools | Use when |
 |---|---|---|
-| `full` (default) | all six | you want the whole loop |
+| `full` (default) | all ten | you want the whole loop |
 | `capture` | `capture` | you only want to record things |
 | `today` | `list_today`, `list_commitments` | you want the assistant to know your day |
 | `memory` | `list_memories`, `confirm_memory`, `reject_memory` | you only want the memory store |
 | `workstreams` | `list_work_streams` | you want grouped summaries |
+| `actions` | `list_actions`, `decide_action`, `revoke_action` | you want to approve or revoke from the assistant |
 
 Focused profiles also have their own binaries (`aldus-palace-mcp-today`, …).
 Keep the model's tool surface small: it selects better and costs less.

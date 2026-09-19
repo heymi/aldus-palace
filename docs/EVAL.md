@@ -4,7 +4,7 @@ Two tiers, deliberately separated.
 
 ## 1. Deterministic suites — `pnpm test`
 
-Assertion scripts under `packages/core/test` and `apps/server/test`, executed
+Assertion scripts under `packages/*/test` and `apps/server/test`, executed
 offline by `tsx`. They cover the parts where a regression would be silent:
 
 | Suite | Locks down |
@@ -20,6 +20,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `dependencies` | blocked-by edges, cycle rejection, planner eligibility, the audit trail |
 | `planningIntelligence` | the Now score, the core/optional/deferred plan, context match |
 | `memoryValue` | levels, decay half-lives, the value score |
+| `memoryActivation` | which memories activate for a capture, and the evidence |
 | `retriever` | FTS5 search, CJK segmentation, backfill, re-index and removal |
 | `privacy` | redaction by data level, the gateway, permission scopes, true deletion |
 | `client` (packages/client) | every method's path, method and body, plus error mapping |
@@ -34,9 +35,10 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `format` | the locale-aware capture card and Today text projection |
 | `providers` | request shaping for Anthropic and OpenAI-compatible providers |
 | `llm-config` | wrangler and code agree on the default model |
+| `mcp tools` (packages/mcp) | the tool surface and profiles run on the offline provider |
 
 ```bash
-pnpm test                       # both packages
+pnpm test                       # every package
 pnpm --filter @aldus-palace/core test
 ```
 

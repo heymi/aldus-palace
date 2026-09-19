@@ -742,7 +742,7 @@ Nine capabilities, three ways in. Use one, or all of them.
 | 5 | [Memory](capabilities/05-memory.md) | a memory store that explains itself, with levels, decay and revisions | `memory` | `/v1/memories*` | `core` |
 | 6 | [Today & planning](capabilities/06-today-and-planning.md) | scheduling heuristics, risk detection, adaptive limits, dependencies, buffer and migration | `today` | `/v1/today` `/v1/plan/today` `/v1/plan/migrate` | `core` |
 | 7 | [Work streams](capabilities/07-work-streams.md) | grouping that is rebuildable and never touches the source of truth | `workstreams` | `GET /v1/work-streams` | `core` |
-| 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 40+ routes | `apps/server` |
+| 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 60 routes | `apps/server` |
 | 9 | [MCP server](capabilities/09-mcp.md) | the Model Context Protocol surface and tool selection | — | — | `packages/mcp` |
 
 ## Modules are decoupled in code
@@ -833,10 +833,10 @@ what happens next, what the system may do on its own, and which model is used.
 
 | Engine | Goal | Shipped today | Designed |
 |---|---|---|---|
-| **Memory** | understand a person over years, not store a chat log | extraction, pollution gate, activation rule, evidence, dedupe, conflict, versioning, retrieval | graded levels, decay, value score, more kinds and signals |
-| **Planning** | keep what matters happening while the environment changes | four kinds of time, priority scoring, slot search, Today, risk, adaptive limits, feedback model | richer constraints, blended priority, schedule optimization, event-driven replanning, buffer, migration |
-| **Trust & autonomy** | widen what the system may do on its own, safely | one fixed rule | risk model, autonomy levels, trust score, permission evolution |
-| **Model orchestration** | use the right model for each job | one provider interface, three implementations | routing by task |
+| **Memory** | understand a person over years, not store a chat log | extraction, pollution gate, activation rule, evidence, dedupe, conflict, versioning, FTS5 retrieval, graded levels, decay, value score | more kinds and signals |
+| **Planning** | keep what matters happening while the environment changes | four kinds of time, priority scoring, slot search, Today, risk, adaptive limits, feedback model, constraints, duration estimate, scored Now, morning plan, buffer, migration | blended priority, rhythm-aware Now, schedule optimization |
+| **Trust & autonomy** | widen what the system may do on its own, safely | the risk table, autonomy levels, trust score, permission evolution, durable execution | a level per call |
+| **Model orchestration** | use the right model for each job | one provider interface, three implementations, the privacy guard at the boundary | routing by task |
 
 ---
 
@@ -887,8 +887,8 @@ what happens next, what the system may do on its own, and which model is used.
   its own lifetime and evidence rules.
 - **Decision memory keeps the *why*** — What, Why, When, Status — not only what
   was chosen.
-- **A three-layer store, a memory graph, retrieval ranking, context assembly and
-  a user memory control centre.**
+- **A three-layer store, a memory graph, richer context assembly and a user
+  memory control centre.**
 
 ---
 
@@ -1125,8 +1125,8 @@ graded:
 The audit log is viewable and revocable.
 
 **Data lifecycle.** Create → process → store → use → archive → delete. When the
-user deletes, the deletion is real: local database, cloud sync and vector indexes
-are all covered.
+user deletes, the deletion is real: the local database, the full-text memory
+index and every derived row are all covered.
 
 ### Designed
 
@@ -1145,8 +1145,8 @@ are all covered.
 - [x] **Progressive and fine-grained permissions**, with Memory private by
       default.
 - [x] An **Action Gate** with risk levels, and a viewable, revocable audit log.
-- [x] A **delete policy** that reaches the local database, cloud sync and vector
-      indexes.
+- [x] A **delete policy** that reaches the local database, the full-text memory
+      index and every derived row.
 - [ ] **Local encrypted storage** for Memory (Keychain / Secure Enclave plus an
       encrypted database).
 
@@ -1176,7 +1176,7 @@ Two tiers, deliberately separated.
 
 ## 1. Deterministic suites — `pnpm test`
 
-Assertion scripts under `packages/core/test` and `apps/server/test`, executed
+Assertion scripts under `packages/*/test` and `apps/server/test`, executed
 offline by `tsx`. They cover the parts where a regression would be silent:
 
 | Suite | Locks down |
@@ -1192,6 +1192,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `dependencies` | blocked-by edges, cycle rejection, planner eligibility, the audit trail |
 | `planningIntelligence` | the Now score, the core/optional/deferred plan, context match |
 | `memoryValue` | levels, decay half-lives, the value score |
+| `memoryActivation` | which memories activate for a capture, and the evidence |
 | `retriever` | FTS5 search, CJK segmentation, backfill, re-index and removal |
 | `privacy` | redaction by data level, the gateway, permission scopes, true deletion |
 | `client` (packages/client) | every method's path, method and body, plus error mapping |
@@ -1206,9 +1207,10 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `format` | the locale-aware capture card and Today text projection |
 | `providers` | request shaping for Anthropic and OpenAI-compatible providers |
 | `llm-config` | wrangler and code agree on the default model |
+| `mcp tools` (packages/mcp) | the tool surface and profiles run on the offline provider |
 
 ```bash
-pnpm test                       # both packages
+pnpm test                       # every package
 pnpm --filter @aldus-palace/core test
 ```
 
@@ -1557,10 +1559,10 @@ from dozens to thousands.
 ## The question
 
 Memory value already ships: levels, decay and a value score weigh what to keep
-(`lib/memoryValue.ts`). Retrieval is the other half, and today it is keyword
-overlap plus a heuristic score over the most recent rows. That is right for a
-small store. A Retriever should hold up as the store grows, without giving up
-local-first or the two runtimes.
+(`lib/memoryValue.ts`). Retrieval is the other half. FTS5 now ranks candidates
+with bm25 and the value score re-ranks them, on both runtimes; keyword overlap
+remains only as the fallback when the index has no match. The port leaves room
+for more as the store grows, without giving up local-first.
 
 ## Spike findings (2026-09-19)
 
@@ -1710,8 +1712,8 @@ resolves free text with the same server rules the deterministic path uses, and
 drops a past date when the words point at the future; resolution reached 100%.
 Locked by `packages/core/test/modelDateNormalization.test.ts`.
 
-The one remaining miss is a commitment the model created for "Keep Mac only, no
-Windows version", where the corpus expects a decision. It is reported, not
+The one remaining miss is "Keep Mac only, no Windows version": the model created
+a commitment and two memories where the corpus allows none. It is reported, not
 hidden.
 
 
@@ -1732,7 +1734,7 @@ today marked against what does not — is in
 - [x] Reference server: local SQLite **and** Cloudflare Durable Object adapters
 - [x] Two-tier tests: deterministic suites + acceptance fixtures (offline)
 - [x] `spec/schema.sql` generated from the canonical schema
-- [x] Two published packages (`@aldus-palace/core`, `@aldus-palace/mcp`)
+- [x] Three published packages (`@aldus-palace/core`, `@aldus-palace/mcp`, `@aldus-palace/client`)
 ## v0.2 — ecosystem (current)
 
 - [x] Anthropic provider (Messages API) alongside DeepSeek / OpenAI-compatible

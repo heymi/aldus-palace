@@ -6,10 +6,10 @@ from dozens to thousands.
 ## The question
 
 Memory value already ships: levels, decay and a value score weigh what to keep
-(`lib/memoryValue.ts`). Retrieval is the other half, and today it is keyword
-overlap plus a heuristic score over the most recent rows. That is right for a
-small store. A Retriever should hold up as the store grows, without giving up
-local-first or the two runtimes.
+(`lib/memoryValue.ts`). Retrieval is the other half. FTS5 now ranks candidates
+with bm25 and the value score re-ranks them, on both runtimes; keyword overlap
+remains only as the fallback when the index has no match. The port leaves room
+for more as the store grows, without giving up local-first.
 
 ## Spike findings (2026-09-19)
 

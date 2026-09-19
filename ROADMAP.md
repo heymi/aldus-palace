@@ -13,7 +13,7 @@ today marked against what does not — is in
 - [x] Reference server: local SQLite **and** Cloudflare Durable Object adapters
 - [x] Two-tier tests: deterministic suites + acceptance fixtures (offline)
 - [x] `spec/schema.sql` generated from the canonical schema
-- [x] Two published packages (`@aldus-palace/core`, `@aldus-palace/mcp`)
+- [x] Three published packages (`@aldus-palace/core`, `@aldus-palace/mcp`, `@aldus-palace/client`)
 ## v0.2 — ecosystem (current)
 
 - [x] Anthropic provider (Messages API) alongside DeepSeek / OpenAI-compatible
