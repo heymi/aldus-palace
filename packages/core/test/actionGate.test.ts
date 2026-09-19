@@ -34,6 +34,14 @@ assert(
 assert(assessActionRisk("memory_deleted").risk === "high", "deleting a belief is high risk");
 assert(assessActionRisk("payment").risk === "critical", "payment is critical");
 assert(
+  assessActionRisk("Payment").risk === "critical",
+  "the risk table is not case-sensitive"
+);
+assert(
+  assessActionRisk("user_data_purge").risk === "critical",
+  "a permanent deletion cannot be taken back"
+);
+assert(
   assessActionRisk("something_new").risk === "high",
   "an unclassified action waits for a decision"
 );

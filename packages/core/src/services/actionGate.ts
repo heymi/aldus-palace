@@ -58,13 +58,17 @@ const RISK_TABLE: Record<string, { risk: ActionRisk; reason: string }> = {
   external_communication: { risk: "critical", reason: "leaves_the_device" },
   payment: { risk: "critical", reason: "moves_money" },
   permanent_memory_write: { risk: "critical", reason: "cannot_be_taken_back" },
+  user_data_purge: { risk: "critical", reason: "cannot_be_taken_back" },
 };
 
 export function assessActionRisk(actionType: string): {
   risk: ActionRisk;
   reason: string;
 } {
-  const known = RISK_TABLE[actionType];
+  // The table is keyed in lower case; an action type that arrives with different
+  // casing is still the action it names.
+  const key = actionType.trim().toLowerCase();
+  const known = RISK_TABLE[key];
   if (known) return known;
   return { risk: "high", reason: "unclassified_action" };
 }

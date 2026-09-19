@@ -113,6 +113,20 @@ const purgeBody = (await purge.json()) as {
 assert(purgeBody.proposal.action_type === "user_data_purge", "the purge is proposed");
 assert(purgeBody.proposal.status === "proposed", "deletion waits for approval");
 
+// A permanent deletion is critical: it takes two approvals.
+const firstPurgeApproval = await app.request(
+  `/v1/actions/${purgeBody.proposal.id}/decide`,
+  { method: "POST", headers, body: JSON.stringify({ decision: "approve" }) }
+);
+assert(firstPurgeApproval.status === 200, `expected 200, got ${firstPurgeApproval.status}`);
+const firstPurgeBody = (await firstPurgeApproval.json()) as {
+  proposal: { status: string };
+};
+assert(
+  firstPurgeBody.proposal.status === "pending_second",
+  "a permanent deletion asks for a second approval"
+);
+
 const approvePurge = await app.request(
   `/v1/actions/${purgeBody.proposal.id}/decide`,
   { method: "POST", headers, body: JSON.stringify({ decision: "approve" }) }
@@ -121,7 +135,7 @@ assert(approvePurge.status === 200, `expected 200, got ${approvePurge.status}`);
 const approveBody = (await approvePurge.json()) as {
   execution?: { status: string; result?: { total: number } };
 };
-assert(approveBody.execution?.status === "succeeded", "approval runs the purge");
+assert(approveBody.execution?.status === "succeeded", "the second approval runs the purge");
 assert((approveBody.execution?.result?.total ?? 0) > 0, "the purge deleted rows");
 
 const afterPurge = await app.request("/v1/today", { headers });
