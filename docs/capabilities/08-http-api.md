@@ -13,6 +13,7 @@ targets and one schema:
 POST   /v1/inputs                        capture (mode: progressive | sync | local)
 POST   /v1/inputs/:id/enrich             run the AI pass now
 POST   /v1/inputs/:id/process            retry processing
+POST   /v1/inputs/:id/reclassify         correct defect | work | note, and learn it
 GET    /v1/inputs/:id                    raw input + everything derived from it
 
 GET    /v1/today                         now / next / risks / unscheduled
@@ -29,7 +30,8 @@ GET    /v1/memories/:id/versions         the whole history of a belief
 POST   /v1/memories/dedupe
 
 GET    /v1/thoughts · /v1/concepts · /v1/projects · /v1/activity
-GET    /v1/me · GET /health
+GET    /v1/clarifications · POST /v1/clarifications/:id/resolve
+GET    /v1/me · PATCH /v1/me (language) · GET /health
 ```
 
 `GET /health` is public; everything under `/v1` takes a bearer token. Responses

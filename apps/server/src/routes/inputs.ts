@@ -434,11 +434,12 @@ export function createInputsRoutes(deps: AppDeps): Hono<{
   inputsRoutes.post("/:id/reclassify", async (c) => {
     const user = await requireUser(c, db);
     const id = c.req.param("id");
-    const body = z
+    const parsed = z
       .object({ mode: z.enum(["bug", "task", "note"]) })
-      .parse(await c.req.json().catch(() => ({})));
+      .safeParse(await c.req.json().catch(() => ({})));
+    if (!parsed.success) return c.json({ error: "invalid_mode" }, 400);
     try {
-      const result = await applyObjectChoice(db, user.id, id, body.mode, {
+      const result = await applyObjectChoice(db, user.id, id, parsed.data.mode, {
         locale: localeOf(user.language),
         actor: "user",
       });

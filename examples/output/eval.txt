@@ -7,7 +7,7 @@
 > pnpm --filter @aldus-palace/core eval
 
 
-> @aldus-palace/core@0.9.2 eval /Users/zhu/R&D/Aldus-Palace/packages/core
+> @aldus-palace/core@0.13.0 eval /Users/zhu/R&D/Aldus-Palace/packages/core
 > tsx test/run-fixtures.ts
 
 PASS S04

@@ -23,8 +23,10 @@ evolve it safely:
 
 The runtime tables sit beside them: `commitment_dependencies` for blocked-by
 edges, `action_proposals` for the Action Gate, `autonomy_settings` for the
-earned-autonomy ceiling and `permission_grants` for scopes. `commitments` carries
-`deferral_count` and `migration_surfaced_at` for slipped work.
+earned-autonomy ceiling, `permission_grants` for scopes, `clarifications` for
+pending questions and `classification_signals` for what a correction taught the
+classifier (ADR 0012). `commitments` carries `deferral_count` and
+`migration_surfaced_at` for slipped work.
 
 Three ideas are baked into the design rather than added later:
 

@@ -47,7 +47,8 @@ import { DevLLMProvider, createLLMProvider, resolveProviderConfig } from "@aldus
 
 const offline = new DevLLMProvider();
 // A cloud provider is only built together with a MessageGuard (ADR 0011);
-// the deterministic provider needs none.
+// the deterministic provider needs none. Direct construction requires it too:
+// the class throws PrivacyGuardRequiredError without one.
 const live = createLLMProvider(resolveProviderConfig(process.env), guard);
 ```
 

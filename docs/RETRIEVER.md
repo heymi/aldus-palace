@@ -41,7 +41,9 @@ query ──► Retriever port
   characters (`segmentForSearch`) and a user query into an FTS5 phrase
   (`toMatchQuery`). A `search_text` column on `memories` holds the segmented
   form, and `indexMemory` writes it into `memory_search(memory_id UNINDEXED,
-  search_text)` — the runtime does this because a trigger cannot segment. The
+  search_text)` — the runtime does this because a trigger cannot segment. A
+  query is capped at 512 characters and 24 terms so a long capture cannot
+  become an unbounded OR chain. The
   backfill on first use repairs rows written before the column existed, or that
   lost their search row; a memory with nothing to index keeps an empty marker
   instead of a row.

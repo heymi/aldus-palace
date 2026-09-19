@@ -157,7 +157,7 @@ store; the bundled adapter covers SQLite.
 
 | Example | Shows |
 |---|---|
-| [`examples/capture-cli`](../examples/capture-cli) | the smallest embedder (~60 lines) |
+| [`examples/capture-cli`](../examples/capture-cli) | the smallest embedder |
 | [`examples/understanding-only`](../examples/understanding-only) | the gates: object mode, dates, dedupe, memory filtering |
 | [`examples/memory-gate-only`](../examples/memory-gate-only) | candidate → conflict → confirm → supersede |
 | [`examples/today-only`](../examples/today-only) | four time models, Today projection, work streams |

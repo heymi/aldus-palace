@@ -63,6 +63,8 @@ Worker: assets for the page, `/api/*` proxied with the token injected, and a
 private Durable Object per visitor selected by an httpOnly cookie. It runs the
 offline provider, so it needs no model key and costs nothing:
 
+Nothing is deployed by default; this only creates a Worker when you run it.
+
 ```bash
 cd apps/server
 printf '%s' "$(openssl rand -hex 32)" | wrangler secret put DEV_AUTH_TOKEN -c wrangler.demo.jsonc

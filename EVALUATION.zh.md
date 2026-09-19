@@ -16,9 +16,9 @@ pnpm demo       # 离线捕获演示
 `pnpm verify` 通过时，结尾会看到类似片段：
 
 ```
-packages/core test: All 23 suites passed.
+packages/core test: All 24 suites passed.
 packages/mcp test: mcp tool tests passed.
-apps/server test: All 3 suites passed.
+apps/server test: All 4 suites passed.
 All fixtures passed.
 spec/schema.sql is up to date.
 ```

@@ -31,6 +31,8 @@ packages/core test: format tests passed.
 packages/core test: PASS format.test.ts
 packages/core test: input object classification tests passed.
 packages/core test: PASS inputObjectClassification.test.ts
+packages/core test: language tests passed.
+packages/core test: PASS language.test.ts
 packages/core test: memory activation tests passed.
 packages/core test: PASS memoryActivation.test.ts
 packages/core test: memory evolution tests passed.
@@ -70,10 +72,10 @@ packages/core test: trust score tests passed.
 packages/core test: PASS trustScore.test.ts
 packages/core test: work migration tests passed.
 packages/core test: PASS workMigration.test.ts
-packages/core test: All 23 suites passed.
+packages/core test: All 24 suites passed.
 packages/core test: Done
-packages/mcp test$ tsx test/tools.test.ts
 apps/server test$ tsx test/run-tests.ts
+packages/mcp test$ tsx test/tools.test.ts
 packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: [llm] provider=dev (local rules)
@@ -82,12 +84,14 @@ packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: [llm] provider=dev (local rules)
 apps/server test: action gate API test passed.
-apps/server test: PASS actionGate.test.ts
 packages/mcp test: mcp tool tests passed.
+apps/server test: PASS actionGate.test.ts
 packages/mcp test: Done
 apps/server test: commitment classification API test passed.
 apps/server test: PASS commitmentClassification.test.ts
 apps/server test: llm config tests passed
 apps/server test: PASS llm-config.test.ts
-apps/server test: All 3 suites passed.
+apps/server test: reclassify API test passed.
+apps/server test: PASS reclassify.test.ts
+apps/server test: All 4 suites passed.
 apps/server test: Done

@@ -25,9 +25,9 @@ programmatic consumers. The SDK validates `structuredContent` against
   clients can validate it.
 
 The card follows `users.language` through the backend locale: the local backend
-reads the user row, the HTTP backend defaults to English. The five remaining
-tools keep their JSON text until they get the same treatment, so the change
-stays reviewable.
+reads the user row, the HTTP backend defaults to English. The capture, today
+and action tools return cards; the remaining tools keep their JSON text until
+they get the same treatment, so the change stays reviewable.
 
 ## Consequences
 

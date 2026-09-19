@@ -91,7 +91,7 @@ you write.
 
 | Capability | What it lets you ship |
 |---|---|
-| **Text → typed objects** | A user writes a sentence and the product already has the task, the decision and the preference — dates resolved, duplicates skipped, model failures handled. No form, no classification rules of your own. |
+| **Text → typed objects** | A user writes a sentence and the product already has the task, the decision and the preference — dates resolved, duplicates skipped, model failures handled. When the rules are unsure, it asks instead of guessing. No form, no classification rules of your own. |
 | **A memory layer** | An assistant that remembers a person over time, where every memory explains itself, can be corrected and can be undone — no "personality from one remark". |
 | **A planning engine** | A "what now" answer instead of a wall of red items: work ordered by dependency, a daily buffer, and slipped work that moves itself. |
 | **Local first + background enrichment** | Instant feedback, then the model catches up; retries, concurrency and crashes never lose or duplicate data. |
@@ -106,7 +106,7 @@ you write.
 | "My assistant invented a preference and I cannot delete it." | The gate waits for your confirmation, every memory shows its evidence, and any of them can be archived. |
 | "Twelve red items and I freeze." | One scored "now", missed dates as risks instead of failures, and a quarter of the day left free. |
 | "We must show how an AI-written record came to be." | Every change writes an action log with a reason; memories keep their evidence and versions. |
-| "A risky action needs a human in the loop." | The Action Gate grades every agent action; high risk waits for one approval, critical for two, and the log is revocable. |
+| "A risky action needs a human in the loop." | The Action Gate grades every proposed agent action; high risk waits for one approval, critical (permanent deletion) for two, and the log is revocable. |
 | "Sensitive data cannot go to a model as-is." | The Privacy Gateway redacts by data level; level 4 stays local, permissions are scopes, Memory is private by default. |
 
 ## Sentences it understands
@@ -122,6 +122,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | 下周把 onboarding 做完 | 要做 · 时间窗 2026-09-19 → 2026-09-26 |
 | 以后产品不要做太复杂，保持克制 | 记忆 · 已生效，因为你亲口说了 |
 | 今晚先不做评审，改排到周五 | 要做 · 截止 2026-09-25 |
+| The search box does not work | question · defect / work / note; the answer becomes the fix |
 
 ## How this compares
 
@@ -307,7 +308,7 @@ personality from one remark. Replace the old record and the history disappears.
 |---|---|---|
 | Schema & domain | `overdue` has no state to occupy; a deadline, a window and a slot are three fields | `db/schema.ts` |
 | Providers | a deterministic provider shares the interface with the paid ones, so agent logic runs in CI | `providers/dev.ts` |
-| Understanding | the model proposes; the server decides (mode, duplicates, dates, fallback) | `agent/understand.ts` |
+| Understanding | the model proposes; the server decides (mode, duplicates, dates, fallback), and a grey-zone sentence asks instead of guessing | `agent/understand.ts`, `lib/objectAmbiguity.ts` |
 | Progressive capture | a lease and a generation id make "local first, model second" idempotent | `services/enrichmentLease.ts` |
 | Memory | a confident memory takes effect, explains itself, and versions instead of deleting | `lib/memoryActivation.ts`, `services/memoryEvolution.ts` |
 | Today & planning | a day with no plan gets suggestions; a full day gets a rest suggestion; a quarter of the day stays free, slipped flexible work moves forward, a blocked commitment is never scheduled, and Now is scored rather than first-in-line | `services/today.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `lib/nowScore.ts` |
@@ -425,9 +426,9 @@ pnpm demo       # the offline capture demo
 A passing `pnpm verify` ends with fragments like:
 
 ```
-packages/core test: All 23 suites passed.
+packages/core test: All 24 suites passed.
 packages/mcp test: mcp tool tests passed.
-apps/server test: All 3 suites passed.
+apps/server test: All 4 suites passed.
 All fixtures passed.
 spec/schema.sql is up to date.
 ```
@@ -546,11 +547,12 @@ packages/core/src
 ├── db/migrate.ts        applySchema / migrate / initialize (forward-only)
 ├── providers/           LLMProvider implementations + config resolution
 ├── lib/                 pure helpers (time, titles, matching, memory filters,
-│                        now score, day plan, memory value, capacity, redaction)
+│                        now score, day plan, memory value, capacity, redaction,
+│                        object ambiguity, classification signals)
 ├── services/            domain services (planning, classification, today, work
 │                        streams, memory lifecycle & evolution, enrichment leases,
 │                        dependencies, work migration, replanning, action gate,
-│                        permissions, privacy gateway, data lifecycle)
+│                        permissions, privacy gateway, data lifecycle, reclassify)
 ├── repos/               thin data access (users, action log)
 └── agent/understand.ts  the Understanding Agent: input → objects → ActionCard
 ```
@@ -602,6 +604,8 @@ as a *proposer*, not an authority:
    - near-duplicate commitments are skipped
    - relative dates (`明天`, “next Friday”) are resolved server-side, and
      ambiguous early-morning phrases produce a clarification instead of a guess
+   - a grey-zone capture (a work signal too weak to act on) asks
+     defect / work / note, and the correction is remembered (ADR 0012)
    - a memory becomes active only through the published gate; below it, and for
      an inferred principle, it waits as a candidate
 4. Write an `action_log` entry for every mutation so behaviour stays explainable.
@@ -661,6 +665,7 @@ slipped flexible work (see [ADR 0008](adr/0008-daily-buffer-and-work-migration.m
 | `today_assignments` | commitments + planning decisions |
 | `commitment_classifications` | commitments + projects + active memories |
 | `planning_day_states`, `planning_profiles`, `planning_feedback_episodes` | planner behaviour over time |
+| `memory_search` (FTS5) | `memories.search_text`, written by the runtime |
 
 Deleting a projection must never change what the user committed to — see
 [ADR 0002](adr/0002-keep-work-classification-as-rebuildable-projection.md).
@@ -747,7 +752,7 @@ Nine capabilities, three ways in. Use one, or all of them.
 | 5 | [Memory](capabilities/05-memory.md) | a memory store that explains itself, with levels, decay and revisions | `memory` | `/v1/memories*` | `core` |
 | 6 | [Today & planning](capabilities/06-today-and-planning.md) | scheduling heuristics, risk detection, adaptive limits, dependencies, buffer and migration | `today` | `/v1/today` `/v1/plan/today` `/v1/plan/migrate` | `core` |
 | 7 | [Work streams](capabilities/07-work-streams.md) | grouping that is rebuildable and never touches the source of truth | `workstreams` | `GET /v1/work-streams` | `core` |
-| 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 61 routes | `apps/server` |
+| 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 62 routes | `apps/server` |
 | 9 | [MCP server](capabilities/09-mcp.md) | the Model Context Protocol surface and tool selection | — | — | `packages/mcp` |
 
 ## Modules are decoupled in code
@@ -840,7 +845,7 @@ what happens next, what the system may do on its own, and which model is used.
 |---|---|---|---|
 | **Memory** | understand a person over years, not store a chat log | extraction, pollution gate, activation rule, evidence, dedupe, conflict, versioning, FTS5 retrieval, graded levels, decay, value score | more kinds and signals |
 | **Planning** | keep what matters happening while the environment changes | four kinds of time, priority scoring, slot search, Today, risk, adaptive limits, feedback model, constraints, duration estimate, scored Now, morning plan, buffer, migration | blended priority, rhythm-aware Now, schedule optimization |
-| **Trust & autonomy** | widen what the system may do on its own, safely | the risk table, autonomy levels, trust score, permission evolution, durable execution | a level per call |
+| **Trust & autonomy** | widen what the system may do on its own, safely | the risk table, autonomy levels, trust score, permission evolution, durable execution | proactive rules |
 | **Model orchestration** | use the right model for each job | one provider interface, three implementations, the privacy guard at the boundary | routing by task |
 
 ---
@@ -1208,6 +1213,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `memoryEvolution` | rule-based conflict detection, supersede, version chains |
 | `actionableWork` | English imperatives, Chinese build verbs, non-work cases |
 | `actionGate` | the published risk table, decisions, two-step critical approval, revocation, audit |
+| `actionGate` (apps/server) | the gate over HTTP: propose, decide, execute, purge, races |
 | `trustScore` | the Laplace-smoothed score, level thresholds, what each level runs, the decision window |
 | `durationEstimate` | stated/history blending, the median, bounds, invalid input |
 | `format` | the locale-aware capture card and Today text projection |
@@ -1244,17 +1250,19 @@ an input plus the properties the result must have:
 ```
 
 Supported expectations: `thoughts_min`/`thoughts_max`,
-`commitments_min`/`commitments_max`, `memory_candidates_min`,
-`memory_active_max`, `thought_types_allowed`, `memory_types_allowed`,
-`must_include_thought`, and `forbidden` markers
-(`thought_type:*`, `commitment:*`, `recurrence`, …).
+`commitments_min`/`commitments_max`, `memory_candidates_min`/`memory_candidates_max`,
+`memory_active_min`/`memory_active_max`, `memory_pending_min`/`memory_pending_max`,
+`thought_types_allowed`, `memory_types_allowed`, `must_include_thought`, and
+`forbidden` markers (`thought_type:*`, `commitment:*`, `recurrence`, …). Every
+fixture key is enforced; an unknown key would not fail on its own, so keep to
+this list.
 
 They run against the **deterministic** provider, so results are stable and the
 suite is safe to require on every pull request.
 
 ```bash
 pnpm eval
-# PASS S04 … PASS S25
+# PASS S04 … PASS S31
 # All fixtures passed.
 ```
 
@@ -1262,7 +1270,7 @@ pnpm eval
 
 Contributing a fixture is the best first contribution — it is data, not code:
 
-1. Pick the next `S<n>` id (`S26`, `S27`, …).
+1. Pick the next `S<n>` id (`S32`, …).
 2. Copy the shape above; write the input in any language.
 3. State only properties that must hold, never the exact model output.
 4. Run `pnpm eval` and open a PR explaining the user behaviour you are pinning.
@@ -1435,7 +1443,8 @@ it, the doc that explains it and the suite that pins it.
 |---|---|---|---|
 | Schema & domain | `packages/core/src/db/schema.ts` | [01](capabilities/01-schema-and-domain.md) | `pnpm spec:check` |
 | Providers | `packages/core/src/providers/` | [02](capabilities/02-providers.md) | `packages/core/test/providers.test.ts` |
-| Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `modelDateNormalization.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
+| Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `modelDateNormalization.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts`, `language.test.ts` |
+| Grey-zone classification | `lib/objectAmbiguity.ts`, `lib/classificationSignals.ts`, `services/reclassify.ts` | [ADR 0012](adr/0012-the-grey-zone-asks-and-learns.md) | `inputObjectClassification.test.ts`, `apps/server/test/reclassify.test.ts` |
 | Progressive capture | `packages/core/src/services/enrichmentLease.ts` | [04](capabilities/04-progressive-capture.md) | `packages/core/test/enrichmentLease.test.ts` |
 | Memory | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `lib/memoryValue.ts`, `lib/retriever.ts`, `lib/search.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` | [05](capabilities/05-memory.md) | `memoryActivation.test.ts`, `memoryEvolution.test.ts`, `memoryValue.test.ts`, `retriever.test.ts` |
 | Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `services/replan.ts`, `lib/nowScore.ts`, `lib/dayPlan.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts`, `planningIntelligence.test.ts` |
@@ -1537,9 +1546,11 @@ The shared vocabulary. Planning-specific terms live in
 | **Action Gate** | the published risk table that decides whether a proposed agent action runs or waits; a decision is logged and revocable (`services/actionGate.ts`) |
 | **Data level** | 0 public, 1 preference, 2 work context, 3 sensitive work, 4 private cognitive; level 4 never leaves the device |
 | **Privacy Gateway** | prepares a cloud call: sensitive detection, redaction, permission check, then the model; enforced at the provider boundary by the message guard |
-| **Message guard** | the port a cloud provider calls before sending; redacts user-role messages by level and refuses level 4 (`providers/guard.ts`) |
+| **Message guard** | the port a cloud provider calls before sending; redacts user-role messages by level, refuses level 4, and writes one audit row per call for every outcome including a pass-through (`providers/guard.ts`) |
 | **Permission scope** | a grantable capability (`calendar.read`, `mail.read`, `memory.ai_assist`, …); absent means not granted |
-| **Purge** | true deletion of every row the user owns, in one transaction, after confirmation |
+| **Purge** | true deletion of every row the user owns (memory index and classification signals included), in one transaction; a critical action, so it takes two approvals |
+| **Clarification** | a pending question about a record — a relative day, or what a capture is; answered by option or in words, never a guess (`clarifications`, ADR 0012) |
+| **Classification signal** | the terms of an input the user corrected, with the mode they chose; applied before asking again (`classification_signals`, ADR 0012) |
 | **Execution** | running an approved action under a lease, once, with the result or error recorded (`executeApprovedAction`) |
 | **Executor** | the function registered per action type that performs the effect; only the composition root knows effects |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |
@@ -1602,7 +1613,9 @@ query ──► Retriever port
   characters (`segmentForSearch`) and a user query into an FTS5 phrase
   (`toMatchQuery`). A `search_text` column on `memories` holds the segmented
   form, and `indexMemory` writes it into `memory_search(memory_id UNINDEXED,
-  search_text)` — the runtime does this because a trigger cannot segment. The
+  search_text)` — the runtime does this because a trigger cannot segment. A
+  query is capped at 512 characters and 24 terms so a long capture cannot
+  become an unbounded OR chain. The
   backfill on first use repairs rows written before the column existed, or that
   lost their search row; a memory with nothing to index keeps an empty marker
   instead of a row.
@@ -1751,7 +1764,7 @@ today marked against what does not — is in
 - [x] Local SQLite adapter published as `@aldus-palace/core/db/sqlite`
 - [x] [Technical write-up](docs/PROGRESSIVE-CAPTURE.md) on the enrichment lease
 - [x] `claude mcp add` / Claude Desktop integration documented and smoke-tested
-- [ ] Published to npm with a release pipeline
+- [x] Published to npm with a release pipeline
 - [ ] More acceptance fixtures contributed by users
 
 ## Memory, deepened
@@ -1860,8 +1873,9 @@ current posture. The privacy architecture takes shape in these pieces:
 
 ## Clients
 
-- [x] **A reference client** — one browser page over the HTTP API: capture, Now,
-  memory with evidence, and the action-approval queue
+- [x] **A reference client** — a macOS-shaped browser app over the HTTP API
+  (Home, Thoughts, Projects, Memory, Decisions, Activity, Input) with a
+  quick-capture sheet; ships in the repo and is not hosted
   (`examples/reference-client`).
 - [ ] A SwiftUI reference client (`clients/` is a placeholder today)
 

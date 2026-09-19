@@ -17,9 +17,9 @@ pnpm demo       # the offline capture demo
 A passing `pnpm verify` ends with fragments like:
 
 ```
-packages/core test: All 23 suites passed.
+packages/core test: All 24 suites passed.
 packages/mcp test: mcp tool tests passed.
-apps/server test: All 3 suites passed.
+apps/server test: All 4 suites passed.
 All fixtures passed.
 spec/schema.sql is up to date.
 ```

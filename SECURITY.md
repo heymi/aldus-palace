@@ -37,8 +37,8 @@ value first.
   memory scope is granted.
 - `prepareCloudPayload` redacts project names, money, emails and phone numbers by
   data level, and level 4 does not leave the device.
-- `purgeUserData` deletes every row the user owns in one transaction, after an
-  explicit confirmation.
+- `purgeUserData` deletes every row the user owns in one transaction; permanent
+  deletion is a critical action, so it takes two explicit approvals.
 - Every mutation writes an `action_log` entry with a reason.
 
 ## Reporting a vulnerability

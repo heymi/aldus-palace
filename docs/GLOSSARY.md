@@ -59,9 +59,11 @@ The shared vocabulary. Planning-specific terms live in
 | **Action Gate** | the published risk table that decides whether a proposed agent action runs or waits; a decision is logged and revocable (`services/actionGate.ts`) |
 | **Data level** | 0 public, 1 preference, 2 work context, 3 sensitive work, 4 private cognitive; level 4 never leaves the device |
 | **Privacy Gateway** | prepares a cloud call: sensitive detection, redaction, permission check, then the model; enforced at the provider boundary by the message guard |
-| **Message guard** | the port a cloud provider calls before sending; redacts user-role messages by level and refuses level 4 (`providers/guard.ts`) |
+| **Message guard** | the port a cloud provider calls before sending; redacts user-role messages by level, refuses level 4, and writes one audit row per call for every outcome including a pass-through (`providers/guard.ts`) |
 | **Permission scope** | a grantable capability (`calendar.read`, `mail.read`, `memory.ai_assist`, …); absent means not granted |
-| **Purge** | true deletion of every row the user owns, in one transaction, after confirmation |
+| **Purge** | true deletion of every row the user owns (memory index and classification signals included), in one transaction; a critical action, so it takes two approvals |
+| **Clarification** | a pending question about a record — a relative day, or what a capture is; answered by option or in words, never a guess (`clarifications`, ADR 0012) |
+| **Classification signal** | the terms of an input the user corrected, with the mode they chose; applied before asking again (`classification_signals`, ADR 0012) |
 | **Execution** | running an approved action under a lease, once, with the result or error recorded (`executeApprovedAction`) |
 | **Executor** | the function registered per action type that performs the effect; only the composition root knows effects |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |

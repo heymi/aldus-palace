@@ -26,6 +26,7 @@ type Fixture = {
     commitments_min?: number;
     commitments_max?: number;
     memory_candidates_min?: number;
+    memory_candidates_max?: number;
     /** Candidates that take effect on capture (see lib/memoryActivation.ts). */
     memory_active_min?: number;
     memory_active_max?: number;
@@ -92,6 +93,14 @@ for (const fx of loadFixtures()) {
   ) {
     errors.push(
       `memory_candidates_min: got ${result.memory_candidates.length}`
+    );
+  }
+  if (
+    fx.expect.memory_candidates_max !== undefined &&
+    result.memory_candidates.length > fx.expect.memory_candidates_max
+  ) {
+    errors.push(
+      `memory_candidates_max: got ${result.memory_candidates.length}, want <= ${fx.expect.memory_candidates_max}`
     );
   }
 

@@ -43,7 +43,7 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 
 ## 它做什么
 
-**读一句话，分清它是什么。** 写「Ship the onboarding page next week」，你得到一条承诺，日期已经算好。没有项目选择器、没有优先级字段、没有截止日历。粘一段文字，你会得到多个对象：想法、承诺、决策、记忆候选。
+**读一句话，分清它是什么。** 写「Ship the onboarding page next week」，你得到一条承诺，日期已经算好。没有项目选择器、没有优先级字段、没有截止日历。粘一段文字，你会得到多个对象：想法、承诺、决策、记忆候选。规则拿不准时，它先问一句，而不是替你猜。
 
 **它抓重复。** 重复说一次，系统会指向第一条记录。
 
@@ -82,7 +82,7 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 | 「助手自己编造了关于我的偏好，我删不掉。」 | 门控等你确认才生效，每条记忆都带出处，任何一条都能归档。 |
 | 「早上看到一堆红点就烦。」 | 只给一个评分得出的"现在做这件"，错过的时间算风险不算失败，一天还留四分之一空档。 |
 | 「要证明 AI 写进系统的内容是怎么来的。」 | 每次改动都写 action log 并附原因；记忆保留证据与版本。 |
-| 「高风险操作得有人把关。」 | Action Gate 给每个 agent 动作分级：高风险等一次批准、关键级两次，日志可撤销。 |
+| 「高风险操作得有人把关。」 | Action Gate 给每个被提议的 agent 动作分级：高风险等一次批准、关键级（永久删除）两次，日志可撤销。 |
 | 「敏感数据不能原文发给模型。」 | Privacy Gateway 按数据级别脱敏；Level 4 不出本机，权限按 scope 授予，Memory 默认私有。 |
 
 ## 它听得懂的句子
@@ -98,6 +98,7 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 | 下周把 onboarding 做完 | 要做 · 时间窗 2026-09-19 → 2026-09-26 |
 | 以后产品不要做太复杂，保持克制 | 记忆 · 已生效，因为你亲口说了 |
 | 今晚先不做评审，改排到周五 | 要做 · 截止 2026-09-25 |
+| 分类记忆不生效，没在设置里显示 | 先问一句「缺陷／要做／记录」，答案直接落成承诺 |
 
 ## 与现有方式对比
 
@@ -251,7 +252,7 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 |---|---|---|
 | Schema & domain | `overdue` 没有可占据的状态；截止、窗口、时段是三个字段 | `db/schema.ts` |
 | Providers | 确定性 provider 与付费实现共享同一接口，agent 逻辑可在 CI 中运行 | `providers/dev.ts` |
-| Understanding | 模型提议，服务端决定（对象模式、去重、日期、回退） | `agent/understand.ts` |
+| Understanding | 模型提议，服务端决定（对象模式、去重、日期、回退）；灰区不猜，先问 | `agent/understand.ts`、`lib/objectAmbiguity.ts` |
 | Progressive capture | lease 与 generation id 让「先本地、后模型」幂等 | `services/enrichmentLease.ts` |
 | Memory | 高置信记忆生效、自我解释、以版本化代替删除 | `lib/memoryActivation.ts`、`services/memoryEvolution.ts` |
 | Today & planning | 空的一天得到建议；排满的一天得到休息建议；四分之一个白天留空，未开始的灵活工作自动顺延，被依赖阻塞的任务不排期，Now 是评分而非排在最前 | `services/today.ts`、`services/workMigration.ts`、`services/dependencies.ts`、`lib/nowScore.ts` |

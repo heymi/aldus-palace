@@ -40,9 +40,9 @@ bearer token.
 
 ## Public demo
 
-`wrangler.demo.jsonc` deploys a separate Worker (`aldus-palace-demo`) that
-serves the reference client as static assets and routes `/api/*` to the same
-backend:
+`wrangler.demo.jsonc` is not deployed by default. When you run it, it creates a
+separate Worker (`aldus-palace-demo`) that serves the reference client as static
+assets and routes `/api/*` to the same backend:
 
 ```bash
 printf '%s' "$(openssl rand -hex 32)" | wrangler secret put DEV_AUTH_TOKEN -c wrangler.demo.jsonc

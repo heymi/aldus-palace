@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * Two documentation guards:
+ * Documentation guards:
  *
  * 1. Every relative link in the docs resolves to a file.
- * 2. Every suite/fixture count in the docs matches the repository.
+ * 2. Every suite/fixture count in the docs matches the repository, including the
+ *    per-package "All N suites passed." fragments in the evaluation samples.
+ * 3. Every route count matches spec/openapi.json.
  *
  * Usage: node scripts/check-docs.mjs
  */
@@ -82,6 +84,22 @@ const suiteFiles = [
 const suites = suiteFiles.length;
 const fixtures = readdirSync(path.join(root, "eval/fixtures")).filter((f) => f.endsWith(".json")).length;
 
+const suitesByDir = new Map(
+  ["packages/core", "packages/mcp", "packages/client", "apps/server"].map((dir) => {
+    const testDir = path.join(root, dir, "test");
+    const count = existsSync(testDir)
+      ? readdirSync(testDir).filter((file) => file.endsWith(".test.ts")).length
+      : 0;
+    return [dir, count];
+  })
+);
+
+const openapi = JSON.parse(readFileSync(path.join(root, "spec/openapi.json"), "utf8"));
+const operations = Object.values(openapi.paths).reduce(
+  (total, pathItem) => total + Object.keys(pathItem).length,
+  0
+);
+
 const counted = [
   "EVALUATION.md",
   "EVALUATION.zh.md",
@@ -96,8 +114,18 @@ for (const file of counted) {
   if (!existsSync(absolute)) continue;
   const text = readFileSync(absolute, "utf8");
   for (const line of text.split("\n")) {
-    // Per-package output fragments ("packages/core test: All 14 suites passed.")
-    // describe one package, not the repository total.
+    // Per-package output fragments describe one package, not the total: check
+    // each against that package's own count instead of skipping the line.
+    const fragment = line.match(/^(\S+) test: All (\d+) suites passed\./);
+    if (fragment) {
+      const expected = suitesByDir.get(fragment[1]);
+      if (expected !== undefined && Number(fragment[2]) !== expected) {
+        failures.push(
+          `${file}: sample says ${fragment[1]} has ${fragment[2]} suites, repository has ${expected}`
+        );
+      }
+      continue;
+    }
     if (/test:|All \d+ suites/.test(line)) continue;
     for (const match of line.matchAll(
       /(\d+)\s+(?:test\s+)?suites|(\d+)\s*个\s*(?:测试\s*)?套件/g
@@ -114,6 +142,25 @@ for (const file of counted) {
       if (value !== fixtures) {
         failures.push(`${file}: says ${value} fixtures, repository has ${fixtures}`);
       }
+    }
+  }
+}
+
+// Route counts in prose must match the generated OpenAPI document.
+const routeCounted = [
+  "docs/CAPABILITIES.md",
+  "docs/capabilities/08-http-api.md",
+  "README.md",
+  "README.zh.md",
+];
+for (const file of routeCounted) {
+  const absolute = path.join(root, file);
+  if (!existsSync(absolute)) continue;
+  const text = readFileSync(absolute, "utf8");
+  for (const match of text.matchAll(/(\d+)\s+(?:REST\s+)?(?:routes|operations)|(\d+)\s*个路由/g)) {
+    const value = Number(match[1] ?? match[2]);
+    if (value !== operations) {
+      failures.push(`${file}: says ${value} routes, spec/openapi.json has ${operations}`);
     }
   }
 }

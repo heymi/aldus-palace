@@ -27,7 +27,7 @@ Every agent action can be routed through `runGatedAction`:
    - `medium` → `notified`, the callback runs and the notification is recorded.
    - `high` → `proposed`, waiting for one approval.
    - `critical` → `proposed`; the first approval moves it to `pending_second`,
-     the second approves it.
+     the second approves it. Permanent deletion (`user_data_purge`) is critical.
 4. **Record.** Proposal, decision and revocation each write an `action_log`
    entry. Revoking is a status change; nothing is deleted.
 
