@@ -102,7 +102,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 24 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 25 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -233,15 +233,16 @@ shape of it, not a feature on top.*
 **Shipped today** — a SQLite file you own (or one Cloudflare Durable Object), a
 single-user runtime, immutable `raw_inputs`, model output validated and gated, an
 `action_log` entry on every mutation, and a memory gate that confident, stated
-memories pass on capture while an inference waits for you. [`SECURITY.md`](SECURITY.md)
-records the posture and the current threat model.
+memories pass on capture while an inference waits for you. A Privacy Gateway
+prepares a cloud call by data level (names, money, emails and phone numbers are
+replaced, level 4 stays local), permissions are progressive with Memory private
+by default, and `purgeUserData` deletes every row the user owns in one
+transaction. [`SECURITY.md`](SECURITY.md) records the posture and the current
+threat model.
 
-**Designed next** — three principles (you own the context; minimum data exposure;
-local first); five data levels; a local intelligence layer; a Privacy Gateway
-with redaction; local encrypted storage (Keychain / Secure Enclave); progressive,
-fine-grained permissions with Memory private by default; an Action Gate with four
-risk levels and a viewable, revocable audit log; and a delete policy that reaches
-the local database, cloud sync and vector indexes.
+**Designed next** — local encrypted storage (Keychain / Secure Enclave), and
+routing every cloud call through the gateway rather than leaving that to the
+caller.
 
 ## Where the difficulty lives
 
@@ -273,7 +274,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Action Gate | an unclassified agent action waits; a critical one needs two approvals; every decision is logged and revocable, and trust is the approval rate of those decisions | `services/actionGate.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 24 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 25 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -282,7 +283,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 24 suites — deterministic, offline, no API key
+pnpm test     # 25 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -369,7 +370,7 @@ pnpm demo       # the offline capture demo
 A passing `pnpm verify` ends with fragments like:
 
 ```
-packages/core test: All 20 suites passed.
+packages/core test: All 21 suites passed.
 packages/mcp test: mcp tool tests passed.
 apps/server test: All 3 suites passed.
 All fixtures passed.
@@ -388,7 +389,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 24 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 25 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -405,6 +406,9 @@ If you cannot run the repository, the real output is committed:
 | Now is the best current action, not the first in line | `packages/core/test/planningIntelligence.test.ts` | the context match wins, and the reason travels with it |
 | The day is classified into core, optional and deferred | `packages/core/test/planningIntelligence.test.ts` | a risk item is core, work that fits is optional, the rest is deferred |
 | A fresh principle outranks an old experience | `packages/core/test/memoryValue.test.ts` | levels, decay and the value score rank retrieval |
+| A cloud call can be redacted before it leaves | `packages/core/test/privacy.test.ts` | names, money and emails become placeholders; level 4 stays local |
+| Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
+| Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
 | The Action Gate is reachable from MCP | `packages/mcp/test/tools.test.ts` | the `actions` profile exposes list, decide and revoke |
 | Trust grows from decisions, not silence | `packages/core/test/trustScore.test.ts` | level 0 with no evidence; six decisions at 0.75 reach level 2 |
@@ -969,6 +973,14 @@ is the shape of it, not a feature on top.*
 - A memory becomes active only through the **published gate**
   (`confidence >= 0.8` and `importance >= 0.8`); an inferred principle waits for
   the user.
+- **A Privacy Gateway** (`services/privacyGateway.ts`): a cloud call is prepared
+  by data level — project names, money, emails and phone numbers are replaced,
+  level 4 stays local, and each call is logged without its content.
+- **Progressive, fine-grained permissions** (`services/permissions.ts`): calendar
+  read by default; mail, files and memory scopes on request; Memory is private
+  until a memory scope is granted.
+- **True deletion** (`services/dataLifecycle.ts`): `purgeUserData` deletes every
+  row the user owns in one transaction, after an explicit confirmation.
 
 `SECURITY.md` records the current posture and the threat model; the design below
 adds at-rest encryption and the rest of the architecture.
@@ -1005,7 +1017,7 @@ adds at-rest encryption and the rest of the architecture.
 The real mapping stays local.
 
 > "Discuss Orvia funding with Zhang tomorrow" leaves as
-> "discuss [business matter] with [contact] tomorrow".
+> "discuss [business] funding with [contact] tomorrow".
 
 **Memory storage.** Memory is the most sensitive data, so the design stores it
 encrypted on device — Keychain plus an encrypted database on macOS, Secure Enclave
@@ -1092,6 +1104,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `dependencies` | blocked-by edges, cycle rejection, planner eligibility, the audit trail |
 | `planningIntelligence` | the Now score, the core/optional/deferred plan, context match |
 | `memoryValue` | levels, decay half-lives, the value score, ranked retrieval |
+| `privacy` | redaction by data level, the gateway, permission scopes, true deletion |
 | `enrichmentLease` | concurrent enrichment and supersede semantics |
 | `commitmentOriginalInput` | optimized content vs original input |
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |
@@ -1290,7 +1303,7 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 | Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
-| Replayable offline | 24 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 25 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 
@@ -1335,6 +1348,7 @@ it, the doc that explains it and the suite that pins it.
 | MCP server | `packages/mcp/src/` | [09](capabilities/09-mcp.md) | `packages/mcp/test/tools.test.ts` |
 | Text projections | `packages/core/src/lib/format.ts` | [EVALUATION](../EVALUATION.md) | `packages/core/test/format.test.ts` |
 | Action Gate | `packages/core/src/services/actionGate.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [ADR 0005](adr/0005-action-gate-with-published-risk.md) | `packages/core/test/actionGate.test.ts` |
+| Privacy | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts`, `lib/redaction.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [SECURITY](../SECURITY.md) | `packages/core/test/privacy.test.ts` |
 | Acceptance fixtures | `eval/fixtures/` | [EVAL](EVAL.md) | `pnpm eval` |
 | The engine design | `docs/INTELLIGENCE.md` (design) | [INTELLIGENCE](INTELLIGENCE.md) | shipped parts above |
 
@@ -1420,6 +1434,10 @@ The shared vocabulary. Planning-specific terms live in
 | **Enrichment lease** | the mechanism that makes "local first, model second" idempotent under retries |
 | **Action log** | an append-only row written on every mutation, with a reason |
 | **Action Gate** | the published risk table that decides whether a proposed agent action runs or waits; a decision is logged and revocable (`services/actionGate.ts`) |
+| **Data level** | 0 public, 1 preference, 2 work context, 3 sensitive work, 4 private cognitive; level 4 never leaves the device |
+| **Privacy Gateway** | prepares a cloud call: sensitive detection, redaction, permission check, then the model |
+| **Permission scope** | a grantable capability (`calendar.read`, `mail.read`, `memory.ai_assist`, …); absent means not granted |
+| **Purge** | true deletion of every row the user owns, in one transaction, after confirmation |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |
 | **Autonomy level** | 0–4, derived from the trust score with minimum samples |
 | **Autonomy ceiling** | how far earned trust may widen autonomy (default 2, up to 4); raising it is the user's explicit consent |
@@ -1591,19 +1609,22 @@ it:
 The shipped runtime is local-first and single-user, and `SECURITY.md` records the
 current posture. The privacy architecture takes shape in these pieces:
 
-- [ ] **A Local Intelligence Layer** — input parsing, sensitive detection, Memory
-  indexing and basic planning stay on device.
-- [ ] **A Privacy Gateway** with redaction, so a cloud call receives only
-  temporary context (`input → sensitive detection → redaction → permission check
-  → cloud`).
+- [x] **A Local Intelligence Layer** — input parsing, classification, Memory
+  indexing and planning all run in the runtime on the device.
+- [x] **A Privacy Gateway** with redaction: `prepareCloudPayload` replaces
+  project names, money, emails and phone numbers by data level, refuses level 4,
+  and logs each call (`services/privacyGateway.ts`).
+- [x] **Progressive, fine-grained permissions** — calendar read by default, mail,
+  files and memory scopes on request, with Memory private until granted
+  (`services/permissions.ts`).
+- [x] **An Action Gate** with four risk levels and a viewable, revocable audit
+  log (ADR 0005).
+- [x] **A delete policy** — `purgeUserData` deletes every row the user owns in
+  one transaction (`services/dataLifecycle.ts`).
 - [ ] **Local encrypted storage** for Memory — Keychain plus an encrypted
   database on macOS, Secure Enclave plus encrypted storage on iOS.
-- [ ] **Progressive, fine-grained permissions** — calendar first, then mail, then
-  files; read / create / modify separated; Memory private by default.
-- [ ] **An Action Gate** with four risk levels (low automatic, medium notified,
-  high confirmed, critical confirmed again) and a viewable, revocable audit log.
-- [ ] **A delete policy** that reaches the local database, cloud sync and vector
-  indexes — deletion is real, not a flag.
+- [ ] **Routing every cloud call through the gateway** — the pipeline can call it
+  today; the provider layer does not do so yet.
 
 ## Later
 

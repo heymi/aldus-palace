@@ -93,7 +93,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 24 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 25 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -224,15 +224,16 @@ shape of it, not a feature on top.*
 **Shipped today** — a SQLite file you own (or one Cloudflare Durable Object), a
 single-user runtime, immutable `raw_inputs`, model output validated and gated, an
 `action_log` entry on every mutation, and a memory gate that confident, stated
-memories pass on capture while an inference waits for you. [`SECURITY.md`](SECURITY.md)
-records the posture and the current threat model.
+memories pass on capture while an inference waits for you. A Privacy Gateway
+prepares a cloud call by data level (names, money, emails and phone numbers are
+replaced, level 4 stays local), permissions are progressive with Memory private
+by default, and `purgeUserData` deletes every row the user owns in one
+transaction. [`SECURITY.md`](SECURITY.md) records the posture and the current
+threat model.
 
-**Designed next** — three principles (you own the context; minimum data exposure;
-local first); five data levels; a local intelligence layer; a Privacy Gateway
-with redaction; local encrypted storage (Keychain / Secure Enclave); progressive,
-fine-grained permissions with Memory private by default; an Action Gate with four
-risk levels and a viewable, revocable audit log; and a delete policy that reaches
-the local database, cloud sync and vector indexes.
+**Designed next** — local encrypted storage (Keychain / Secure Enclave), and
+routing every cloud call through the gateway rather than leaving that to the
+caller.
 
 ## Where the difficulty lives
 
@@ -264,7 +265,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Action Gate | an unclassified agent action waits; a critical one needs two approvals; every decision is logged and revocable, and trust is the approval rate of those decisions | `services/actionGate.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 24 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 25 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -273,7 +274,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 24 suites — deterministic, offline, no API key
+pnpm test     # 25 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start

@@ -78,7 +78,7 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 | **每日视图回答什么** | 列出全部 | 现在做什么、什么有风险、什么未排期；排满的一天会建议休息 |
 | **有几份数据** | 每个应用一份 | 一份记录，MCP、HTTP 与库都能访问：Claude、Cursor、你的前端、脚本 |
 | **记录存在哪** | 厂商云 | 你拥有的 SQLite 文件，或一个 Cloudflare Worker；可复制、可备份、可转交 |
-| **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；24 个套件与 11 个 fixture 每次重放 |
+| **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；25 个套件与 11 个 fixture 每次重放 |
 
 ## 当前边界
 
@@ -188,9 +188,9 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 
 *系统长期接触工作、决策、关系与习惯；隐私是它的形状，不是附加功能。*
 
-**今天已交付** —— 你拥有的 SQLite 文件（或单个 Cloudflare Durable Object）、单用户运行时、不可变的 `raw_inputs`、经校验与门控的模型输出、每次变更写 `action_log`，以及一道记忆门：你陈述的高置信记忆在捕获时生效，推断则等待你确认。[`SECURITY.md`](SECURITY.md) 记录了当前姿态与威胁模型。
+**今天已交付** —— 你拥有的 SQLite 文件（或单个 Cloudflare Durable Object）、单用户运行时、不可变的 `raw_inputs`、经校验与门控的模型输出、每次变更写 `action_log`，以及一道记忆门：你陈述的高置信记忆在捕获时生效，推断则等待你确认。Privacy Gateway 会按数据级别准备云端调用（名称、金额、邮箱与电话会被替换，Level 4 不出本机）；权限渐进且细粒度，Memory 默认私有；`purgeUserData` 在一个事务里删除用户拥有的全部数据。[`SECURITY.md`](SECURITY.md) 记录了当前姿态与威胁模型。
 
-**设计中** —— 三原则（你拥有上下文；最小数据外发；本地优先）；五级数据分类；本地智能层；带脱敏的 Privacy Gateway；本地加密存储（Keychain / Secure Enclave）；渐进式、细粒度权限且 Memory 默认私有；带四级风险的 Action Gate 与可查看、可撤销的审计日志；以及覆盖本地数据库、云同步与向量索引的删除策略。
+**设计中** —— 本地加密存储（Keychain / Secure Enclave），以及把所有云端调用统一接入 Gateway（目前由调用方决定）。
 
 ## 难点在哪
 
@@ -222,7 +222,7 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm verify   # 24 个套件 + 11 个 fixture + 构建 + 校验，全部离线
+pnpm verify   # 25 个套件 + 11 个 fixture + 构建 + 校验，全部离线
 pnpm demo     # 上面的捕获演示
 
 pnpm --filter @aldus-palace/example-understanding-only start

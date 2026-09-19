@@ -257,6 +257,14 @@ is the shape of it, not a feature on top.*
 - A memory becomes active only through the **published gate**
   (`confidence >= 0.8` and `importance >= 0.8`); an inferred principle waits for
   the user.
+- **A Privacy Gateway** (`services/privacyGateway.ts`): a cloud call is prepared
+  by data level — project names, money, emails and phone numbers are replaced,
+  level 4 stays local, and each call is logged without its content.
+- **Progressive, fine-grained permissions** (`services/permissions.ts`): calendar
+  read by default; mail, files and memory scopes on request; Memory is private
+  until a memory scope is granted.
+- **True deletion** (`services/dataLifecycle.ts`): `purgeUserData` deletes every
+  row the user owns in one transaction, after an explicit confirmation.
 
 `SECURITY.md` records the current posture and the threat model; the design below
 adds at-rest encryption and the rest of the architecture.
@@ -293,7 +301,7 @@ adds at-rest encryption and the rest of the architecture.
 The real mapping stays local.
 
 > "Discuss Orvia funding with Zhang tomorrow" leaves as
-> "discuss [business matter] with [contact] tomorrow".
+> "discuss [business] funding with [contact] tomorrow".
 
 **Memory storage.** Memory is the most sensitive data, so the design stores it
 encrypted on device — Keychain plus an encrypted database on macOS, Secure Enclave

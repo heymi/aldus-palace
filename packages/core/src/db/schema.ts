@@ -310,6 +310,15 @@ CREATE TABLE IF NOT EXISTS autonomy_settings (
   CHECK (ceiling IN (2, 3, 4))
 );
 
+-- Progressive, fine-grained permissions. A scope that is absent is not granted;
+-- Memory stays private until memory.ai_assist or memory.sync is granted.
+CREATE TABLE IF NOT EXISTS permission_grants (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  scope TEXT NOT NULL,
+  granted_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, scope)
+);
+
 -- Today is a projection over Commitments. This table records assignment
 -- provenance without turning "task" into a primary domain object.
 CREATE TABLE IF NOT EXISTS today_assignments (

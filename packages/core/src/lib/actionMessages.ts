@@ -217,6 +217,23 @@ function build(locale: ActionLocale): Record<string, MsgFn> {
       if (zh) return blocker ? `移除依赖：${blocker}` : "移除依赖";
       return blocker ? `No longer waits on ${blocker}` : "Removed a dependency";
     },
+    permission_granted: (p) => {
+      const scope = p?.scope ? String(p.scope) : "";
+      if (zh) return scope ? `已授权：${scope}` : "已授权";
+      return scope ? `Granted: ${scope}` : "Granted a permission";
+    },
+    permission_revoked: (p) => {
+      const scope = p?.scope ? String(p.scope) : "";
+      if (zh) return scope ? `已收回授权：${scope}` : "已收回授权";
+      return scope ? `Revoked: ${scope}` : "Revoked a permission";
+    },
+    privacy_gateway_redacted: (p) => {
+      const level = Number(p?.level ?? 0);
+      const kinds = p?.kinds ? String(p.kinds) : "";
+      if (zh) return `云端调用已脱敏（Level ${level}${kinds ? ` · ${kinds}` : ""}）`;
+      return `Redacted before the cloud call (level ${level}${kinds ? ` · ${kinds}` : ""})`;
+    },
+    user_data_purged: () => (zh ? "已彻底删除全部数据" : "Purged all data"),
     work_needs_confirmation: (p) => {
       const title = p?.title ? String(p.title) : "";
       if (zh) return title ? `多次顺延，需要决定：${title}` : "多次顺延，需要决定";

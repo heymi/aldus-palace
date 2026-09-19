@@ -7,11 +7,17 @@ import {
   memoryLevelFor,
   decideAction,
   getAutonomyState,
+  ensureDefaultScopes,
+  grantScope,
   listActionProposals,
   listDependencies,
+  memoryPermission,
   migrateStaleWork,
+  prepareCloudPayload,
+  purgeUserData,
   removeDependency,
   revokeAction,
+  revokeScope,
   setAutonomyCeiling,
   commitmentsAreNearDuplicate,
   commitmentTitleFromThought,
@@ -1021,6 +1027,66 @@ export function createListRoutes(deps: AppDeps): Hono<{
     const user = await requireUser(c, db);
     const items = await listActionLogs(db, user.id, 100);
     return c.json({ items });
+  });
+
+  /** Progressive, fine-grained permissions; Memory is private by default. */
+  listRoutes.get("/permissions", async (c) => {
+    const user = await requireUser(c, db);
+    const scopes = await ensureDefaultScopes(db, user.id);
+    return c.json({ scopes, memory_permission: await memoryPermission(db, user.id) });
+  });
+
+  listRoutes.post("/permissions", async (c) => {
+    const user = await requireUser(c, db);
+    const body = (await c.req.json().catch(() => ({}))) as { scope?: string };
+    if (!body.scope) return c.json({ error: "scope_required" }, 400);
+    const result = await grantScope(db, user.id, body.scope, {
+      locale: localeOf(user.language),
+    });
+    if (!result.ok) return c.json({ error: result.error }, 400);
+    return c.json({ scopes: result.scopes });
+  });
+
+  listRoutes.delete("/permissions/:scope", async (c) => {
+    const user = await requireUser(c, db);
+    const result = await revokeScope(db, user.id, c.req.param("scope"), {
+      locale: localeOf(user.language),
+    });
+    if (!result.ok) {
+      return c.json({ error: result.error }, result.error === "unknown_scope" ? 400 : 404);
+    }
+    return c.json({ scopes: result.scopes });
+  });
+
+  /** What a cloud call would send at a data level. */
+  listRoutes.post("/privacy/redact", async (c) => {
+    const user = await requireUser(c, db);
+    const body = (await c.req.json().catch(() => ({}))) as {
+      text?: string;
+      level?: number;
+      contacts?: string[];
+    };
+    if (typeof body.text !== "string") return c.json({ error: "text_required" }, 400);
+    const level = Math.min(4, Math.max(0, Number(body.level ?? 0))) as 0 | 1 | 2 | 3 | 4;
+    const payload = await prepareCloudPayload(db, user.id, {
+      text: body.text,
+      level,
+      contacts: body.contacts,
+      locale: localeOf(user.language),
+    });
+    return c.json(payload);
+  });
+
+  /** True deletion: every row the user owns goes, in one transaction. */
+  listRoutes.post("/me/purge", async (c) => {
+    const user = await requireUser(c, db);
+    const body = (await c.req.json().catch(() => ({}))) as { confirm?: boolean };
+    const result = await purgeUserData(db, user.id, {
+      confirm: body.confirm === true,
+      locale: localeOf(user.language),
+    });
+    if (!result.ok) return c.json({ error: result.error }, 400);
+    return c.json(result.result);
   });
 
   /** The trust score and autonomy level derived from decided actions. */

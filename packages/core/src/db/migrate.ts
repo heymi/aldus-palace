@@ -200,6 +200,20 @@ const commitmentDependencies: Migration = {
   },
 };
 
+const permissionGrants: Migration = {
+  version: "2026-09-19-permission-grants",
+  async up(db) {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS permission_grants (
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        scope TEXT NOT NULL,
+        granted_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, scope)
+      );
+    `);
+  },
+};
+
 export const MIGRATIONS: Migration[] = [
   workClassificationV1,
   progressiveCaptureColumns,
@@ -208,6 +222,7 @@ export const MIGRATIONS: Migration[] = [
   autonomySettings,
   workMigration,
   commitmentDependencies,
+  permissionGrants,
 ];
 
 /**

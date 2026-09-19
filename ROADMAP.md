@@ -94,19 +94,22 @@ it:
 The shipped runtime is local-first and single-user, and `SECURITY.md` records the
 current posture. The privacy architecture takes shape in these pieces:
 
-- [ ] **A Local Intelligence Layer** — input parsing, sensitive detection, Memory
-  indexing and basic planning stay on device.
-- [ ] **A Privacy Gateway** with redaction, so a cloud call receives only
-  temporary context (`input → sensitive detection → redaction → permission check
-  → cloud`).
+- [x] **A Local Intelligence Layer** — input parsing, classification, Memory
+  indexing and planning all run in the runtime on the device.
+- [x] **A Privacy Gateway** with redaction: `prepareCloudPayload` replaces
+  project names, money, emails and phone numbers by data level, refuses level 4,
+  and logs each call (`services/privacyGateway.ts`).
+- [x] **Progressive, fine-grained permissions** — calendar read by default, mail,
+  files and memory scopes on request, with Memory private until granted
+  (`services/permissions.ts`).
+- [x] **An Action Gate** with four risk levels and a viewable, revocable audit
+  log (ADR 0005).
+- [x] **A delete policy** — `purgeUserData` deletes every row the user owns in
+  one transaction (`services/dataLifecycle.ts`).
 - [ ] **Local encrypted storage** for Memory — Keychain plus an encrypted
   database on macOS, Secure Enclave plus encrypted storage on iOS.
-- [ ] **Progressive, fine-grained permissions** — calendar first, then mail, then
-  files; read / create / modify separated; Memory private by default.
-- [ ] **An Action Gate** with four risk levels (low automatic, medium notified,
-  high confirmed, critical confirmed again) and a viewable, revocable audit log.
-- [ ] **A delete policy** that reaches the local database, cloud sync and vector
-  indexes — deletion is real, not a flag.
+- [ ] **Routing every cloud call through the gateway** — the pipeline can call it
+  today; the provider layer does not do so yet.
 
 ## Later
 

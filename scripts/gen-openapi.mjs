@@ -106,6 +106,42 @@ const meta = {
   "POST /v1/clarifications/{id}/resolve": { summary: "Answer a time clarification", tag: "Clarifications" },
   "GET /v1/activity": { summary: "The action log", tag: "Activity", response: "ActionLog" },
   "GET /v1/actions": { summary: "Agent actions proposed, waiting and decided", tag: "Actions", response: "ActionProposal" },
+  "GET /v1/permissions": { summary: "Granted scopes and the memory permission", tag: "Privacy", response: "PermissionList" },
+  "POST /v1/permissions": {
+    summary: "Grant a scope",
+    tag: "Privacy",
+    request: {
+      type: "object",
+      required: ["scope"],
+      properties: { scope: { type: "string" } },
+    },
+    response: "PermissionList",
+  },
+  "DELETE /v1/permissions/{scope}": { summary: "Revoke a scope", tag: "Privacy", response: "PermissionList" },
+  "POST /v1/privacy/redact": {
+    summary: "What a cloud call would send at a data level",
+    tag: "Privacy",
+    request: {
+      type: "object",
+      required: ["text", "level"],
+      properties: {
+        text: { type: "string" },
+        level: { type: "integer", minimum: 0, maximum: 4 },
+        contacts: { type: "array", items: { type: "string" } },
+      },
+    },
+    response: "CloudPayload",
+  },
+  "POST /v1/me/purge": {
+    summary: "Delete every row the user owns (requires confirm)",
+    tag: "Privacy",
+    request: {
+      type: "object",
+      required: ["confirm"],
+      properties: { confirm: { type: "boolean", enum: [true] } },
+    },
+    response: "PurgeResult",
+  },
   "GET /v1/autonomy": { summary: "The trust score and autonomy level derived from decided actions", tag: "Actions", response: "AutonomyState" },
   "POST /v1/autonomy": {
     summary: "Set how far earned trust may widen autonomy",
@@ -316,6 +352,32 @@ const spec = {
           planning: { type: "object", additionalProperties: true },
         },
         required: ["date_key", "summary"],
+      },
+      PermissionList: {
+        type: "object",
+        properties: {
+          scopes: { type: "array", items: { type: "string" } },
+          memory_permission: { type: "string", enum: ["private", "sync", "ai_assist"] },
+        },
+        required: ["scopes"],
+      },
+      CloudPayload: {
+        type: "object",
+        properties: {
+          allowed: { type: "boolean" },
+          text: { type: "string" },
+          redactions: { type: "array", items: { type: "string" } },
+          reason: { type: "string", enum: ["clean", "redacted", "level_4_stays_local"] },
+        },
+        required: ["allowed", "text", "redactions", "reason"],
+      },
+      PurgeResult: {
+        type: "object",
+        properties: {
+          purged: { type: "object", additionalProperties: { type: "integer" } },
+          total: { type: "integer" },
+        },
+        required: ["total"],
       },
       DependencyList: {
         type: "object",

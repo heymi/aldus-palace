@@ -55,6 +55,10 @@ The shared vocabulary. Planning-specific terms live in
 | **Enrichment lease** | the mechanism that makes "local first, model second" idempotent under retries |
 | **Action log** | an append-only row written on every mutation, with a reason |
 | **Action Gate** | the published risk table that decides whether a proposed agent action runs or waits; a decision is logged and revocable (`services/actionGate.ts`) |
+| **Data level** | 0 public, 1 preference, 2 work context, 3 sensitive work, 4 private cognitive; level 4 never leaves the device |
+| **Privacy Gateway** | prepares a cloud call: sensitive detection, redaction, permission check, then the model |
+| **Permission scope** | a grantable capability (`calendar.read`, `mail.read`, `memory.ai_assist`, …); absent means not granted |
+| **Purge** | true deletion of every row the user owns, in one transaction, after confirmation |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |
 | **Autonomy level** | 0–4, derived from the trust score with minimum samples |
 | **Autonomy ceiling** | how far earned trust may widen autonomy (default 2, up to 4); raising it is the user's explicit consent |
