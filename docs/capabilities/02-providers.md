@@ -32,7 +32,7 @@ one fake per test.
 ## See it in 30 seconds
 
 ```bash
-pnpm test     # eleven suites, zero keys, offline
+pnpm test     # the full suite, zero keys, offline
 ```
 
 The deterministic provider is what makes the pipeline reproducible: the same
@@ -46,7 +46,9 @@ input yields the same objects, so tests assert behaviour instead of vibes.
 import { DevLLMProvider, createLLMProvider, resolveProviderConfig } from "@aldus-palace/core/providers";
 
 const offline = new DevLLMProvider();
-const live = createLLMProvider(resolveProviderConfig(process.env));
+// A cloud provider is only built together with a MessageGuard (ADR 0011);
+// the deterministic provider needs none.
+const live = createLLMProvider(resolveProviderConfig(process.env), guard);
 ```
 
 `LLM_PROVIDER=auto` (default) prefers Anthropic, then any OpenAI-compatible key,

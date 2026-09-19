@@ -13,6 +13,8 @@
     "cf:types": "wrangler types",
     "cf:dev": "wrangler dev",
     "cf:deploy": "wrangler deploy",
+    "cf:dev:demo": "wrangler dev -c wrangler.demo.jsonc",
+    "cf:deploy:demo": "wrangler deploy -c wrangler.demo.jsonc",
     "test": "tsx test/run-tests.ts"
   },
   "dependencies": {

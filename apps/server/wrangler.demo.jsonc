@@ -1,0 +1,46 @@
+// The public demo: one Worker that serves the reference client and the API,
+// with a private Durable Object per visitor (see src/worker.ts DEMO_MODE).
+//
+//   pnpm cf:dev:demo       # wrangler dev, http://localhost:8787
+//   pnpm cf:deploy:demo    # https://aldus-palace-demo.<account>.workers.dev
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "aldus-palace-demo",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-07-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "assets": {
+    "directory": "../../examples/reference-client/public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ALDUS_PALACE",
+        "class_name": "AldusPalaceBackend"
+      }
+    ]
+  },
+  "exports": {
+    "AldusPalaceBackend": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "vars": {
+    "DEMO_MODE": "true",
+    "LLM_PROVIDER": "dev",
+    "DEV_USER_NAME": "Demo",
+    "DEV_USER_TIMEZONE": "UTC",
+    "DEV_USER_LANGUAGE": "en"
+  },
+  "secrets": {
+    "required": ["DEV_AUTH_TOKEN"]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

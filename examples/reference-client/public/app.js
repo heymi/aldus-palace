@@ -246,6 +246,13 @@ $("capture-form").addEventListener("submit", (event) => {
   void capture(content);
 });
 
+$("examples").addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-example]");
+  if (!chip) return;
+  $("input").value = chip.dataset.example;
+  $("capture-form").requestSubmit();
+});
+
 $("input").addEventListener("keydown", (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
     event.preventDefault();
