@@ -1,5 +1,30 @@
 # @aldus-palace/core
 
+## 0.11.0
+
+### Minor Changes
+
+- 9b144f2: Classify permanent deletion, and look up action types case-insensitively.
+
+  `user_data_purge` was unlisted, so the gate graded it `high` (one approval). It is
+  permanent, so it is now `critical` and takes two approvals, like the other
+  irreversible action. The risk table is also matched case-insensitively, so
+  `Payment` grades the same as `payment`.
+
+### Patch Changes
+
+- b74a164: The privacy guard writes its per-call audit row for every outcome. Level 0 and a
+  blocked level 4 now leave a `privacy_gateway_redacted` entry, as ADR 0011 states,
+  instead of only levels 1–3.
+- e18d505: Bound the FTS5 query expression: the input is capped at 512 characters and 24
+  terms, so a long capture cannot turn retrieval into an unbounded OR chain.
+- 0234daa: Resolve more relative phrases a model returns, and fill a deadline from the right
+  edge of the window.
+
+  "下个月", every weekday ("周一", "Wednesday") and "next Monday" now resolve
+  instead of being dropped, and a window phrase fills a deadline with the window's
+  end rather than its start, so "next week" does not become the first day.
+
 ## 0.10.0
 
 ### Minor Changes
