@@ -202,6 +202,18 @@ function build(locale: ActionLocale): Record<string, MsgFn> {
       if (zh) return `自主上限设为 ${ceiling}`;
       return `Autonomy ceiling set to ${ceiling}`;
     },
+    work_migrated: (p) => {
+      const title = p?.title ? String(p.title) : "";
+      if (zh) return title ? `已顺延：${title}` : "已顺延未开始的事";
+      return title ? `Moved forward: ${title}` : "Moved unstarted work forward";
+    },
+    work_needs_confirmation: (p) => {
+      const title = p?.title ? String(p.title) : "";
+      if (zh) return title ? `多次顺延，需要决定：${title}` : "多次顺延，需要决定";
+      return title
+        ? `Deferred too often, needs a decision: ${title}`
+        : "Deferred too often, needs a decision";
+    },
   };
 }
 

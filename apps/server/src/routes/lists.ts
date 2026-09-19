@@ -5,6 +5,7 @@ import {
   decideAction,
   getAutonomyState,
   listActionProposals,
+  migrateStaleWork,
   revokeAction,
   setAutonomyCeiling,
   commitmentsAreNearDuplicate,
@@ -408,11 +409,24 @@ export function createListRoutes(deps: AppDeps): Hono<{
     return c.json(payload);
   });
 
+  /** Move slipped, flexible work forward; repeated deferrals surface here. */
+  listRoutes.post("/plan/migrate", async (c) => {
+    const user = await requireUser(c, db);
+    const result = await migrateStaleWork(db, user.id, {
+      locale: localeOf(user.language),
+    });
+    return c.json(result);
+  });
+
   listRoutes.post("/plan/today", async (c) => {
     const user = await requireUser(c, db);
     const body = (await c.req.json().catch(() => ({}))) as {
       plan_version?: string;
     };
+    // Planning starts by moving slipped, flexible work forward.
+    const migration = await migrateStaleWork(db, user.id, {
+      locale: localeOf(user.language),
+    });
     const result = await reconcileTodayPlan(
       db,
       user.id,
@@ -421,7 +435,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
         planVersion: body.plan_version?.trim() || `server:${nowIso()}`,
       }
     );
-    return c.json(result);
+    return c.json({ ...result, migration });
   });
 
   listRoutes.post("/commitments/:id/complete", async (c) => {

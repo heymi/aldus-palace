@@ -169,12 +169,26 @@ const autonomySettings: Migration = {
   },
 };
 
+const workMigration: Migration = {
+  version: "2026-09-19-work-migration",
+  async up(db) {
+    await addColumnIfMissing(
+      db,
+      "commitments",
+      "deferral_count",
+      "INTEGER NOT NULL DEFAULT 0"
+    );
+    await addColumnIfMissing(db, "commitments", "migration_surfaced_at", "TEXT");
+  },
+};
+
 export const MIGRATIONS: Migration[] = [
   workClassificationV1,
   progressiveCaptureColumns,
   memoryEvolution,
   actionGate,
   autonomySettings,
+  workMigration,
 ];
 
 /**

@@ -69,6 +69,7 @@ export * from "./services/memoryEvolution.js";
 export * from "./services/planToday.js";
 export * from "./services/resolveClarification.js";
 export * from "./services/today.js";
+export * from "./services/workMigration.js";
 export * from "./services/workStreams.js";
 
 // Pure helpers that are useful to embedders and tests
@@ -81,6 +82,7 @@ export * from "./lib/format.js";
 export * from "./lib/locale.js";
 export * from "./lib/memoryActivation.js";
 export * from "./lib/memoryExtract.js";
+export * from "./lib/planCapacity.js";
 export * from "./lib/projectMatch.js";
 export * from "./lib/relativeDay.js";
 export * from "./lib/thoughtTitle.js";

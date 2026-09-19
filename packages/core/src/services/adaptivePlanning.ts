@@ -1,7 +1,11 @@
 import type { SqlDatabase } from "../db/port.js";
 import { nowIso } from "../db/port.js";
-import { estimateDurationMinutes } from "../lib/durationEstimate.js";
+import {
+  DEFAULT_DURATION_MINUTES,
+  estimateDurationMinutes,
+} from "../lib/durationEstimate.js";
 import { newId } from "../lib/id.js";
+import { planCapacityMinutes } from "../lib/planCapacity.js";
 import { getLocalParts, localDayWindow } from "../lib/time.js";
 import { writeActionLog } from "../repos/actionLogs.js";
 
@@ -42,6 +46,9 @@ export async function reconcileTodayPlan(
   const at = options.at ?? new Date();
   const local = getLocalParts(timezone, at);
   const day = localDayWindow(timezone, local.dateKey, "full");
+  const daytime = localDayWindow(timezone, local.dateKey, "daytime");
+  // The planner keeps a quarter of the daytime window free.
+  const capacityMinutes = planCapacityMinutes(daytime.start, daytime.end);
   const now = at.toISOString();
 
   await ensurePlanningProfile(db, userId, now);
@@ -310,6 +317,18 @@ export async function reconcileTodayPlan(
   }
   occupied.sort((a, b) => a.start - b.start);
 
+  // Load already on the day: the items on it plus the fixed events. The buffer
+  // stops auto-fill before the daytime window is full.
+  let plannedMinutes = 0;
+  for (const row of today) {
+    plannedMinutes +=
+      positiveNumber(row.duration_minutes) ?? DEFAULT_DURATION_MINUTES;
+  }
+  for (const event of fixedEvents) {
+    const minutes = (Date.parse(event.end_at) - Date.parse(event.start_at)) / 60000;
+    if (Number.isFinite(minutes) && minutes > 0) plannedMinutes += minutes;
+  }
+
   const picked: ReconcileTodayPlanResult["picked"] = [];
   const persist = await db.transaction(async () => {
     for (const meta of pickedMeta) {
@@ -325,8 +344,10 @@ export async function reconcileTodayPlan(
           estimate.source === "blended" ? "时长按历史校准" : "时长按历史估算"
         );
       }
+      if (plannedMinutes + estimate.minutes > capacityMinutes) break;
       const slot = findSlot(at.getTime(), Date.parse(day.end), estimate.minutes, occupied);
       if (!slot) continue;
+      plannedMinutes += estimate.minutes;
       occupied.push(slot);
       occupied.sort((a, b) => a.start - b.start);
 

@@ -57,7 +57,8 @@ const meta = {
   "POST /v1/commitments/rewrite-titles": { summary: "Rewrite commitment titles into executable form", tag: "Commitments" },
   "POST /v1/commitments/dedupe": { summary: "Collapse duplicate commitments", tag: "Commitments" },
   "GET /v1/today": { summary: "The Today projection: now, timeline, risks, unscheduled", tag: "Planning", response: "Today" },
-  "POST /v1/plan/today": { summary: "Reconcile the Today plan", tag: "Planning", response: "Today" },
+  "POST /v1/plan/today": { summary: "Reconcile the Today plan (migrates slipped work first)", tag: "Planning", response: "Today" },
+  "POST /v1/plan/migrate": { summary: "Move slipped, flexible work forward", tag: "Planning", response: "MigrationResult" },
   "GET /v1/work-streams": { summary: "Commitments grouped into rebuildable work streams", tag: "Work streams", response: "WorkStreams" },
   "POST /v1/commitment-classifications/rebuild": { summary: "Rebuild the work-stream projection", tag: "Work streams" },
   "PATCH /v1/commitments/{id}/classification": { summary: "Move a commitment to another work stream", tag: "Work streams" },
@@ -294,6 +295,18 @@ const spec = {
           planning: { type: "object", additionalProperties: true },
         },
         required: ["date_key", "summary"],
+      },
+      MigrationResult: {
+        type: "object",
+        properties: {
+          migrated: { type: "array", items: { type: "object", additionalProperties: true } },
+          needs_confirmation: {
+            type: "array",
+            items: { type: "object", additionalProperties: true },
+            description: "Deferred three times: they wait for a decision instead of moving again.",
+          },
+        },
+        required: ["migrated", "needs_confirmation"],
       },
       WorkStreams: {
         type: "object",

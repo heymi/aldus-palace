@@ -1969,9 +1969,49 @@
         }
       }
     },
+    "/v1/plan/migrate": {
+      "post": {
+        "summary": "Move slipped, flexible work forward",
+        "tags": [
+          "Planning"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MigrationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/plan/today": {
       "post": {
-        "summary": "Reconcile the Today plan",
+        "summary": "Reconcile the Today plan (migrates slipped work first)",
         "tags": [
           "Planning"
         ],
@@ -2512,6 +2552,30 @@
         "required": [
           "date_key",
           "summary"
+        ]
+      },
+      "MigrationResult": {
+        "type": "object",
+        "properties": {
+          "migrated": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "needs_confirmation": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Deferred three times: they wait for a decision instead of moving again."
+          }
+        },
+        "required": [
+          "migrated",
+          "needs_confirmation"
         ]
       },
       "WorkStreams": {

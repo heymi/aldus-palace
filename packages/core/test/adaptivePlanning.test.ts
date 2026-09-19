@@ -5,6 +5,10 @@ import {
   observePlanningOutcome,
 } from "../src/services/adaptivePlanning.js";
 import { buildToday } from "../src/services/today.js";
+import {
+  planBufferMinutes,
+  planCapacityMinutes,
+} from "../src/lib/planCapacity.js";
 import { createTestDb, finish } from "./support/db.js";
 import type { SqlDatabase } from "../src/db/port.js";
 
@@ -887,7 +891,66 @@ await learnsSameProjectAndStoppedOutcomesWithinFifteenDays();
 await planningForeignKeysAllowInputDerivativeReplacement();
 await readingTodayDoesNotWrite();
 await sizesSlotsFromProjectHistory();
+await keepsABufferFree();
 finish("adaptive planning tests passed.");
+
+async function keepsABufferFree() {
+  // Nine daytime hours hold back a quarter.
+  const daytimeStart = "2026-07-19T01:00:00.000Z";
+  const daytimeEnd = "2026-07-19T10:00:00.000Z";
+  assert(planCapacityMinutes(daytimeStart, daytimeEnd) === 405, "capacity is 75% of the window");
+  assert(planBufferMinutes(daytimeStart, daytimeEnd) === 135, "the buffer is 25% of the window");
+
+  const full = await makeDb();
+  await addCommitment(full, {
+    id: "long",
+    title: "全天工作坊",
+    projectId: "p-other",
+    status: "scheduled",
+    slotStart: "2026-07-19T01:00:00.000Z",
+    slotEnd: "2026-07-19T06:00:00.000Z",
+    duration: 300,
+  });
+  await addCommitment(full, {
+    id: "candidate",
+    title: "调整 Related 空状态",
+    projectId: "p-related",
+    duration: 120,
+  });
+  const blocked = await reconcileTodayPlan(full, "u1", "Asia/Shanghai", {
+    at: new Date("2026-07-19T04:00:00.000Z"),
+    planVersion: "2026-07-19:buffer-full",
+  });
+  assert(
+    blocked.picked.length === 0,
+    "the buffer stops auto-fill before the day is full"
+  );
+
+  const room = await makeDb();
+  await addCommitment(room, {
+    id: "long",
+    title: "全天工作坊",
+    projectId: "p-other",
+    status: "scheduled",
+    slotStart: "2026-07-19T01:00:00.000Z",
+    slotEnd: "2026-07-19T06:00:00.000Z",
+    duration: 300,
+  });
+  await addCommitment(room, {
+    id: "small",
+    title: "调整 Related 空状态",
+    projectId: "p-related",
+    duration: 30,
+  });
+  const fitted = await reconcileTodayPlan(room, "u1", "Asia/Shanghai", {
+    at: new Date("2026-07-19T04:00:00.000Z"),
+    planVersion: "2026-07-19:buffer-room",
+  });
+  assert(
+    fitted.picked.some((item) => item.id === "small"),
+    "work that fits inside the buffer is still picked"
+  );
+}
 
 async function sizesSlotsFromProjectHistory() {
   const db = await makeDb();

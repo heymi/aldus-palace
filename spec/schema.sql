@@ -90,6 +90,8 @@ CREATE TABLE IF NOT EXISTS commitments (
   source_input_id TEXT REFERENCES raw_inputs(id),
   started_at TEXT,
   completed_at TEXT,
+  deferral_count INTEGER NOT NULL DEFAULT 0,
+  migration_surfaced_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   CHECK (status IN ('captured', 'planned', 'scheduled', 'completed', 'cancelled', 'risk'))
