@@ -20,43 +20,73 @@ export type MemoryRetriever = (
   options?: RetrieverOptions
 ) => Promise<string[]>;
 
+/**
+ * Refresh a memory's search row.
+ *
+ * Update when a row exists, insert guarded by NOT EXISTS otherwise: delete then
+ * insert could leave two rows for one memory if two flows interleave, and the
+ * index has no unique key to stop it. Empty text means nothing to index, so the
+ * row is removed instead.
+ */
 async function upsertSearchRow(
   db: SqlDatabase,
   memoryId: string,
   segmented: string
 ): Promise<void> {
-  await db.prepare(`DELETE FROM memory_search WHERE memory_id = ?`).run(memoryId);
-  if (segmented) {
-    await db
-      .prepare(`INSERT INTO memory_search(memory_id, search_text) VALUES (?, ?)`)
-      .run(memoryId, segmented);
+  if (!segmented) {
+    await db.prepare(`DELETE FROM memory_search WHERE memory_id = ?`).run(memoryId);
+    return;
   }
+  const updated = await db
+    .prepare(`UPDATE memory_search SET search_text = ? WHERE memory_id = ?`)
+    .run(segmented, memoryId);
+  if (Number(updated.changes ?? 0) > 0) return;
+  await db
+    .prepare(
+      `INSERT INTO memory_search(memory_id, search_text)
+       SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM memory_search WHERE memory_id = ?)`
+    )
+    .run(memoryId, segmented, memoryId);
 }
 
-/** Index one memory: store the segmented text and refresh its search row. */
+/**
+ * Index one memory: refresh its search row, then record the segmented text.
+ *
+ * The search row goes first so a failure between the two writes leaves
+ * `search_text` NULL, which the backfill treats as "needs indexing" and repairs.
+ * The reverse order could mark a memory indexed with no search row, which
+ * nothing would ever revisit.
+ */
 export async function indexMemory(
   db: SqlDatabase,
   memoryId: string,
   content: string
 ): Promise<void> {
   const segmented = segmentForSearch(content);
+  await upsertSearchRow(db, memoryId, segmented);
   await db
     .prepare(`UPDATE memories SET search_text = ? WHERE id = ?`)
     .run(segmented, memoryId);
-  await upsertSearchRow(db, memoryId, segmented);
 }
 
-/** Drop a memory's search row. */
+/**
+ * Drop a memory's search row. The stored text is cleared to an empty marker, so
+ * the backfill can tell a deliberate removal from a row that went missing and
+ * needs repair.
+ */
 export async function removeMemoryFromIndex(
   db: SqlDatabase,
   memoryId: string
 ): Promise<void> {
   await db.prepare(`DELETE FROM memory_search WHERE memory_id = ?`).run(memoryId);
+  await db.prepare(`UPDATE memories SET search_text = '' WHERE id = ?`).run(memoryId);
 }
 
 /**
- * Backfill memories written before the index existed, or by raw SQL. Returns
- * how many rows it indexed, so a caller can log the work.
+ * Backfill memories written before the index existed, or by raw SQL, and repair
+ * any that lost their search row. Returns how many rows it indexed, so a caller
+ * can log the work. Empty text is indexed as '' with no search row, so it is not
+ * mistaken for a missing one.
  */
 export async function ensureMemoryIndex(
   db: SqlDatabase,
@@ -64,8 +94,10 @@ export async function ensureMemoryIndex(
 ): Promise<number> {
   const rows = (await db
     .prepare(
-      `SELECT id, content FROM memories
-       WHERE user_id = ? AND search_text IS NULL`
+      `SELECT m.id, m.content FROM memories m
+       LEFT JOIN memory_search ms ON ms.memory_id = m.id
+       WHERE m.user_id = ?
+         AND (m.search_text IS NULL OR (m.search_text <> '' AND ms.memory_id IS NULL))`
     )
     .all(userId)) as Array<{ id: string; content: string }>;
   for (const row of rows) {

@@ -85,7 +85,7 @@ import {
   makeModelJudge,
   type MemoryConflict,
 } from "../services/memoryEvolution.js";
-import { indexMemory } from "../lib/retriever.js";
+import { indexMemory, removeMemoryFromIndex } from "../lib/retriever.js";
 import { isRealLLMProvider } from "../providers/index.js";
 import { pick, plural, localeOf, type Locale } from "../lib/locale.js";
 import {
@@ -386,6 +386,8 @@ export async function clearInputDerivatives(
     .all(rawInputId) as Array<{ id: string }>;
   for (const m of memIds) {
     await db.prepare(`DELETE FROM memory_concepts WHERE memory_id = ?`).run(m.id);
+    // The FTS index has no foreign key; drop its row with the memory.
+    await removeMemoryFromIndex(db, m.id);
   }
   await db.prepare(`DELETE FROM memories WHERE source_input_id = ?`).run(rawInputId);
   await db.prepare(`DELETE FROM decisions WHERE source_input_id = ?`).run(rawInputId);

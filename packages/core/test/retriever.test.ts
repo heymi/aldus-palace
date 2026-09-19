@@ -14,6 +14,7 @@ import {
   retrieveMemoryIds,
 } from "../src/lib/retriever.js";
 import { segmentForSearch, toMatchQuery } from "../src/lib/search.js";
+import { clearInputDerivatives } from "../src/agent/understand.js";
 import { createTestDb, finish } from "./support/db.js";
 
 function assert(condition: boolean, message: string): asserts condition {
@@ -136,5 +137,62 @@ assert(
   (await retrieveMemoryIds(db, "u1", "Windows")).includes("m-mac"),
   "a second term matches"
 );
+
+// A memory whose search row went missing is repaired by the backfill.
+await addMemory("m-repair", "Prefers quiet mornings");
+await db
+  .prepare(`UPDATE memories SET search_text = 'Prefers quiet mornings' WHERE id = 'm-repair'`)
+  .run();
+assert(
+  (await ensureMemoryIndex(db, "u1")) >= 1,
+  "a memory with text but no search row is repaired"
+);
+assert(
+  (await retrieveMemoryIds(db, "u1", "quiet")).includes("m-repair"),
+  "the repaired memory is searchable"
+);
+
+// Indexing the same memory twice leaves one row: the index has no unique key.
+await indexMemory(db, "m-repair", "Prefers quiet mornings");
+await indexMemory(db, "m-repair", "Prefers quiet mornings");
+const searchRows = (await db
+  .prepare(`SELECT COUNT(*) AS count FROM memory_search WHERE memory_id = 'm-repair'`)
+  .get()) as { count: number };
+assert(Number(searchRows.count) === 1, `one search row per memory, got ${searchRows.count}`);
+
+// Text with nothing to index is marked empty, creates no row, and is not
+// revisited by the backfill.
+await addMemory("m-empty", "   ");
+await indexMemory(db, "m-empty", "   ");
+const emptyMarker = (await db
+  .prepare(`SELECT search_text FROM memories WHERE id = 'm-empty'`)
+  .get()) as { search_text: string };
+assert(emptyMarker.search_text === "", "nothing to index stores an empty marker");
+const emptyRows = (await db
+  .prepare(`SELECT COUNT(*) AS count FROM memory_search WHERE memory_id = 'm-empty'`)
+  .get()) as { count: number };
+assert(Number(emptyRows.count) === 0, "nothing to index creates no search row");
+assert((await ensureMemoryIndex(db, "u1")) === 0, "the backfill does not revisit empty text");
+
+// Clearing an input's derivatives removes the search row with the memory.
+await db
+  .prepare(
+    `INSERT INTO raw_inputs (id, user_id, content, source, processing_status, created_at, updated_at)
+     VALUES ('r1', 'u1', 'x', 'text', 'processed', ?, ?)`
+  )
+  .run(now, now);
+await db
+  .prepare(
+    `INSERT INTO memories
+     (id, user_id, type, content, status, source, confidence, importance, source_input_id, created_at, updated_at)
+     VALUES ('m-input', 'u1', 'preference', 'Temporary memory', 'active', 'user_explicit', 0.9, 0.8, 'r1', ?, ?)`
+  )
+  .run(now, now);
+await indexMemory(db, "m-input", "Temporary memory");
+await clearInputDerivatives(db, "r1");
+const leftover = (await db
+  .prepare(`SELECT COUNT(*) AS count FROM memory_search WHERE memory_id = 'm-input'`)
+  .get()) as { count: number };
+assert(Number(leftover.count) === 0, "the search row goes when the memory is cleared");
 
 finish("retriever tests passed.");

@@ -40,10 +40,11 @@ query ──► Retriever port
 - **Segmented text the runtime writes.** `lib/search.ts` turns CJK into single
   characters (`segmentForSearch`) and a user query into an FTS5 phrase
   (`toMatchQuery`). A `search_text` column on `memories` holds the segmented
-  form, written by the memory write path; triggers copy it into
-  `memory_search(memory_id UNINDEXED, search_text)`, because a trigger cannot
-  segment. A backfill runs on first use for rows written before the column
-  existed.
+  form, and `indexMemory` writes it into `memory_search(memory_id UNINDEXED,
+  search_text)` — the runtime does this because a trigger cannot segment. The
+  backfill on first use repairs rows written before the column existed, or that
+  lost their search row; a memory with nothing to index keeps an empty marker
+  instead of a row.
 - **The score blends both worlds.** `bm25` orders the match; the existing
   `memoryRetrievalScore` (level, decay, value, importance) breaks ties and keeps
   a fresh principle ahead of an old experience on the same topic.
