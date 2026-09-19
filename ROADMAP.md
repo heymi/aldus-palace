@@ -110,8 +110,9 @@ current posture. The privacy architecture takes shape in these pieces:
   one transaction (`services/dataLifecycle.ts`).
 - [ ] **Local encrypted storage** for Memory — Keychain plus an encrypted
   database on macOS, Secure Enclave plus encrypted storage on iOS.
-- [ ] **Routing every cloud call through the gateway** — the pipeline can call it
-  today; the provider layer does not do so yet.
+- [x] **Routing every cloud call through the gateway** — a cloud provider is only
+  built with the guard attached, so a call cannot leave unredacted
+  (`providers/guard.ts`, ADR 0011).
 
 ## Later
 

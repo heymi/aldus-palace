@@ -57,7 +57,8 @@ The shared vocabulary. Planning-specific terms live in
 | **Action log** | an append-only row written on every mutation, with a reason |
 | **Action Gate** | the published risk table that decides whether a proposed agent action runs or waits; a decision is logged and revocable (`services/actionGate.ts`) |
 | **Data level** | 0 public, 1 preference, 2 work context, 3 sensitive work, 4 private cognitive; level 4 never leaves the device |
-| **Privacy Gateway** | prepares a cloud call: sensitive detection, redaction, permission check, then the model |
+| **Privacy Gateway** | prepares a cloud call: sensitive detection, redaction, permission check, then the model; enforced at the provider boundary by the message guard |
+| **Message guard** | the port a cloud provider calls before sending; redacts user-role messages by level and refuses level 4 (`providers/guard.ts`) |
 | **Permission scope** | a grantable capability (`calendar.read`, `mail.read`, `memory.ai_assist`, …); absent means not granted |
 | **Purge** | true deletion of every row the user owns, in one transaction, after confirmation |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |

@@ -273,9 +273,10 @@ by default, and `purgeUserData` deletes every row the user owns in one
 transaction. [`SECURITY.md`](SECURITY.md) records the posture and the current
 threat model.
 
-**Designed next** — local encrypted storage (Keychain / Secure Enclave), and
-routing every cloud call through the gateway rather than leaving that to the
-caller.
+Cloud providers are only built together with that guard, so a call cannot leave
+the device unredacted.
+
+**Designed next** — local encrypted storage (Keychain / Secure Enclave).
 
 ## Where the difficulty lives
 

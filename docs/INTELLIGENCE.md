@@ -263,16 +263,18 @@ is the shape of it, not a feature on top.*
 - **A Privacy Gateway** (`services/privacyGateway.ts`): a cloud call is prepared
   by data level — project names, money, emails and phone numbers are replaced,
   level 4 stays local, and each call is logged without its content.
+- **The gateway is a boundary** (`providers/guard.ts`): a cloud provider is only
+  constructed with a message guard, which redacts user-role messages and refuses
+  level 4, so a call cannot leave unredacted.
 - **Progressive, fine-grained permissions** (`services/permissions.ts`): calendar
   read by default; mail, files and memory scopes on request; Memory is private
   until a memory scope is granted.
 - **True deletion** (`services/dataLifecycle.ts`): `purgeUserData` deletes every
   row the user owns in one transaction, after an explicit confirmation.
 
-`SECURITY.md` records the current posture and the threat model; the design below
-adds at-rest encryption and the rest of the architecture.
+`SECURITY.md` records the current posture and the threat model.
 
-### Designed
+### The privacy model
 
 **Three principles**
 
@@ -332,23 +334,27 @@ The audit log is viewable and revocable.
 user deletes, the deletion is real: local database, cloud sync and vector indexes
 are all covered.
 
----
+### Designed
+
+- **Local encrypted storage** for Memory — Keychain plus an encrypted database on
+  macOS, Secure Enclave plus encrypted storage on iOS.
+- **A level per call** — today the guard uses one level per provider
+  (`PRIVACY_LEVEL`, default 2); a capture about money could ask for a higher one
+  at the call site.
 
 ## Action items
 
-These are the concrete pieces the privacy design adds on top of today's runtime:
-
-- [ ] A **Local Intelligence Layer** — input parsing, sensitive detection, Memory
-      indexing, basic planning.
-- [ ] A **Privacy Gateway** and redaction flow, so the cloud receives only
-      temporary context.
+- [x] A **Local Intelligence Layer** — input parsing, classification, Memory
+      indexing and planning run on the device.
+- [x] A **Privacy Gateway** and redaction flow, enforced at the provider
+      boundary.
+- [x] **Progressive and fine-grained permissions**, with Memory private by
+      default.
+- [x] An **Action Gate** with risk levels, and a viewable, revocable audit log.
+- [x] A **delete policy** that reaches the local database, cloud sync and vector
+      indexes.
 - [ ] **Local encrypted storage** for Memory (Keychain / Secure Enclave plus an
       encrypted database).
-- [ ] **Progressive and fine-grained permissions**, with Memory private by
-      default.
-- [ ] An **Action Gate** with risk levels, and a viewable, revocable audit log.
-- [ ] A **delete policy** that reaches the local database, cloud sync and vector
-      indexes.
 
 ---
 

@@ -11,8 +11,10 @@ import path from "node:path";
 import {
   buildToday,
   createLLMProvider,
+  createMessageGuard,
   ensureDevUser,
   getAutonomyState,
+  resolvePrivacyLevel,
   listCommitments,
   rejectMemory as rejectMemoryRow,
   listActionProposals,
@@ -107,8 +109,14 @@ export class LocalBackend implements Backend {
     }
     const db = await openSqliteDatabase(options.databasePath);
     const user = await ensureDevUser(db, options.user);
+    const providerEnv = options.provider ?? process.env;
+    // A cloud provider is only built together with the privacy guard.
     const llm = createLLMProvider(
-      resolveProviderConfig(options.provider ?? process.env)
+      resolveProviderConfig(providerEnv),
+      createMessageGuard(db, user.id, {
+        level: resolvePrivacyLevel(providerEnv),
+        locale: localeOf(user.language),
+      })
     );
     return new LocalBackend(db, user, llm, options.databasePath);
   }

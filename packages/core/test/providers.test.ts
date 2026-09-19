@@ -4,7 +4,9 @@ import {
   OpenAICompatibleProvider,
   ProviderConfigError,
   createLLMProvider,
+  isPrivacyGuarded,
   resolveProviderConfig,
+  type ChatMessage,
 } from "../src/providers/index.js";
 
 function assert(condition: boolean, message: string): asserts condition {
@@ -46,6 +48,23 @@ try {
   threw = error instanceof ProviderConfigError;
 }
 assert(threw, "createLLMProvider must reject a half-configured provider");
+
+let guardRequired = false;
+try {
+  createLLMProvider({ kind: "anthropic", apiKey: "k", model: "m", log: () => {} });
+} catch (error) {
+  guardRequired =
+    error instanceof ProviderConfigError && /privacy guard/.test(error.message);
+}
+assert(guardRequired, "a cloud provider without a guard is refused");
+
+const passThrough = async (messages: ChatMessage[]): Promise<ChatMessage[]> => messages;
+const guardedCloud = createLLMProvider(
+  { kind: "anthropic", apiKey: "k", model: "m", log: () => {} },
+  passThrough
+);
+assert(isPrivacyGuarded(guardedCloud), "a cloud provider built with a guard is branded");
+assert(!isPrivacyGuarded(dev), "the dev provider never needs a guard");
 
 // --- request shaping (fetch is stubbed; no network) -------------------------
 

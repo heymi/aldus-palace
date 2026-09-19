@@ -51,6 +51,7 @@ spec/schema.sql is up to date.
 | 提前完成会重排当天 | `packages/core/test/planningIntelligence.test.ts` | 完成后自动重排，下一个候选被排入 |
 | 新原则的权重高于旧经历 | `packages/core/test/memoryValue.test.ts` | 等级、衰减与价值评分决定检索排序 |
 | 云端调用可在离开前脱敏 | `packages/core/test/privacy.test.ts` | 名称、金额、邮箱变占位符；Level 4 不出本机 |
+| 没有 guard 就无法创建云端 provider | `packages/core/test/providers.test.ts` | `createLLMProvider` 拒绝不带 guard 的云端 kind |
 | 未经授权时 Memory 保持私有 | `packages/core/test/privacy.test.ts` | 默认权限不含 memory；可收回 |
 | 删除是真实的 | `packages/core/test/privacy.test.ts` | 需要 `confirm`，删除后用户所有表为空 |
 | 高风险 agent 动作会等待决定 | `packages/core/test/actionGate.test.ts` | 关键级需两次批准；撤销不可逆 |

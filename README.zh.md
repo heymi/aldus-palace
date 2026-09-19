@@ -233,7 +233,9 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 
 **今天已交付** —— 你拥有的 SQLite 文件（或单个 Cloudflare Durable Object）、单用户运行时、不可变的 `raw_inputs`、经校验与门控的模型输出、每次变更写 `action_log`，以及一道记忆门：你陈述的高置信记忆在捕获时生效，推断则等待你确认。Privacy Gateway 会按数据级别准备云端调用（名称、金额、邮箱与电话会被替换，Level 4 不出本机）；权限渐进且细粒度，Memory 默认私有；`purgeUserData` 在一个事务里删除用户拥有的全部数据。[`SECURITY.md`](SECURITY.md) 记录了当前姿态与威胁模型。
 
-**设计中** —— 本地加密存储（Keychain / Secure Enclave），以及把所有云端调用统一接入 Gateway（目前由调用方决定）。
+云端 provider 只能与该 guard 一起创建，因此调用不会未脱敏就离开本机。
+
+**设计中** —— 本地加密存储（Keychain / Secure Enclave）。
 
 ## 难点在哪
 
