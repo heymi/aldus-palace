@@ -3,6 +3,7 @@
 [![CI](https://github.com/heymi/aldus-palace/actions/workflows/ci.yml/badge.svg)](https://github.com/heymi/aldus-palace/actions/workflows/ci.yml)
 [![npm core](https://img.shields.io/npm/v/%40aldus-palace%2Fcore?label=core)](https://www.npmjs.com/package/@aldus-palace/core)
 [![npm mcp](https://img.shields.io/npm/v/%40aldus-palace%2Fmcp?label=mcp)](https://www.npmjs.com/package/@aldus-palace/mcp)
+[![npm client](https://img.shields.io/npm/v/%40aldus-palace%2Fclient?label=client)](https://www.npmjs.com/package/@aldus-palace/client)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 ![一次捕获会话](docs/assets/capture-session.svg)
@@ -76,7 +77,7 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 | **记忆如何表现** | 助手在应用内部推断并存储 | 高置信记忆在捕获时生效，每条带着出处句子和生效说明 |
 | **你的原话在哪** | 被摘要成任务或聊天记录 | 按你写的原样保留，系统自己的理解放在旁边 |
 | **每日视图回答什么** | 列出全部 | 现在做什么、什么有风险、什么未排期；排满的一天会建议休息 |
-| **有几份数据** | 每个应用一份 | 一份记录，MCP、HTTP 与库都能访问：Claude、Cursor、你的前端、脚本 |
+| **有几份数据** | 每个应用一份 | 一份记录，MCP、HTTP、库与类型化客户端都能访问：Claude、Cursor、你的前端、脚本 |
 | **记录存在哪** | 厂商云 | 你拥有的 SQLite 文件，或一个 Cloudflare Worker；可复制、可备份、可转交 |
 | **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；26 个套件与 11 个 fixture 每次重放 |
 
@@ -84,14 +85,14 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 
 - **单用户。** 一个人、一个数据库、一个 bearer token。每人跑一个实例。
 - **单个 SQLite 写入者。** 两个进程写同一个文件会争抢写锁；额外客户端请指向 HTTP API。
-- **没有客户端界面。** 入口是 MCP、HTTP 和库，界面由你来做。
+- **没有客户端界面。** 入口是 MCP、HTTP、库与类型化客户端，界面由你来做。
 - **没有同步。** 文件不会与第二份副本合并。
 - **没有对外动作。** 运行时只记录意图与计划：不发邮件、不发帖、不付款。
 - **离线模式只认有限句式。** 确定性 provider 处理命令句、陈述规则和少量日期形式，支持中英文。通用理解请接模型；回执会标明是哪个 provider 产出的。
 
 ## 用它构建
 
-三个入口，一套 schema，Apache-2.0 开源。离线模式无需 API key。
+四个入口，一套 schema，Apache-2.0 开源。离线模式无需 API key。
 
 **库（Library）**
 
@@ -133,6 +134,17 @@ curl -X POST localhost:8787/v1/inputs \
   -d '{"content":"Ship the onboarding page next week","mode":"sync"}'
 ```
 
+**Client** —— 同一套 HTTP API 的类型化客户端
+
+```ts
+import { createClient } from "@aldus-palace/client";
+
+const aldus = createClient({ baseUrl: "http://localhost:8787", token: "dev-local-token" });
+const card = await aldus.capture("Ship the onboarding page next week", "local");
+console.log(card.action_card.summary);        // Captured · 1 commitment
+console.log(await aldus.actions("proposed")); // Action Gate 正在等什么
+```
+
 ---
 
 ## 规模
@@ -164,7 +176,7 @@ context        active memories and projects feed the next capture
 | **Trust & autonomy** | Action Gate（低/中直接执行，高风险等批准，关键级要两次）、信任分与自主等级 0–4，以及受用户上限约束的权限演进 | 主动规则 |
 | **Model orchestration** | 一个 `LLMProvider` 接口与三种实现，配置由调用方解析 | 按任务路由——快速分类、推理、embedding、敏感输入的本地模型 |
 
-代码位于 `lib/memoryExtract.ts`、`lib/memoryActivation.ts`、`services/memoryLifecycle.ts`、`services/memoryEvolution.ts`、`services/today.ts`、`services/planToday.ts`、`services/adaptivePlanning.ts` 与 `providers/`。完整设计（每个引擎的已交付与计划部分）见 [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md)。
+运行时代码都在 `packages/core/src`：`agent/understand.ts` 负责捕获，`services/` 是规划、记忆、Action Gate 与隐私，`lib/` 是纯函数，`providers/` 是模型接口。能力到代码的映射见 [`docs/MAP.md`](docs/MAP.md)，完整设计（每个引擎的已交付与计划部分）见 [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md)。
 
 ### 记忆管线
 
@@ -209,12 +221,14 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 | Understanding | 模型提议，服务端决定（对象模式、去重、日期、回退） | `agent/understand.ts` |
 | Progressive capture | lease 与 generation id 让「先本地、后模型」幂等 | `services/enrichmentLease.ts` |
 | Memory | 高置信记忆生效、自我解释、以版本化代替删除 | `lib/memoryActivation.ts`、`services/memoryEvolution.ts` |
-| Today & planning | 空的一天得到建议；排满的一天得到休息建议 | `services/today.ts` |
+| Today & planning | 空的一天得到建议；排满的一天得到休息建议；四分之一个白天留空，未开始的灵活工作自动顺延，被依赖阻塞的任务不排期，Now 是评分而非排在最前 | `services/today.ts`、`services/workMigration.ts`、`services/dependencies.ts`、`lib/nowScore.ts` |
 | Work streams | 分组是可重建的投影；记录本身不变 | `services/workStreams.ts` |
 | HTTP API | 一套 schema，两种运行时：本地 SQLite 与 Cloudflare Durable Object | `apps/server` |
 | MCP server | 无需服务进程，直接读同一个本地文件 | `packages/mcp` |
+| Action Gate | 未分类的 agent 动作会等待；关键级需两次批准；每次决定都有日志且可撤销，信任分就是这些决定的通过率 | `services/actionGate.ts` |
+| Privacy | 云端调用按数据级别脱敏且 Level 4 不出本机；未经授权 Memory 保持私有；删除会清空该用户的全部表 | `services/privacyGateway.ts`、`services/permissions.ts`、`services/dataLifecycle.ts` |
 
-流水线可离线运行：确定性 provider 与模型实现共享同一接口，因此 16 个测试套件与 11 个验收 fixture 无需任何 key 即可重放。
+流水线可离线运行：确定性 provider 与模型实现共享同一接口，因此 26 个测试套件与 11 个验收 fixture 无需任何 key 即可重放。
 
 ## 看它跑起来
 
@@ -259,6 +273,7 @@ pnpm --filter @aldus-palace/example-today-only start
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | 本地、边缘、嵌入式、备份 |
 | [EVAL.md](docs/EVAL.md) | 验收 fixture 及如何新增 |
 | [PROGRESSIVE-CAPTURE.md](docs/PROGRESSIVE-CAPTURE.md) | enrichment lease，写给直接照抄的人 |
+| [packages/client/README.md](packages/client/README.md) | 类型化 HTTP 客户端 |
 | [adr/](docs/adr) | 已作出的决策与理由 |
 
 ## 仓库结构
@@ -266,6 +281,7 @@ pnpm --filter @aldus-palace/example-today-only start
 ```
 packages/core          领域模型、agent 运行时、存储端口、迁移、providers
 packages/mcp           MCP 服务器（stdio）——profiles、本地与 HTTP 后端
+packages/client        类型化 HTTP 客户端，每个路由一个方法
 apps/server            Hono 参考服务器（本地 SQLite 与 Cloudflare Durable Object）
 examples/              五个可运行示例，覆盖各能力组
 spec/schema.sql        生成的可读 schema（CI 校验）

@@ -96,7 +96,7 @@ crashed workers cannot corrupt or duplicate anything. See
 
 **An agent you can run in CI.** A deterministic provider plus
 replayable acceptance fixtures means the whole pipeline is testable offline, with
-no API key. `pnpm test && pnpm eval` is green in a fresh clone.
+no API key. `pnpm verify` is green in a fresh clone.
 
 ## How it compares
 
@@ -104,9 +104,9 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 |---|---|---|---|---|---|
 | Who structures your input | the runtime decides | you do | you do | assistant, conversationally | partially |
 | Time model | 4 kinds, held apart | one due date | free text | conversation only | calendar slots |
-| Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
+| Memory | a gate, candidates, evidence, versioning, levels and decay | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
-| Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
+| Programmable | MCP · HTTP · library · typed client | API | API | in-app | calendar API |
 | Replayable offline | 26 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
@@ -129,4 +129,4 @@ These are choices, not gaps:
 - **No external side effects.** The runtime records intent and plans; it sends
   no mail, posts nothing and pays nobody. It records intent and plans; acting on the world is your call.
 - **MCP-level clients.** The UI is yours to build. The integration surfaces are
-  MCP, HTTP and the library.
+  MCP, HTTP, the library and a typed client.

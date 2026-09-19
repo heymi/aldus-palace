@@ -28,16 +28,25 @@ public and change `DEV_AUTH_TOKEN` from the example value first.
 - All SQL goes through bound parameters; there is no string-concatenated SQL.
 - Model output is validated with `zod` and then gated by server-side invariants.
 - The AI pass writes only *derived* fields; `raw_inputs.content` is immutable.
-- Memory is never activated without user confirmation.
+- Memory passes a published gate: a high-confidence rule the user states
+  activates on capture, while an inferred principle and anything below the gate
+  wait as a candidate. Every activation is reversible.
+- Permissions are scopes, and absence means no: Memory stays private until a
+  memory scope is granted.
+- `prepareCloudPayload` redacts project names, money, emails and phone numbers by
+  data level, and level 4 does not leave the device.
+- `purgeUserData` deletes every row the user owns in one transaction, after an
+  explicit confirmation.
 - Every mutation writes an `action_log` entry with a reason.
 
 ## Forward-looking design
 
-The privacy architecture this project is being built toward — data levels, a
-Privacy Gateway with redaction, local encrypted storage, progressive permissions,
-an Action Gate and a real delete policy — is in
-[`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md). It is design, not the current
-posture described above.
+Two parts of the privacy architecture are still design: **local encrypted
+storage** (Keychain / Secure Enclave plus an encrypted database) and **routing
+every cloud call through the gateway**, which the pipeline can do but the
+provider layer does not enforce yet. Both are tracked in
+[`ROADMAP.md`](ROADMAP.md), and the full intent is in
+[`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
 
 ## Reporting a vulnerability
 

@@ -15,11 +15,16 @@ evolve it safely:
 | **Thought** | an idea, insight, observation, research note or decision candidate |
 | **Commitment** | something the user intends to get done, with four kinds of time |
 | **Decision** | a choice *and why it was made*; can be superseded or retracted |
-| **Memory** | durable personal context — candidate until confirmed, versioned afterwards |
+| **Memory** | durable personal context — active through the gate or a candidate waiting, always versioned |
 | **Concept** | a reusable cognitive node (“simplicity”, “privacy”) memories attach to |
 | **Project** | a context container with a free-form brief used to ground understanding |
 | **RawInput** | the immutable record of what the user actually said |
 | **ActionLog** | every mutation, with actor, reason and reversibility |
+
+The runtime tables sit beside them: `commitment_dependencies` for blocked-by
+edges, `action_proposals` for the Action Gate, `autonomy_settings` for the
+earned-autonomy ceiling and `permission_grants` for scopes. `commitments` carries
+`deferral_count` and `migration_surfaced_at` for slipped work.
 
 Three ideas are baked into the design rather than added later:
 

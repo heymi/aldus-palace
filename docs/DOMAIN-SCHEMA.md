@@ -11,11 +11,23 @@ The canonical DDL lives in [`packages/core/src/db/schema.ts`](../packages/core/s
 | Thought | `thoughts` | an idea, insight, observation, research note or decision candidate |
 | Commitment | `commitments` | something the user intends to get done |
 | Decision | `decisions` | a choice, with a reason, that can be superseded or retracted |
-| Memory | `memories` | durable personal context — **candidate until confirmed** |
+| Memory | `memories` | durable personal context — active through the gate, or a candidate waiting for the user |
 | Concept | `concepts` | a reusable cognitive node (e.g. “simplicity”, “privacy”) |
 | Project | `projects` | context container with a free-form `brief` used for grounding |
 | Event | `events` | fixed external calendar entries and AI work blocks (read-mostly) |
 | ActionLog | `action_logs` | every user/agent mutation, with a reason |
+
+### Agent state
+
+| Table | Role |
+|---|---|
+| `commitment_dependencies` | a commitment waits on another; the planner skips it while a blocker is open |
+| `action_proposals` | the Action Gate: risk, status, decision and revocations for agent actions |
+| `autonomy_settings` | how far earned trust may widen autonomy (the ceiling) |
+| `permission_grants` | granted permission scopes; absence means not granted |
+
+`commitments` also carries `deferral_count` and `migration_surfaced_at` for
+slipped flexible work (see [ADR 0008](adr/0008-daily-buffer-and-work-migration.md)).
 
 ### Projections (never truth sources)
 
@@ -32,9 +44,11 @@ Deleting a projection must never change what the user committed to — see
 
 1. **`raw_inputs` is sacred.** Model output only ever writes fields *derived*
    from it; the original text is never rewritten.
-2. **Memory needs confirmation.** New memories are inserted as `candidate`;
-   only `active` memories are injected into the understanding context.
-   `evidence` and `confidence` are required, and near-duplicates are rejected.
+2. **Memory passes a published gate.** A high-confidence rule the user states is
+   inserted as `active` on capture; an inferred principle and anything below the
+   gate is inserted as `candidate` and waits. Only `active` memories are injected
+   into the understanding context. `evidence` and `confidence` are required, and
+   near-duplicates are rejected.
 3. **Commitments are deduplicated.** Re-capturing a near-identical intention
    skips the insert and surfaces the existing commitment instead.
 4. **Dates are resolved server-side.** `deadline`, `window_start`/`window_end`
@@ -54,6 +68,10 @@ Deleting a projection must never change what the user committed to — see
 | `memories.type` | `preference`, `project_context`, `principle`, `decision`, `experience` |
 | `raw_inputs.processing_status` | `pending`, `local`, `enriching`, `processed`, `failed` |
 | `memories.source` | `user_explicit`, `ai_inferred`, `decision_promote` |
+| `action_proposals.risk` | `low`, `medium`, `high`, `critical` |
+| `action_proposals.status` | `approved`, `notified`, `proposed`, `pending_second`, `rejected`, `revoked` |
+| `action_proposals.actor` | `user`, `agent` |
+| `autonomy_settings.ceiling` | `2`, `3`, `4` |
 
 ## Memory evolution
 

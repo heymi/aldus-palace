@@ -46,9 +46,12 @@ packages/core/src
 ├── db/schema.ts         canonical DDL (single source of truth)
 ├── db/migrate.ts        applySchema / migrate / initialize (forward-only)
 ├── providers/           LLMProvider implementations + config resolution
-├── lib/                 pure helpers (time, titles, matching, memory filters)
+├── lib/                 pure helpers (time, titles, matching, memory filters,
+│                        now score, day plan, memory value, capacity, redaction)
 ├── services/            domain services (planning, classification, today, work
-│                        streams, memory lifecycle & evolution, enrichment leases)
+│                        streams, memory lifecycle & evolution, enrichment leases,
+│                        dependencies, work migration, replanning, action gate,
+│                        permissions, privacy gateway, data lifecycle)
 ├── repos/               thin data access (users, action log)
 └── agent/understand.ts  the Understanding Agent: input → objects → ActionCard
 ```

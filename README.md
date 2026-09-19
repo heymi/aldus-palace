@@ -3,6 +3,7 @@
 [![CI](https://github.com/heymi/aldus-palace/actions/workflows/ci.yml/badge.svg)](https://github.com/heymi/aldus-palace/actions/workflows/ci.yml)
 [![npm core](https://img.shields.io/npm/v/%40aldus-palace%2Fcore?label=core)](https://www.npmjs.com/package/@aldus-palace/core)
 [![npm mcp](https://img.shields.io/npm/v/%40aldus-palace%2Fmcp?label=mcp)](https://www.npmjs.com/package/@aldus-palace/mcp)
+[![npm client](https://img.shields.io/npm/v/%40aldus-palace%2Fclient?label=client)](https://www.npmjs.com/package/@aldus-palace/client)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 ![A capture session](docs/assets/capture-session.svg)
@@ -91,7 +92,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **How memory behaves** | the assistant infers and stores inside that app | confident memories take effect on capture, and each one carries the sentence it came from plus a note saying why it is active |
 | **Where your words live** | summarized into a task or a chat log | kept as you wrote them, with the system's own reading beside them |
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
-| **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
+| **How many stores you have** | one per app | one record, reached by MCP, HTTP, a library and a typed client: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
 | **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 26 suites and 11 fixtures replay each run |
 
@@ -101,8 +102,8 @@ A real run of the offline provider. Relative dates resolve at capture time.
   person.
 - **One writer per SQLite file.** Two processes on the same file fight over the
   write lock. Point extra clients at the HTTP API.
-- **No client interface.** The surfaces are MCP, HTTP and the library. You bring
-  the screen.
+- **No client interface.** The surfaces are MCP, HTTP, the library and a typed
+  client. You bring the screen.
 - **No sync.** The file does not merge with a second copy.
 - **No external actions.** The runtime records intent and plans. It sends no mail,
   posts nothing and pays nobody.
@@ -113,7 +114,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 
 ## Build with it
 
-Three surfaces, one schema, open source under Apache-2.0. Offline mode runs with
+Four ways in, one schema, open source under Apache-2.0. Offline mode runs with
 no API key.
 
 **Library**
@@ -156,6 +157,17 @@ curl -X POST localhost:8787/v1/inputs \
   -d '{"content":"Ship the onboarding page next week","mode":"sync"}'
 ```
 
+**Client** — a typed client over the same HTTP API
+
+```ts
+import { createClient } from "@aldus-palace/client";
+
+const aldus = createClient({ baseUrl: "http://localhost:8787", token: "dev-local-token" });
+const card = await aldus.capture("Ship the onboarding page next week", "local");
+console.log(card.action_card.summary);        // Captured · 1 commitment
+console.log(await aldus.actions("proposed")); // what the Action Gate is holding
+```
+
 ---
 
 ## Scale
@@ -196,7 +208,7 @@ context        active memories and projects feed the next capture
 | **Trust & autonomy** | an Action Gate (low and medium run, high waits, critical needs two), a trust score with levels 0–4, and permission evolution capped by a user ceiling | proactive rules |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
-The code lives in `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts`, `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts` and `providers/`. The full design, with each engine's shipped and planned parts in depth, is in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
+The runtime lives in `packages/core/src`: `agent/understand.ts` for capture, `services/` for planning, memory, the Action Gate and privacy, `lib/` for the pure helpers, and `providers/` for the model interface. The capability-by-capability map is in [`docs/MAP.md`](docs/MAP.md), and the full design, with each engine's shipped and planned parts in depth, is in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
 
 ### The memory pipeline
 
@@ -263,6 +275,7 @@ personality from one remark. Replace the old record and the history disappears.
 | HTTP API | one schema, two runtimes: a local SQLite file and a Cloudflare Durable Object | `apps/server` |
 | MCP server | runs with no server process, against the same local file | `packages/mcp` |
 | Action Gate | an unclassified agent action waits; a critical one needs two approvals; every decision is logged and revocable, and trust is the approval rate of those decisions | `services/actionGate.ts` |
+| Privacy | a cloud call is redacted by data level and level 4 stays local; Memory is private until a scope is granted; deletion empties every table for the user | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
 as the model-backed ones, so 26 test suites and 11 acceptance fixtures replay
@@ -312,6 +325,7 @@ API key and no network.
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | local, edge, embedded, backups |
 | [EVAL.md](docs/EVAL.md) | the acceptance fixtures, and how to add one |
 | [PROGRESSIVE-CAPTURE.md](docs/PROGRESSIVE-CAPTURE.md) | the enrichment lease, written to be copied |
+| [packages/client/README.md](packages/client/README.md) | the typed HTTP client |
 | [adr/](docs/adr) | decisions already made, and why |
 
 ## Repository layout
@@ -319,6 +333,7 @@ API key and no network.
 ```
 packages/core          domain, agent runtime, storage port, migrations, providers
 packages/mcp           MCP server (stdio) — profiles, local and HTTP backends
+packages/client        typed HTTP client, one method per route
 apps/server            Hono reference server (local SQLite and Cloudflare Durable Object)
 examples/              five runnable examples, one per capability group
 spec/schema.sql        generated, readable schema (CI-checked)

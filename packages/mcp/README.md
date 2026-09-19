@@ -62,6 +62,7 @@ list_actions
 
 Actions · 1 waiting
   high      memory_deleted  ·  waiting  ·  replaces_a_belief
+  Trust 0.50 · level 2 · 0 approved / 0 rejected
 ```
 
 Two prompts ship as slash commands:

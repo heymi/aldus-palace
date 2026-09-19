@@ -22,6 +22,7 @@ decide — Mac only — is nowhere.
 | **Contradictions surface** | an opposing statement is flagged against the confirmed memory it disagrees with |
 | **Replacements keep history** | confirming a replacement marks the old memory `superseded` with a pointer and a reason. Nothing is deleted |
 | **Memory feeds back** | active memories are injected into the next capture, so understanding improves — and every injection is logged |
+| **Graded, decaying, scored** | the kinds map onto levels 0–3, each with a decay half-life (a month for an experience, years for a principle); a value score weighs retrieval, so a fresh principle outranks an old experience |
 | **Every activation is reversible** | the memory list shows why a memory is active and archives any of them, including one the system stored on its own |
 
 **Who this is for.** Anyone building an assistant that remembers, in a product
@@ -62,5 +63,7 @@ the user still makes the call.
 - `packages/core/src/services/memoryLifecycle.ts` — confirm / reject / list
 - `packages/core/src/services/memoryEvolution.ts` — conflicts, supersede, version chains
 - `packages/core/src/lib/memoryExtract.ts` — extraction, scoring fields, the pollution gate
+- `packages/core/src/lib/memoryValue.ts` — levels, decay half-lives, the value score, ranked retrieval
 - `packages/core/test/memoryEvolution.test.ts` — polarity detection, supersede, history retention
+- `packages/core/test/memoryValue.test.ts` — levels, decay, ranking (a fresh principle beats an old experience)
 - `apps/server/test/commitmentClassification.test.ts` — memory counts through the API

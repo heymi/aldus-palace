@@ -13,12 +13,17 @@ that adapts instead of nagging:
 
 | Piece | Behaviour |
 |---|---|
-| **Now** | exactly one thing is highlighted, chosen from deadline, risk, project context and your recent behaviour |
+| **Now** | exactly one thing is highlighted; urgency, importance, time fit and context match score it, and the reason travels with it |
 | **Timeline** | scheduled work, in order, including AI-suggested slots |
 | **Risks** | the commitments that need attention — this is what replaces “overdue” |
 | **Unscheduled** | everything else, visible without being shouted at |
 | **Empty-day plan** | a genuinely empty day gets up to three suggestions instead of nothing |
 | **Adaptive limits** | automatic additions stop at a cap (5, or 10 after you deliberately add more), then it suggests rest |
+| **Daily buffer** | a quarter of the 09:00–18:00 window stays free; auto-fill stops before the day is full |
+| **Dependencies** | a commitment that waits on another is never scheduled while a blocker is open |
+| **Migration** | slipped, flexible, unstarted work moves forward; three deferrals ask for a decision, and a deadline never migrates silently |
+| **Morning plan** | the day is classified into core, optional and deferred |
+| **Replanning** | finishing something re-derives the day |
 | **Stall detection** | the same queue of 1–3 items producing no completion for 24 h pauses auto-fill instead of piling on |
 | **Behaviour model** | project weighting and preference signals are learned from a rolling 15-day window |
 
@@ -44,13 +49,16 @@ adaptive work-stream grouping.
 | Level | How |
 |---|---|
 | **MCP** | profile `today` → `list_today` |
-| **HTTP** | `GET /v1/today`, `POST /v1/plan/today`, `POST /v1/commitments/:id/arrange-today` |
-| **Library** | `buildToday`, `planEmptyToday`, `reconcileTodayPlan`, `recordUserTodayArrangement` |
+| **HTTP** | `GET /v1/today`, `POST /v1/plan/today`, `POST /v1/plan/migrate`, `POST /v1/commitments/:id/arrange-today`, `GET/POST/DELETE /v1/commitments/:id/dependencies` |
+| **Library** | `buildToday`, `planEmptyToday`, `reconcileTodayPlan`, `recordUserTodayArrangement`, `migrateStaleWork`, `replanAfterChange`, `addDependency` |
 
 ## Proof
 
-- `packages/core/src/services/today.ts` — the projection, `isRisk()`, no overdue state
+- `packages/core/src/services/today.ts` — the projection, `isRisk()`, the scored Now, the morning plan
 - `packages/core/src/services/planToday.ts` — scoring for an empty day
-- `packages/core/src/services/adaptivePlanning.ts` — caps, pause, rest suggestion, behaviour profile
-- `packages/core/test/adaptivePlanning.test.ts` — seventeen scenarios, offline
+- `packages/core/src/services/adaptivePlanning.ts` — caps, pause, rest suggestion, behaviour profile, buffer, duration estimation
+- `packages/core/src/services/workMigration.ts` — slipped flexible work and deferral counting
+- `packages/core/src/services/dependencies.ts` — blocked-by edges and cycle rejection
+- `packages/core/src/services/replan.ts` — replanning after a change
+- `packages/core/test/adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts`, `planningIntelligence.test.ts` — scenarios, offline
 - `CONTEXT.md` — the vocabulary (`主动续排`, `续排暂停`, `规划经验`) behind the behaviour

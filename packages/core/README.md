@@ -43,8 +43,10 @@ already decided and tested:
 | an object model for thoughts / commitments / decisions | a frozen schema with invariants as `CHECK` constraints, plus forward-only migrations |
 | prompt engineering + output validation | one pipeline with server-side gates and a deterministic fallback |
 | “wait for the model” UX | local-first capture, then leased background enrichment |
-| an assistant memory policy | candidates, evidence, conflicts, versioning, and an explanation on every activation |
-| a scheduler | four kinds of time, risk in place of overdue, adaptive daily limits |
+| an assistant memory policy | a gate, candidates, evidence, conflicts, versioning, levels, decay and an explanation on every activation |
+| a scheduler | four kinds of time, blocked-by dependencies, a daily buffer, duration estimation, risk in place of overdue, adaptive daily limits |
+| an approval policy for agent actions | a published risk table, a trust score and earned autonomy capped by the user (`services/actionGate.ts`) |
+| a privacy layer for model calls | redaction by data level, permission scopes with Memory private by default, and true deletion |
 
 ## Install it in four lines
 
@@ -95,8 +97,9 @@ context        active memories and projects feed the next capture
 | Engine | Its job | Where it lives |
 |---|---|---|
 | **Understanding** | reads a sentence, decides the object mode, resolves dates, skips duplicates, falls back when a model fails | `agent/understand.ts` |
-| **Memory** | proposes candidates, filters noise, detects contradictions, versions beliefs, retrieves context | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` |
-| **Planning** | holds four kinds of time apart, assembles Today, flags risk, adapts the daily limit | `services/today.ts`, `planToday.ts`, `adaptivePlanning.ts` |
+| **Memory** | proposes candidates, filters noise, detects contradictions, versions beliefs, grades and decays them, ranks retrieval | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `lib/memoryValue.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` |
+| **Planning** | holds four kinds of time apart, respects dependencies, sizes slots, keeps a buffer, migrates slipped work, scores Now, assembles Today, flags risk, adapts the daily limit | `services/today.ts`, `planToday.ts`, `adaptivePlanning.ts`, `workMigration.ts`, `dependencies.ts`, `replan.ts`, `lib/nowScore.ts`, `lib/dayPlan.ts` |
+| **Trust & autonomy** | grades every proposed agent action, records the decision, and widens autonomy as trust is earned | `services/actionGate.ts` |
 | **Model** | one provider interface, three implementations, configuration resolved by the caller | `providers/` |
 
 ### The memory pipeline
@@ -136,7 +139,14 @@ createLLMProvider(resolveProviderConfig(process.env));  // auto: key if present,
   cannot overwrite a newer result ([ADR 0003](../../docs/adr/0003-progressive-capture-with-enrichment-leases.md)).
 - **Memory explains every activation.** A rule you state takes effect on capture;
   an inference waits for confirmation. Every row carries its evidence and a note
-  that says which. Replacements keep their history.
+  that says which. Replacements keep their history, and levels and decay weigh
+  retrieval.
+- **The agent asks before it oversteps.** A published risk table grades every
+  proposed action; trust is the approval rate of your decisions, and autonomy
+  never widens past the ceiling you set.
+- **Privacy is a mechanism.** A cloud call is redacted by data level, Memory is
+  private until a scope is granted, and `purgeUserData` deletes every row you
+  own in one transaction.
 - **Content follows the user.** Receipts, warnings, memory contents and Today
   labels are written in `users.language`; machine keys stay stable.
 - **Migrations are forward-only** and versioned in `schema_migrations`.

@@ -92,6 +92,15 @@ curl -X POST localhost:8787/v1/inputs \
 Prefer the edge? `cd apps/server && pnpm cf:deploy` puts the same API on a
 Cloudflare Worker backed by a SQLite Durable Object.
 
+In TypeScript, `@aldus-palace/client` wraps these routes with one typed method
+each:
+
+```ts
+import { createClient } from "@aldus-palace/client";
+const aldus = createClient({ baseUrl: "http://localhost:8787", token: "dev-local-token" });
+const card = await aldus.capture("Ship the onboarding page next week", "local");
+```
+
 → [Capability 8: HTTP API](capabilities/08-http-api.md) ·
 [Deployment](DEPLOYMENT.md)
 

@@ -99,13 +99,17 @@ for (const file of counted) {
     // Per-package output fragments ("packages/core test: All 14 suites passed.")
     // describe one package, not the repository total.
     if (/test:|All \d+ suites/.test(line)) continue;
-    for (const match of line.matchAll(/(\d+)\s+(?:test\s+)?suites|(\d+)\s*个\s*套件/g)) {
+    for (const match of line.matchAll(
+      /(\d+)\s+(?:test\s+)?suites|(\d+)\s*个\s*(?:测试\s*)?套件/g
+    )) {
       const value = Number(match[1] ?? match[2]);
       if (value !== suites) {
         failures.push(`${file}: says ${value} suites, repository has ${suites}`);
       }
     }
-    for (const match of line.matchAll(/(\d+)\s+(?:acceptance\s+)?fixtures|(\d+)\s*个\s*fixture/g)) {
+    for (const match of line.matchAll(
+      /(\d+)\s+(?:acceptance\s+)?fixtures|(\d+)\s*个\s*(?:验收\s*)?fixture/g
+    )) {
       const value = Number(match[1] ?? match[2]);
       if (value !== fixtures) {
         failures.push(`${file}: says ${value} fixtures, repository has ${fixtures}`);
