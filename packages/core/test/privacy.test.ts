@@ -195,6 +195,7 @@ assert(redactedMessages[1].content.includes("[business]"), "the user message is 
 assert(redactedMessages[1].content.includes("[amount]"), "the amount is redacted");
 assert((await guardLogCount()) === 1, "one audit row per call, not per message");
 
+const beforeBlocked = await guardLogCount();
 const strict = createMessageGuard(guardDb, "gu", { level: 4 });
 let blocked: unknown;
 try {
@@ -203,6 +204,10 @@ try {
   blocked = error;
 }
 assert(blocked instanceof PrivacyBlockedError, "level 4 throws before sending");
+assert(
+  (await guardLogCount()) === beforeBlocked + 1,
+  "a blocked level-4 call still writes its audit row"
+);
 
 function recordingProvider(): { provider: LLMProvider; seen: ChatMessage[][] } {
   const seen: ChatMessage[][] = [];
@@ -247,7 +252,10 @@ const logsBefore = await guardLogCount();
 const open = createMessageGuard(guardDb, "gu", { level: 0 });
 const passthrough = await open([{ role: "user", content: "Discuss Orvia" }]);
 assert(passthrough[0].content === "Discuss Orvia", "level 0 passes through");
-assert((await guardLogCount()) === logsBefore, "level 0 writes no audit row");
+assert(
+  (await guardLogCount()) === logsBefore + 1,
+  "level 0 still writes its per-call audit row"
+);
 
 // --- true deletion ----------------------------------------------------------
 

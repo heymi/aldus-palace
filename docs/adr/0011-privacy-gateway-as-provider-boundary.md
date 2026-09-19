@@ -22,8 +22,9 @@ that can be skipped is a convention, not architecture.
   contacts, locale })`, built by the composition root (the server, the Worker,
   the MCP backend).
 - **A cloud provider is only built with a guard.** `createLLMProvider(config,
-  guard)` refuses a non-`dev` kind without one, and wraps the provider with
-  `withMessageGuard`. `dev` runs on the device and needs no guard.
+  guard)` refuses a non-`dev` kind without one, and each cloud provider class
+  requires a `guard` at construction and applies it in `complete`. `dev` runs on
+  the device and needs no guard.
 - **Only user-role messages are redacted.** The system prompt is instructions and
   is left untouched, so a project name that overlaps a schema word cannot change
   the prompt.
@@ -41,9 +42,9 @@ that can be skipped is a convention, not architecture.
   never leaves at all.
 - The provider layer keeps its dependency rule (`providers/` imports only its own
   types), so provider tests stay pure.
-- The exported low-level classes (`AnthropicProvider`,
-  `OpenAICompatibleProvider`) remain available for advanced use; direct use
-  bypasses the guard and is outside the supported path.
+- The low-level classes (`AnthropicProvider`, `OpenAICompatibleProvider`) remain
+  available for advanced use, and they require a guard too: direct construction
+  cannot bypass it.
 - One level applies per provider; a level per call is a follow-up (see
   `docs/INTELLIGENCE.md`, "Designed").
 - Covered by `packages/core/test/privacy.test.ts` (the guard) and
