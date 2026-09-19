@@ -84,6 +84,7 @@ export * from "./lib/format.js";
 export * from "./lib/locale.js";
 export * from "./lib/memoryActivation.js";
 export * from "./lib/memoryExtract.js";
+export * from "./lib/memoryValue.js";
 export * from "./lib/nowScore.js";
 export * from "./lib/planCapacity.js";
 export * from "./lib/projectMatch.js";

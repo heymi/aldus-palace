@@ -1,6 +1,7 @@
 import type { SqlDatabase } from "../db/port.js";
 import { nowIso } from "../db/port.js";
 import { newId } from "./id.js";
+import { memoryRetrievalScore } from "./memoryValue.js";
 
 export function normalizeConceptName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, " ");
@@ -112,13 +113,22 @@ export async function retrieveActiveMemoriesForContext(
 
   const scored = rows.map((r) => {
     const content = String(r.content ?? "").toLowerCase();
-    let score = 0;
+    let keywordScore = 0;
     for (const t of tokens) {
-      if (content.includes(t)) score += 2;
+      if (content.includes(t)) keywordScore += 2;
     }
-    // type boost for principles/preferences always somewhat relevant
-    if (r.type === "principle" || r.type === "preference") score += 0.5;
-    if (r.importance != null) score += Number(r.importance);
+    // Level, decay and value weigh the keyword match: a fresh principle holds
+    // more influence than an old experience.
+    const score = memoryRetrievalScore(
+      {
+        type: String(r.type ?? ""),
+        updated_at: r.updated_at as string | null,
+        importance: r.importance as number | null,
+        source: r.source as string | null,
+        project_id: r.project_id as string | null,
+      },
+      { now: new Date(), keywordScore }
+    );
     return { row: r, score };
   });
 

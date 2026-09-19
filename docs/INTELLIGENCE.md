@@ -76,36 +76,24 @@ what happens next, what the system may do on its own, and which model is used.
   injection lands in the action log.
 - **Five kinds** ship: preference, project context, principle, decision,
   experience.
+- **A graded value model** (`lib/memoryValue.ts`): the kinds map onto levels
+  0–3, each carries a decay half-life, and a value score (explicitness,
+  frequency, impact, scope, future relevance) weighs retrieval. A fresh
+  principle outranks an old experience on the same topic.
 
 `lib/memoryExtract.ts` · `lib/memoryActivation.ts` ·
 `services/memoryLifecycle.ts` · `services/memoryEvolution.ts`
 
 ### Designed
 
-- **A graded model.** Five levels, where a higher level carries more weight in
-  future decisions:
-
-  | Level | Name | What it holds |
-  |---|---|---|
-  | 0 | Raw experience | what happened |
-  | 1 | Observation | a pattern noticed once |
-  | 2 | Preference | a recurring choice |
-  | 3 | Principle | a value that shapes decisions |
-  | 4 | Identity model | who the person is |
-
+- **An identity level.** Levels 0–3 ship; identity (4) needs an identity kind
+  before it can exist.
 - **The full formation pipeline** — user experience → extraction → candidate →
   evaluation → conflict check → storage → activation → retrieval. Most stages
   ship; the candidate lifecycle is the part that keeps growing.
 - **Four extraction signals** — a long-term phrase, repeated behaviour, impact on
   future decisions, and reach across projects. The first two ship; impact and
   scope extend the same extractor.
-- **A value score** — explicitness + frequency + impact + scope + future
-  relevance — gating on the total, with importance following the memory kind and
-  confidence following the extraction rule.
-- **Pollution prevention** — three rules: a mood is not a trait, one inference is
-  not a principle, every memory carries evidence.
-- **Decay by kind** — identity holds, principle fades slowly, preference over
-  months, habit over weeks, a current state over days.
 - **More kinds** — goal, relationship, knowledge, habit and episode, each with
   its own lifetime and evidence rules.
 - **Decision memory keeps the *why*** — What, Why, When, Status — not only what

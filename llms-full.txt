@@ -102,7 +102,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 23 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 24 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -200,7 +200,7 @@ context        active memories and projects feed the next capture
 
 | Engine | Shipped today | Designed next |
 |---|---|---|
-| **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, retrieval into the next capture | graded levels, decay by kind, the value score, more kinds and extraction signals, a memory graph |
+| **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, graded levels with decay and a value score, ranked retrieval into the next capture | more kinds and extraction signals, an identity level, a memory graph |
 | **Planning** | four kinds of time, constraint handling (deadline, window, preference, blocked-by dependencies), priority scoring, slot search, duration estimation from project history, a daily buffer, migration for slipped flexible work, a scored Now with context match, a morning core/optional/deferred plan, Today, risk, adaptive limits, a learned behaviour model | soft-constraint trade-offs, a blended priority score, a rhythm-aware Now, event-driven replanning |
 | **Trust & autonomy** | an Action Gate (low and medium run, high waits, critical needs two), a trust score with levels 0–4, and permission evolution capped by a user ceiling | proactive rules |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
@@ -273,7 +273,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Action Gate | an unclassified agent action waits; a critical one needs two approvals; every decision is logged and revocable, and trust is the approval rate of those decisions | `services/actionGate.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 23 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 24 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -282,7 +282,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 23 suites — deterministic, offline, no API key
+pnpm test     # 24 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -369,7 +369,7 @@ pnpm demo       # the offline capture demo
 A passing `pnpm verify` ends with fragments like:
 
 ```
-packages/core test: All 19 suites passed.
+packages/core test: All 20 suites passed.
 packages/mcp test: mcp tool tests passed.
 apps/server test: All 3 suites passed.
 All fixtures passed.
@@ -388,7 +388,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 23 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 24 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -404,6 +404,7 @@ If you cannot run the repository, the real output is committed:
 | A blocked commitment is never scheduled | `packages/core/test/dependencies.test.ts` | the planner skips it; completing the blocker releases it; cycles are refused |
 | Now is the best current action, not the first in line | `packages/core/test/planningIntelligence.test.ts` | the context match wins, and the reason travels with it |
 | The day is classified into core, optional and deferred | `packages/core/test/planningIntelligence.test.ts` | a risk item is core, work that fits is optional, the rest is deferred |
+| A fresh principle outranks an old experience | `packages/core/test/memoryValue.test.ts` | levels, decay and the value score rank retrieval |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
 | The Action Gate is reachable from MCP | `packages/mcp/test/tools.test.ts` | the `actions` profile exposes list, decide and revoke |
 | Trust grows from decisions, not silence | `packages/core/test/trustScore.test.ts` | level 0 with no evidence; six decisions at 0.75 reach level 2 |
@@ -787,36 +788,24 @@ what happens next, what the system may do on its own, and which model is used.
   injection lands in the action log.
 - **Five kinds** ship: preference, project context, principle, decision,
   experience.
+- **A graded value model** (`lib/memoryValue.ts`): the kinds map onto levels
+  0–3, each carries a decay half-life, and a value score (explicitness,
+  frequency, impact, scope, future relevance) weighs retrieval. A fresh
+  principle outranks an old experience on the same topic.
 
 `lib/memoryExtract.ts` · `lib/memoryActivation.ts` ·
 `services/memoryLifecycle.ts` · `services/memoryEvolution.ts`
 
 ### Designed
 
-- **A graded model.** Five levels, where a higher level carries more weight in
-  future decisions:
-
-  | Level | Name | What it holds |
-  |---|---|---|
-  | 0 | Raw experience | what happened |
-  | 1 | Observation | a pattern noticed once |
-  | 2 | Preference | a recurring choice |
-  | 3 | Principle | a value that shapes decisions |
-  | 4 | Identity model | who the person is |
-
+- **An identity level.** Levels 0–3 ship; identity (4) needs an identity kind
+  before it can exist.
 - **The full formation pipeline** — user experience → extraction → candidate →
   evaluation → conflict check → storage → activation → retrieval. Most stages
   ship; the candidate lifecycle is the part that keeps growing.
 - **Four extraction signals** — a long-term phrase, repeated behaviour, impact on
   future decisions, and reach across projects. The first two ship; impact and
   scope extend the same extractor.
-- **A value score** — explicitness + frequency + impact + scope + future
-  relevance — gating on the total, with importance following the memory kind and
-  confidence following the extraction rule.
-- **Pollution prevention** — three rules: a mood is not a trait, one inference is
-  not a principle, every memory carries evidence.
-- **Decay by kind** — identity holds, principle fades slowly, preference over
-  months, habit over weeks, a current state over days.
 - **More kinds** — goal, relationship, knowledge, habit and episode, each with
   its own lifetime and evidence rules.
 - **Decision memory keeps the *why*** — What, Why, When, Status — not only what
@@ -1102,6 +1091,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `workMigration` | slipped flexible work, deferral counting, the confirmation threshold |
 | `dependencies` | blocked-by edges, cycle rejection, planner eligibility, the audit trail |
 | `planningIntelligence` | the Now score, the core/optional/deferred plan, context match |
+| `memoryValue` | levels, decay half-lives, the value score, ranked retrieval |
 | `enrichmentLease` | concurrent enrichment and supersede semantics |
 | `commitmentOriginalInput` | optimized content vs original input |
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |
@@ -1300,7 +1290,7 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 | Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
-| Replayable offline | 23 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 24 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 
@@ -1338,7 +1328,7 @@ it, the doc that explains it and the suite that pins it.
 | Providers | `packages/core/src/providers/` | [02](capabilities/02-providers.md) | `packages/core/test/providers.test.ts` |
 | Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
 | Progressive capture | `packages/core/src/services/enrichmentLease.ts` | [04](capabilities/04-progressive-capture.md) | `packages/core/test/enrichmentLease.test.ts` |
-| Memory | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` | [05](capabilities/05-memory.md) | `memoryActivation.test.ts`, `memoryEvolution.test.ts` |
+| Memory | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `lib/memoryValue.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` | [05](capabilities/05-memory.md) | `memoryActivation.test.ts`, `memoryEvolution.test.ts`, `memoryValue.test.ts` |
 | Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `lib/nowScore.ts`, `lib/dayPlan.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts`, `planningIntelligence.test.ts` |
 | Work streams | `services/workStreams.ts`, `services/commitmentClassification.ts` | [07](capabilities/07-work-streams.md) | `apps/server/test/commitmentClassification.test.ts` |
 | HTTP API | `apps/server/src/` | [08](capabilities/08-http-api.md) | `apps/server/test/` |
@@ -1417,6 +1407,9 @@ The shared vocabulary. Planning-specific terms live in
 | **Archived** | a memory the user removed from use |
 | **Evidence** | the excerpt, confidence and input id behind a memory |
 | **Activation gate** | `confidence >= 0.8` and `importance >= 0.8`; everything below waits as a candidate |
+| **Memory level** | how much a kind shapes behaviour: experience 0, decision/project context 1, preference 2, principle 3 |
+| **Memory decay** | the half-life of a kind — a month for an experience, years for a principle |
+| **Value score** | explicitness, frequency, impact, scope and future relevance averaged into one weight |
 
 ## Runtime
 
@@ -1533,14 +1526,15 @@ today marked against what does not — is in
 The shipped memory layer covers extraction, evaluation, activation, conflict
 detection, versioning and retrieval. The design extends it:
 
-- [ ] **A graded memory model.** The five shipped kinds grow into levels — raw
-  experience, observation, preference, principle, identity — where a higher level
-  carries more weight in future decisions.
-- [ ] **Memory decay.** A lifetime on each kind: identity holds, principle fades
-  with a long half-life, preference over months, habit over weeks, a current
-  state over days.
-- [ ] **A value score.** A candidate scored on explicitness, frequency, impact,
-  project coverage and future relevance, then gated on the total.
+- [x] **A graded memory model.** Levels 0–3 are derived from the shipped kinds
+  (experience, decision/project context, preference, principle) and weigh
+  retrieval (`lib/memoryValue.ts`). An identity level needs an identity kind
+  first.
+- [x] **Memory decay.** Each kind carries a half-life — an experience fades in a
+  month, a principle holds for years — and retrieval weighs it.
+- [x] **A value score.** Explicitness, frequency, impact, scope and future
+  relevance average into one score that retrieval uses. Extraction still reads
+  two signals, so frequency and scope stay at their defaults.
 - [ ] **More memory kinds.** Goal, relationship, knowledge, habit and episode
   memories, each with its own lifetime and evidence rules.
 - [ ] **More extraction signals.** Impact on future decisions, and scope across

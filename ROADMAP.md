@@ -29,14 +29,15 @@ today marked against what does not — is in
 The shipped memory layer covers extraction, evaluation, activation, conflict
 detection, versioning and retrieval. The design extends it:
 
-- [ ] **A graded memory model.** The five shipped kinds grow into levels — raw
-  experience, observation, preference, principle, identity — where a higher level
-  carries more weight in future decisions.
-- [ ] **Memory decay.** A lifetime on each kind: identity holds, principle fades
-  with a long half-life, preference over months, habit over weeks, a current
-  state over days.
-- [ ] **A value score.** A candidate scored on explicitness, frequency, impact,
-  project coverage and future relevance, then gated on the total.
+- [x] **A graded memory model.** Levels 0–3 are derived from the shipped kinds
+  (experience, decision/project context, preference, principle) and weigh
+  retrieval (`lib/memoryValue.ts`). An identity level needs an identity kind
+  first.
+- [x] **Memory decay.** Each kind carries a half-life — an experience fades in a
+  month, a principle holds for years — and retrieval weighs it.
+- [x] **A value score.** Explicitness, frequency, impact, scope and future
+  relevance average into one score that retrieval uses. Extraction still reads
+  two signals, so frequency and scope stay at their defaults.
 - [ ] **More memory kinds.** Goal, relationship, knowledge, habit and episode
   memories, each with its own lifetime and evidence rules.
 - [ ] **More extraction signals.** Impact on future decisions, and scope across

@@ -3,6 +3,8 @@ import {
   actionSummary,
   addDependency,
   buildToday,
+  decayWeight,
+  memoryLevelFor,
   decideAction,
   getAutonomyState,
   listActionProposals,
@@ -853,7 +855,18 @@ export function createListRoutes(deps: AppDeps): Hono<{
           concepts.length > 0
             ? concepts.map((x) => x.name)
             : suggestConceptNamesForMemory(String(r.type), String(r.content));
-        return { ...r, state: memoryState(r), concepts, concept_names };
+        const updated = r.updated_at ? Date.parse(String(r.updated_at)) : Number.NaN;
+        const ageDays = Number.isFinite(updated)
+          ? Math.max(0, (Date.now() - updated) / (24 * 3600 * 1000))
+          : 0;
+        return {
+          ...r,
+          state: memoryState(r),
+          concepts,
+          concept_names,
+          level: memoryLevelFor(String(r.type)),
+          decay: decayWeight(String(r.type), ageDays),
+        };
       })
     );
     return c.json({ items });

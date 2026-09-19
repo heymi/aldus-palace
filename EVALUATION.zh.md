@@ -16,7 +16,7 @@ pnpm demo       # 离线捕获演示
 `pnpm verify` 通过时，结尾会看到类似片段：
 
 ```
-packages/core test: All 19 suites passed.
+packages/core test: All 20 suites passed.
 packages/mcp test: mcp tool tests passed.
 apps/server test: All 3 suites passed.
 All fixtures passed.
@@ -32,7 +32,7 @@ spec/schema.sql is up to date.
 | 主张 | 验证方式 | 预期 |
 |---|---|---|
 | 自由文本变成带类型的对象 | `pnpm demo` | `Captured · 1 commitment`，窗口已解析 |
-| 流水线可离线运行 | `pnpm verify` | 23 个套件与 11 个 fixture 无需 key 通过 |
+| 流水线可离线运行 | `pnpm verify` | 24 个套件与 11 个 fixture 无需 key 通过 |
 | `overdue` 没有可占据的状态 | `rg overdue packages/core/src/db/schema.ts` | 无匹配；状态为 `captured/planned/scheduled/completed/risk/cancelled` |
 | 记忆按唯一公开规则激活 | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | 情绪句不会变成记忆 | `pnpm eval` | fixture `S04` 通过 |
@@ -48,6 +48,7 @@ spec/schema.sql is up to date.
 | 被依赖阻塞的任务不会被排期 | `packages/core/test/dependencies.test.ts` | 规划器跳过；阻塞项完成后自动释放；循环依赖被拒绝 |
 | Now 是当下最合适的行动，而不是排在最前的 | `packages/core/test/planningIntelligence.test.ts` | 上下文匹配胜出，理由随结果返回 |
 | 一天被分为 core / optional / deferred | `packages/core/test/planningIntelligence.test.ts` | 风险项进入 core，装得下的进入 optional，其余 deferred |
+| 新原则的权重高于旧经历 | `packages/core/test/memoryValue.test.ts` | 等级、衰减与价值评分决定检索排序 |
 | 高风险 agent 动作会等待决定 | `packages/core/test/actionGate.test.ts` | 关键级需两次批准；撤销不可逆 |
 | Action Gate 可在 MCP 中使用 | `packages/mcp/test/tools.test.ts` | `actions` profile 暴露 list/decide/revoke |
 | 信任来自决定，而非沉默 | `packages/core/test/trustScore.test.ts` | 无证据时等级 0；六次决定、0.75 时到等级 2 |

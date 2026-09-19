@@ -42,6 +42,9 @@ The shared vocabulary. Planning-specific terms live in
 | **Archived** | a memory the user removed from use |
 | **Evidence** | the excerpt, confidence and input id behind a memory |
 | **Activation gate** | `confidence >= 0.8` and `importance >= 0.8`; everything below waits as a candidate |
+| **Memory level** | how much a kind shapes behaviour: experience 0, decision/project context 1, preference 2, principle 3 |
+| **Memory decay** | the half-life of a kind — a month for an experience, years for a principle |
+| **Value score** | explicitness, frequency, impact, scope and future relevance averaged into one weight |
 
 ## Runtime
 
