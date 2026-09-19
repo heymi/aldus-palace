@@ -1,18 +1,31 @@
 # @aldus-palace/mcp
 
-**Give your assistant a memory you own.** An MCP server that records thoughts,
-commitments and decisions into a database on your machine — and reads your day
-back — inside Claude Desktop, Claude Code, Cursor or any MCP client.
+> **You told your assistant something important. It remembered — in a place you
+> cannot read, scoped to that one tool, and gone the moment you switch client.**
 
 ```bash
 npm install -g @aldus-palace/mcp
 ```
 
+---
+
+**The moment.** You use Claude Desktop at your desk and Claude Code in the
+terminal. Neither knows what the other was told. You mention, once, that a UI felt
+noisy — six weeks later the assistant is confident you *prefer minimalism*, and
+there is no way to see where that came from or correct it. Meanwhile the decision
+you actually made is nowhere.
+
+**This puts the same context in a file you own** — and gives you the tools to
+inspect it: what it remembers, why, and what you replaced. It works in Claude
+Desktop, Claude Code, Cursor or any MCP client, and every client shares one
+database.
+
 ## Why not the assistant's built-in memory
 
 Built-in memory is a black box: scoped to one tool, unreadable, unexportable,
-and it cannot tell you why it believes something. This puts the same context in a
-SQLite file you can open, query, back up, and share across every client you use.
+and it cannot tell you why it believes something. Here, memories are candidates
+until you confirm them, every one carries its evidence, contradictions surface as
+a question, and replacing a belief keeps the old version readable.
 
 - **Portable** — one file, or one Worker. Change client or model freely.
 - **Auditable** — every memory carries its evidence and confidence.

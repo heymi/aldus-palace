@@ -1,19 +1,31 @@
 # @aldus-palace/core
 
-**The runtime behind Aldus Palace**: a domain model for human intent, an agent
-that turns free text into structured objects, a memory gate, and a scheduling
-projection — with no global state and nothing to configure.
+> **The user typed a paragraph. Somewhere in it there is a task, a decision and a
+> thing you should never forget. Your database needs all three, typed.**
 
 ```bash
 npm install @aldus-palace/core
 ```
 
+---
+
+**The moment.** Week one of building anything that takes natural-language input.
+A user types *“push the launch to Friday, and I keep going back and forth on
+pricing.”* One task, two tasks, a note, a decision? You guess, and you ship the
+guess. Three weeks later the model produces shapes your tables cannot hold, the
+same task exists three times, and someone asks why the assistant believes the user
+prefers minimalism.
+
+**This is that problem, already solved and tested.** A domain model for human
+intent, an agent that turns free text into typed objects, a memory gate that
+requires evidence and confirmation, and a scheduling projection with no
+`overdue` state — with no global state and nothing to configure.
+
 ## Why you'd use it
 
-You are building something where people state intentions — a notes app, an
-assistant, a support tool, an internal bot — and you are about to invent a data
-model, a prompt pipeline, a duplicate strategy, a memory policy and a scheduler.
-This is that, already decided and tested:
+You are about to invent a data model, a prompt pipeline, a duplicate strategy, a
+memory policy and a scheduler. Here is what each of those looks like when it is
+already decided and tested:
 
 | You'd otherwise build | What's here instead |
 |---|---|
