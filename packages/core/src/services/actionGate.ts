@@ -298,6 +298,8 @@ export async function proposeAction(
     locale?: Locale;
     /** When provided, this autonomy level decides what runs without asking. */
     autonomyLevel?: AutonomyLevel;
+    /** Stable key so an approved action runs at most once. Defaults to the id. */
+    idempotencyKey?: string;
   }
 ): Promise<ProposeActionResult> {
   const actor = input.actor ?? "agent";
@@ -314,8 +316,8 @@ export async function proposeAction(
     .prepare(
       `INSERT INTO action_proposals
        (id, user_id, action_type, payload, risk, status, actor, reason,
-        decided_by, decided_at, confirmations, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0, ?, ?)`
+        decided_by, decided_at, confirmations, idempotency_key, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0, ?, ?, ?)`
     )
     .run(
       id,
@@ -326,6 +328,7 @@ export async function proposeAction(
       status,
       actor,
       input.reason ?? reason,
+      input.idempotencyKey ?? id,
       t,
       t
     );
@@ -472,4 +475,257 @@ export async function runGatedAction<T>(
     return { ...proposed, ran: true, result };
   }
   return { ...proposed, ran: false };
+}
+
+// --------------------------------------------------------------------------
+// Durable execution
+// --------------------------------------------------------------------------
+
+export type ActionExecutionStatus =
+  | "pending"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "skipped";
+
+/** How long one worker holds an action before another may reclaim it. */
+export const EXECUTION_LEASE_MS = 60_000;
+
+export type ActionExecutorContext = {
+  userId: string;
+  proposalId: string;
+  actionType: string;
+  actionVersion: number;
+  payload: Record<string, unknown>;
+  idempotencyKey: string;
+};
+
+export type ActionExecutor = (
+  context: ActionExecutorContext
+) => Promise<unknown>;
+
+/** Executors are provided by the composition root: core cannot know effects. */
+export type ActionExecutorRegistry = Record<string, ActionExecutor>;
+
+export type ExecutionResult =
+  | {
+      ok: true;
+      executed: boolean;
+      status: ActionExecutionStatus;
+      result?: unknown;
+      reason?: string;
+    }
+  | { ok: false; error: string };
+
+function parseJson<T = unknown>(value: unknown): T | null {
+  if (typeof value !== "string" || !value) return null;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function markExecution(
+  db: SqlDatabase,
+  userId: string,
+  proposalId: string,
+  patch: {
+    status: ActionExecutionStatus;
+    result?: string;
+    error?: string;
+    now: string;
+  }
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE action_proposals
+       SET execution_status = ?, result = COALESCE(?, result), error = COALESCE(?, error),
+           executed_at = ?, execution_leased_until = NULL, updated_at = ?
+       WHERE id = ? AND user_id = ?`
+    )
+    .run(
+      patch.status,
+      patch.result ?? null,
+      patch.error ?? null,
+      patch.now,
+      patch.now,
+      proposalId,
+      userId
+    );
+}
+
+async function logExecution(
+  db: SqlDatabase,
+  userId: string,
+  proposalId: string,
+  actionType: string,
+  status: ActionExecutionStatus,
+  detail: string,
+  locale?: Locale
+): Promise<void> {
+  const logType =
+    status === "succeeded"
+      ? "action_executed"
+      : status === "failed"
+        ? "action_execution_failed"
+        : "action_execution_skipped";
+  await writeActionLog(db, {
+    user_id: userId,
+    actor: "agent",
+    action_type: logType,
+    summary: actionSummary(
+      logType,
+      { action_type: actionType, detail },
+      locale ?? "en"
+    ),
+    reason: detail,
+    entity_type: "action_proposal",
+    entity_id: proposalId,
+    payload: { execution_status: status },
+  });
+}
+
+/** Claim the execution lease; false when another worker holds a live one. */
+async function claimExecution(
+  db: SqlDatabase,
+  userId: string,
+  proposalId: string,
+  at: Date,
+  now: string
+): Promise<boolean> {
+  const leaseUntil = new Date(at.getTime() + EXECUTION_LEASE_MS).toISOString();
+  const result = await db
+    .prepare(
+      `UPDATE action_proposals
+       SET execution_status = 'running', execution_leased_until = ?, updated_at = ?
+       WHERE id = ? AND user_id = ?
+         AND (execution_status != 'running'
+              OR execution_leased_until IS NULL
+              OR execution_leased_until < ?)`
+    )
+    .run(leaseUntil, now, proposalId, userId, now);
+  return Number(result.changes ?? 0) === 1;
+}
+
+/**
+ * Run an approved action at most once.
+ *
+ * The executor is chosen by action type and provided by the caller, because only
+ * the caller knows how an action affects the world. The proposal carries an
+ * idempotency key, a lease guards against two workers, and the result or the
+ * error is recorded. A revoked proposal never runs, `canExecute` re-checks
+ * permissions at execution time, and a succeeded action is not run again.
+ */
+export async function executeApprovedAction(
+  db: SqlDatabase,
+  userId: string,
+  proposalId: string,
+  executors: ActionExecutorRegistry,
+  options: {
+    at?: Date;
+    canExecute?: (context: ActionExecutorContext) => Promise<boolean>;
+    locale?: Locale;
+  } = {}
+): Promise<ExecutionResult> {
+  const row = await getProposal(db, userId, proposalId);
+  if (!row) return { ok: false, error: "not_found" };
+
+  const status = String(row.status) as ActionStatus;
+  if (status !== "approved" && status !== "notified") {
+    return { ok: false, error: "not_approved" };
+  }
+
+  const execution = String(row.execution_status ?? "pending") as ActionExecutionStatus;
+  if (execution === "succeeded") {
+    return {
+      ok: true,
+      executed: false,
+      status: "succeeded",
+      reason: "already_succeeded",
+      result: parseJson(row.result),
+    };
+  }
+
+  const at = options.at ?? new Date();
+  const now = at.toISOString();
+  if (execution === "running") {
+    const leasedUntil = row.execution_leased_until
+      ? Date.parse(String(row.execution_leased_until))
+      : 0;
+    if (Number.isFinite(leasedUntil) && leasedUntil > at.getTime()) {
+      return { ok: false, error: "in_progress" };
+    }
+  }
+
+  const actionType = String(row.action_type);
+  const executor = executors[actionType];
+  if (!executor) return { ok: false, error: "no_executor" };
+
+  const context: ActionExecutorContext = {
+    userId,
+    proposalId,
+    actionType,
+    actionVersion: Number(row.action_version ?? 1),
+    payload: parseJson<Record<string, unknown>>(row.payload) ?? {},
+    idempotencyKey: String(row.idempotency_key ?? proposalId),
+  };
+
+  if (options.canExecute && !(await options.canExecute(context))) {
+    await markExecution(db, userId, proposalId, {
+      status: "skipped",
+      error: "permission_revoked",
+      now,
+    });
+    await logExecution(
+      db,
+      userId,
+      proposalId,
+      actionType,
+      "skipped",
+      "permission_revoked",
+      options.locale
+    );
+    return { ok: true, executed: false, status: "skipped", reason: "permission_revoked" };
+  }
+
+  if (!(await claimExecution(db, userId, proposalId, at, now))) {
+    return { ok: false, error: "in_progress" };
+  }
+
+  try {
+    const result = await executor(context);
+    await markExecution(db, userId, proposalId, {
+      status: "succeeded",
+      result: JSON.stringify(result ?? null),
+      now,
+    });
+    await logExecution(
+      db,
+      userId,
+      proposalId,
+      actionType,
+      "succeeded",
+      context.idempotencyKey,
+      options.locale
+    );
+    return { ok: true, executed: true, status: "succeeded", result };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await markExecution(db, userId, proposalId, {
+      status: "failed",
+      error: message,
+      now,
+    });
+    await logExecution(
+      db,
+      userId,
+      proposalId,
+      actionType,
+      "failed",
+      message,
+      options.locale
+    );
+    return { ok: true, executed: true, status: "failed", reason: message };
+  }
 }

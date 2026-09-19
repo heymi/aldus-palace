@@ -197,6 +197,23 @@ function build(locale: ActionLocale): Record<string, MsgFn> {
       if (zh) return `已撤销动作：${action}`;
       return `Revoked action: ${action}`;
     },
+    action_executed: (p) => {
+      const action = p?.action_type ? String(p.action_type) : "";
+      if (zh) return `已执行动作：${action}`;
+      return `Executed action: ${action}`;
+    },
+    action_execution_failed: (p) => {
+      const action = p?.action_type ? String(p.action_type) : "";
+      const detail = p?.detail ? String(p.detail) : "";
+      if (zh) return detail ? `动作执行失败：${action}（${detail}）` : `动作执行失败：${action}`;
+      return detail ? `Action failed: ${action} (${detail})` : `Action failed: ${action}`;
+    },
+    action_execution_skipped: (p) => {
+      const action = p?.action_type ? String(p.action_type) : "";
+      const detail = p?.detail ? String(p.detail) : "";
+      if (zh) return detail ? `动作未执行：${action}（${detail}）` : `动作未执行：${action}`;
+      return detail ? `Action skipped: ${action} (${detail})` : `Action skipped: ${action}`;
+    },
     autonomy_ceiling_changed: (p) => {
       const ceiling = Number(p?.ceiling ?? 0);
       if (zh) return `自主上限设为 ${ceiling}`;
