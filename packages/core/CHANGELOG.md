@@ -1,5 +1,12 @@
 # @aldus-palace/core
 
+## 0.3.3
+
+### Patch Changes
+
+- Rewrite the package READMEs around the problem each capability solves, with the
+  concrete moment it saves you from, instead of a feature list.
+
 ## 0.3.2
 
 ### Patch Changes
