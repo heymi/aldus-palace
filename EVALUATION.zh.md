@@ -16,9 +16,9 @@ pnpm demo       # 离线捕获演示
 `pnpm verify` 通过时，结尾会看到类似片段：
 
 ```
-packages/core test: All 14 suites passed.
+packages/core test: All 15 suites passed.
 packages/mcp test: mcp tool tests passed.
-apps/server test: All 2 suites passed.
+apps/server test: All 3 suites passed.
 All fixtures passed.
 spec/schema.sql is up to date.
 ```
@@ -32,7 +32,7 @@ spec/schema.sql is up to date.
 | 主张 | 验证方式 | 预期 |
 |---|---|---|
 | 自由文本变成带类型的对象 | `pnpm demo` | `Captured · 1 commitment`，窗口已解析 |
-| 流水线可离线运行 | `pnpm verify` | 17 个套件与 11 个 fixture 无需 key 通过 |
+| 流水线可离线运行 | `pnpm verify` | 19 个套件与 11 个 fixture 无需 key 通过 |
 | `overdue` 没有可占据的状态 | `rg overdue packages/core/src/db/schema.ts` | 无匹配；状态为 `captured/planned/scheduled/completed/risk/cancelled` |
 | 记忆按唯一公开规则激活 | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | 情绪句不会变成记忆 | `pnpm eval` | fixture `S04` 通过 |
@@ -43,6 +43,7 @@ spec/schema.sql is up to date.
 | 后台增强可承受重试 | `packages/core/test/enrichmentLease.test.ts` | lease 与 generation 断言 |
 | 模型提议，服务端决定 | `packages/core/test/inputObjectClassification.test.ts` | 每次捕获只有一个对象模式 |
 | 缺失时长会按历史估算 | `packages/core/test/adaptivePlanning.test.ts` | 时段长度跟随项目历史中位数 |
+| 高风险 agent 动作会等待决定 | `packages/core/test/actionGate.test.ts` | 关键级需两次批准；撤销不可逆 |
 | schema 是唯一真相源 | `pnpm spec:check` | `spec/schema.sql` 与 `db/schema.ts` 一致 |
 | 一份记录，三个入口 | `packages/mcp`、`apps/server`、`packages/core` | 各处使用同一 schema 与迁移 |
 | MCP 工具返回可读卡片 | `pnpm --filter @aldus-palace/mcp test` | 断言卡片文本，payload 在 `structuredContent` |
@@ -54,7 +55,7 @@ README 按引擎标注了已交付与设计中的部分，完整设计见 [`docs
 
 - 规划引擎的约束模型、上下文切换成本、每日缓冲与任务迁移（见 [`ROADMAP.md`](ROADMAP.md) 的 "Planning, deepened"）。
 - 分级记忆、按类型衰减与完整价值评分。
-- 信任与自主引擎，以及 Action Gate。
+- 信任与自主引擎：自主等级、信任分与权限演进。Action Gate 本身已交付。
 - 隐私架构：本地加密、细粒度权限、Privacy Gateway。
 - Postgres 适配器与 SwiftUI 客户端（`clients/` 目前是占位目录）。
 

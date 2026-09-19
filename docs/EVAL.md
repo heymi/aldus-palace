@@ -20,6 +20,9 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |
 | `memoryEvolution` | rule-based conflict detection, supersede, version chains |
 | `actionableWork` | English imperatives, Chinese build verbs, non-work cases |
+| `actionGate` | the published risk table, decisions, two-step critical approval, revocation, audit |
+| `durationEstimate` | stated/history blending, the median, bounds, invalid input |
+| `format` | the locale-aware capture card and Today text projection |
 | `providers` | request shaping for Anthropic and OpenAI-compatible providers |
 | `llm-config` | wrangler and code agree on the default model |
 

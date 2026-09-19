@@ -102,7 +102,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 17 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 19 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -202,7 +202,7 @@ context        active memories and projects feed the next capture
 |---|---|---|
 | **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, retrieval into the next capture | graded levels, decay by kind, the value score, more kinds and extraction signals, a memory graph |
 | **Planning** | four kinds of time, concrete constraint handling (deadline, window, learned project preference), priority scoring, slot search that avoids conflicts, duration estimation from project history, Today, risk, adaptive limits, a learned behaviour model, light triage | richer constraints, a blended priority score, schedule optimization with context-switch cost, buffer, migration |
-| **Trust & autonomy** | one fixed rule — a capture lands on its own, a stated principle takes effect, the rest waits | an action risk model, autonomy levels 0–4, a trust score, permission evolution |
+| **Trust & autonomy** | one fixed rule, plus an Action Gate: low and medium actions run, high waits for one approval, critical for two | autonomy levels 0–4, a trust score, permission evolution |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
 The code lives in `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts`, `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts` and `providers/`. The full design, with each engine's shipped and planned parts in depth, is in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
@@ -270,9 +270,10 @@ personality from one remark. Replace the old record and the history disappears.
 | Work streams | grouping is a rebuildable projection; the records stay as they are | `services/workStreams.ts` |
 | HTTP API | one schema, two runtimes: a local SQLite file and a Cloudflare Durable Object | `apps/server` |
 | MCP server | runs with no server process, against the same local file | `packages/mcp` |
+| Action Gate | an unclassified agent action waits; a critical one needs two approvals; every decision is logged and revocable | `services/actionGate.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 17 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 19 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -281,7 +282,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 17 suites — deterministic, offline, no API key
+pnpm test     # 19 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -368,9 +369,9 @@ pnpm demo       # the offline capture demo
 A passing `pnpm verify` ends with fragments like:
 
 ```
-packages/core test: All 14 suites passed.
+packages/core test: All 15 suites passed.
 packages/mcp test: mcp tool tests passed.
-apps/server test: All 2 suites passed.
+apps/server test: All 3 suites passed.
 All fixtures passed.
 spec/schema.sql is up to date.
 ```
@@ -387,7 +388,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 17 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 19 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -398,6 +399,7 @@ If you cannot run the repository, the real output is committed:
 | Background enrichment survives retries | `packages/core/test/enrichmentLease.test.ts` | lease and generation assertions |
 | The model proposes, the server decides | `packages/core/test/inputObjectClassification.test.ts` | one object mode per capture |
 | A missing duration is estimated from history | `packages/core/test/adaptivePlanning.test.ts` | the slot follows the project median |
+| A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
 | The schema is the single source of truth | `pnpm spec:check` | `spec/schema.sql` matches `db/schema.ts` |
 | One record, three surfaces | `packages/mcp`, `apps/server`, `packages/core` | the same schema and migrations everywhere |
 | MCP tools return a readable card | `pnpm --filter @aldus-palace/mcp test` | card text asserted, payload in `structuredContent` |
@@ -410,7 +412,8 @@ The README marks shipped and designed parts per engine; the full intent lives in
 - The planning engine's constraint model, context-switch cost, daily buffer and
   task migration ([`ROADMAP.md`](ROADMAP.md), "Planning, deepened").
 - Graded memory levels, decay and the full value score.
-- The trust and autonomy engine, and the Action Gate.
+- The trust and autonomy engine: autonomy levels, the trust score and permission
+  evolution. The Action Gate itself ships.
 - The privacy architecture: local encryption, fine-grained permissions, the
   Privacy Gateway.
 - Postgres adapter and the SwiftUI client (`clients/` is a placeholder).
@@ -897,15 +900,21 @@ earned.*
 - **One fixed rule.** A capture lands on its own; a principle the user states
   takes effect; everything else waits for the user. The runtime writes an
   `action_log` entry for every mutation.
+- **An action gate** (`services/actionGate.ts`). Every proposed agent action is
+  graded against a published table: low and medium run (medium is recorded as a
+  notification), high waits for one approval, critical needs two, and an
+  unclassified action waits. `action_proposals` holds the trail; a revocation is
+  a status change, and every step writes an `action_log` entry.
 
 ### Designed
 
-- **An action risk model** — risk, reversibility and visibility of each proposed
-  action.
-- **Autonomy levels 0–4** — from "propose only" to "act and report".
+- **Autonomy levels 0–4** built on the proposal table, from "propose only" to
+  "act and report".
 - **A trust score** accumulated from outcomes, not assumed.
 - **Permission evolution** — authority grows with demonstrated reliability.
 - **Proactive rules**, judged on evidence, pattern and value.
+- **Routing the capture and planning flows through the gate.** Their action
+  types are graded low today, so the gate is available without changing them.
 
 ---
 
@@ -1069,6 +1078,9 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |
 | `memoryEvolution` | rule-based conflict detection, supersede, version chains |
 | `actionableWork` | English imperatives, Chinese build verbs, non-work cases |
+| `actionGate` | the published risk table, decisions, two-step critical approval, revocation, audit |
+| `durationEstimate` | stated/history blending, the median, bounds, invalid input |
+| `format` | the locale-aware capture card and Today text projection |
 | `providers` | request shaping for Anthropic and OpenAI-compatible providers |
 | `llm-config` | wrangler and code agree on the default model |
 
@@ -1258,7 +1270,7 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 | Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
-| Replayable offline | 17 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 19 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 
@@ -1302,6 +1314,7 @@ it, the doc that explains it and the suite that pins it.
 | HTTP API | `apps/server/src/` | [08](capabilities/08-http-api.md) | `apps/server/test/` |
 | MCP server | `packages/mcp/src/` | [09](capabilities/09-mcp.md) | `packages/mcp/test/tools.test.ts` |
 | Text projections | `packages/core/src/lib/format.ts` | [EVALUATION](../EVALUATION.md) | `packages/core/test/format.test.ts` |
+| Action Gate | `packages/core/src/services/actionGate.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [ADR 0005](adr/0005-action-gate-with-published-risk.md) | `packages/core/test/actionGate.test.ts` |
 | Acceptance fixtures | `eval/fixtures/` | [EVAL](EVAL.md) | `pnpm eval` |
 | The engine design | `docs/INTELLIGENCE.md` (design) | [INTELLIGENCE](INTELLIGENCE.md) | shipped parts above |
 
@@ -1377,6 +1390,7 @@ The shared vocabulary. Planning-specific terms live in
 | **Progressive capture** | the local pass writes first; the model replaces derived fields under a lease |
 | **Enrichment lease** | the mechanism that makes "local first, model second" idempotent under retries |
 | **Action log** | an append-only row written on every mutation, with a reason |
+| **Action Gate** | the published risk table that decides whether a proposed agent action runs or waits; a decision is logged and revocable (`services/actionGate.ts`) |
 | **Storage port** | the async `SqlDatabase` interface; the only I/O boundary in `packages/core` |
 | **Projection** | a view rebuilt from the source of truth, never a second truth (Today, work streams) |
 
@@ -1519,10 +1533,11 @@ it:
 
 ## Autonomy and models
 
-- [ ] **Trust and autonomy engine.** Risk, reversibility, visibility and an
-  accumulated trust score would decide what the system may do without asking.
-  Today the rule is fixed: capture lands on its own, and a stated principle takes
-  effect, while everything else waits for the user.
+- [x] **An Action Gate.** A published risk table grades every proposed agent
+  action: low and medium run, high waits for one approval, critical needs two,
+  and every decision is logged and revocable (`services/actionGate.ts`).
+- [ ] **A trust and autonomy engine.** An accumulated trust score and autonomy
+  levels would widen what the system may do without asking, on top of the gate.
 - [ ] **Model orchestration.** One provider interface serves every call today.
   The design routes work by task: a fast model for classification, a reasoning
   model for planning and conflict, embeddings for memory retrieval, and a local

@@ -78,7 +78,7 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 | **每日视图回答什么** | 列出全部 | 现在做什么、什么有风险、什么未排期；排满的一天会建议休息 |
 | **有几份数据** | 每个应用一份 | 一份记录，MCP、HTTP 与库都能访问：Claude、Cursor、你的前端、脚本 |
 | **记录存在哪** | 厂商云 | 你拥有的 SQLite 文件，或一个 Cloudflare Worker；可复制、可备份、可转交 |
-| **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；17 个套件与 11 个 fixture 每次重放 |
+| **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；19 个套件与 11 个 fixture 每次重放 |
 
 ## 当前边界
 
@@ -161,7 +161,7 @@ context        active memories and projects feed the next capture
 |---|---|---|
 | **Memory** | 抽取、污染门、激活门、每行证据、去重、冲突检测、版本化 supersede、回注下一次捕获 | 分级记忆、按类型衰减、价值评分、更多类型与信号、记忆图谱 |
 | **Planning** | 四类时间、具体约束处理（截止/窗口/学习到的项目偏好）、优先级评分、避开冲突的时段搜索、按项目历史估算时长、Today、风险、自适应上限、行为模型、轻量分诊 | 更完整的约束、混合优先级、含切换成本的调度优化、缓冲、迁移 |
-| **Trust & autonomy** | 一条固定规则——捕获自动落地、用户陈述的原则生效、其余等待 | 风险模型、自主等级 0–4、信任分、权限演进 |
+| **Trust & autonomy** | 一条固定规则，外加 Action Gate：低/中风险直接执行，高风险等一次批准，关键级要两次 | 自主等级 0–4、信任分、权限演进 |
 | **Model orchestration** | 一个 `LLMProvider` 接口与三种实现，配置由调用方解析 | 按任务路由——快速分类、推理、embedding、敏感输入的本地模型 |
 
 代码位于 `lib/memoryExtract.ts`、`lib/memoryActivation.ts`、`services/memoryLifecycle.ts`、`services/memoryEvolution.ts`、`services/today.ts`、`services/planToday.ts`、`services/adaptivePlanning.ts` 与 `providers/`。完整设计（每个引擎的已交付与计划部分）见 [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md)。
@@ -222,7 +222,7 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm verify   # 17 个套件 + 11 个 fixture + 构建 + 校验，全部离线
+pnpm verify   # 19 个套件 + 11 个 fixture + 构建 + 校验，全部离线
 pnpm demo     # 上面的捕获演示
 
 pnpm --filter @aldus-palace/example-understanding-only start

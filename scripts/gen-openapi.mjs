@@ -92,6 +92,29 @@ const meta = {
   "GET /v1/clarifications": { summary: "Open time clarifications", tag: "Clarifications", response: "Clarification" },
   "POST /v1/clarifications/{id}/resolve": { summary: "Answer a time clarification", tag: "Clarifications" },
   "GET /v1/activity": { summary: "The action log", tag: "Activity", response: "ActionLog" },
+  "GET /v1/actions": { summary: "Agent actions proposed, waiting and decided", tag: "Actions", response: "ActionProposal" },
+  "POST /v1/actions/{id}/decide": {
+    summary: "Approve or reject a waiting action; a critical action needs two approvals",
+    tag: "Actions",
+    request: {
+      type: "object",
+      required: ["decision"],
+      properties: {
+        decision: { type: "string", enum: ["approve", "reject"] },
+        reason: { type: "string" },
+      },
+    },
+    response: "ActionProposal",
+  },
+  "POST /v1/actions/{id}/revoke": {
+    summary: "Revoke a proposal or an approval",
+    tag: "Actions",
+    request: {
+      type: "object",
+      properties: { reason: { type: "string" } },
+    },
+    response: "ActionProposal",
+  },
 };
 
 function parseRoutes() {
@@ -279,6 +302,25 @@ const spec = {
           reason: { type: ["string", "null"] },
           created_at: { type: "string", format: "date-time" },
         },
+      },
+      ActionProposal: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          action_type: { type: "string" },
+          payload: { type: "string", description: "JSON-encoded action payload." },
+          risk: { type: "string", enum: ["low", "medium", "high", "critical"] },
+          status: {
+            type: "string",
+            enum: ["approved", "notified", "proposed", "pending_second", "rejected", "revoked"],
+          },
+          actor: { type: "string", enum: ["user", "agent"] },
+          reason: { type: ["string", "null"] },
+          decided_by: { type: ["string", "null"] },
+          decided_at: { type: ["string", "null"], format: "date-time" },
+          confirmations: { type: "integer" },
+        },
+        required: ["id", "action_type", "risk", "status"],
       },
     },
   },

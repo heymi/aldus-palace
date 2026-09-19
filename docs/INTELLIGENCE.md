@@ -197,15 +197,21 @@ earned.*
 - **One fixed rule.** A capture lands on its own; a principle the user states
   takes effect; everything else waits for the user. The runtime writes an
   `action_log` entry for every mutation.
+- **An action gate** (`services/actionGate.ts`). Every proposed agent action is
+  graded against a published table: low and medium run (medium is recorded as a
+  notification), high waits for one approval, critical needs two, and an
+  unclassified action waits. `action_proposals` holds the trail; a revocation is
+  a status change, and every step writes an `action_log` entry.
 
 ### Designed
 
-- **An action risk model** — risk, reversibility and visibility of each proposed
-  action.
-- **Autonomy levels 0–4** — from "propose only" to "act and report".
+- **Autonomy levels 0–4** built on the proposal table, from "propose only" to
+  "act and report".
 - **A trust score** accumulated from outcomes, not assumed.
 - **Permission evolution** — authority grows with demonstrated reliability.
 - **Proactive rules**, judged on evidence, pattern and value.
+- **Routing the capture and planning flows through the gate.** Their action
+  types are graded low today, so the gate is available without changing them.
 
 ---
 

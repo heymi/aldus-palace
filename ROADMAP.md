@@ -69,10 +69,11 @@ it:
 
 ## Autonomy and models
 
-- [ ] **Trust and autonomy engine.** Risk, reversibility, visibility and an
-  accumulated trust score would decide what the system may do without asking.
-  Today the rule is fixed: capture lands on its own, and a stated principle takes
-  effect, while everything else waits for the user.
+- [x] **An Action Gate.** A published risk table grades every proposed agent
+  action: low and medium run, high waits for one approval, critical needs two,
+  and every decision is logged and revocable (`services/actionGate.ts`).
+- [ ] **A trust and autonomy engine.** An accumulated trust score and autonomy
+  levels would widen what the system may do without asking, on top of the gate.
 - [ ] **Model orchestration.** One provider interface serves every call today.
   The design routes work by task: a fast model for classification, a reasoning
   model for planning and conflict, embeddings for memory retrieval, and a local
