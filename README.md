@@ -327,7 +327,14 @@ pnpm --filter @aldus-palace/example-today-only start
 ```
 
 Each example prints the records it stored and the reasoning behind them, with no
-API key and no network.
+API key and no network. To see it in a browser, start the server and the
+reference client — capture a sentence, then watch Now, Memory, Evidence and the
+approval queue:
+
+```bash
+pnpm --filter @aldus-palace/server start                  # API on :8787
+pnpm --filter @aldus-palace/example-reference-client start # client on :5173
+```
 
 ## Install
 
@@ -367,7 +374,7 @@ packages/core          domain, agent runtime, storage port, migrations, provider
 packages/mcp           MCP server (stdio) — profiles, local and HTTP backends
 packages/client        typed HTTP client, one method per route
 apps/server            Hono reference server (local SQLite and Cloudflare Durable Object)
-examples/              five runnable examples, one per capability group
+examples/              six runnable examples, one per capability group (the last is a browser client)
 spec/schema.sql        generated, readable schema (CI-checked)
 eval/fixtures          acceptance scenarios
 docs/                  everything above

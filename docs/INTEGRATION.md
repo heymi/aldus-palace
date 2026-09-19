@@ -161,6 +161,7 @@ store; the bundled adapter covers SQLite.
 | [`examples/memory-gate-only`](../examples/memory-gate-only) | candidate → conflict → confirm → supersede |
 | [`examples/today-only`](../examples/today-only) | four time models, Today projection, work streams |
 | [`examples/http-client`](../examples/http-client) | the same capabilities over HTTP |
+| [`examples/reference-client`](../examples/reference-client) | a browser: capture, Now, Memory, Evidence, action approval |
 
 ```bash
 pnpm install

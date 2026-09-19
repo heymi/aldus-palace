@@ -277,7 +277,12 @@ pnpm --filter @aldus-palace/example-memory-gate-only start
 pnpm --filter @aldus-palace/example-today-only start
 ```
 
-每个示例都会打印它存储的记录以及背后的推理，无需 API key，无需网络。
+每个示例都会打印它存储的记录以及背后的推理，无需 API key，无需网络。想在浏览器里看，就启动 server 与 reference client —— 写一句话，然后看 Now、Memory、Evidence 与待批准队列如何变化：
+
+```bash
+pnpm --filter @aldus-palace/server start                   # API 在 :8787
+pnpm --filter @aldus-palace/example-reference-client start # 客户端在 :5173
+```
 
 ## 安装
 
@@ -317,7 +322,7 @@ packages/core          领域模型、agent 运行时、存储端口、迁移、
 packages/mcp           MCP 服务器（stdio）——profiles、本地与 HTTP 后端
 packages/client        类型化 HTTP 客户端，每个路由一个方法
 apps/server            Hono 参考服务器（本地 SQLite 与 Cloudflare Durable Object）
-examples/              五个可运行示例，覆盖各能力组
+examples/              六个可运行示例，覆盖各能力组（最后一个是浏览器客户端）
 spec/schema.sql        生成的可读 schema（CI 校验）
 eval/fixtures          验收场景
 docs/                  以上全部文档
