@@ -2,6 +2,7 @@ import {
   AnthropicProvider,
   DevLLMProvider,
   OpenAICompatibleProvider,
+  PrivacyGuardRequiredError,
   ProviderConfigError,
   createLLMProvider,
   isPrivacyGuarded,
@@ -59,6 +60,14 @@ try {
 assert(guardRequired, "a cloud provider without a guard is refused");
 
 const passThrough = async (messages: ChatMessage[]): Promise<ChatMessage[]> => messages;
+
+let classRefused = false;
+try {
+  new AnthropicProvider({ apiKey: "k", model: "m" } as never);
+} catch (error) {
+  classRefused = error instanceof PrivacyGuardRequiredError;
+}
+assert(classRefused, "the provider class itself refuses construction without a guard");
 const guardedCloud = createLLMProvider(
   { kind: "anthropic", apiKey: "k", model: "m", log: () => {} },
   passThrough
@@ -87,7 +96,11 @@ globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
 }) as typeof fetch;
 
 try {
-  const anthropic = new AnthropicProvider({ apiKey: "sk-ant", model: "claude-sonnet-4-5" });
+  const anthropic = new AnthropicProvider({
+    apiKey: "sk-ant",
+    model: "claude-sonnet-4-5",
+    guard: passThrough,
+  });
   const text = await anthropic.complete(
     [
       { role: "system", content: "SYSTEM RULES" },
@@ -123,6 +136,7 @@ try {
     apiKey: "k",
     baseUrl: "https://api.deepseek.com/",
     model: "deepseek-chat",
+    guard: passThrough,
   });
   assert(compatible.name === "openai-compatible", "default display name");
   await compatible.complete([{ role: "user", content: "hi" }], { json: true });

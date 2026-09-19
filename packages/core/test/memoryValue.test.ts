@@ -101,12 +101,25 @@ async function addMemory(id: string, type: string, content: string, updatedAt: s
 
 await addMemory("old-exp", "experience", "prefers simplicity in tools", "2024-09-19T04:00:00.000Z", 0.3);
 await addMemory("fresh-principle", "principle", "prefers simplicity above all", now.toISOString(), 0.9);
+await addMemory("lone-exp", "experience", "deployed the release on a Tuesday", now.toISOString(), 0.9);
 
 const retrieved = await retrieveActiveMemoriesForContext(db, "u1", "simplicity", 5);
 assert(retrieved.length === 2, "both memories match the token");
 assert(
   retrieved[0].id === "fresh-principle",
   `the fresh principle ranks first, got ${retrieved[0].id}`
+);
+
+// When nothing matches, principles and preferences fill the context — an
+// unrelated experience is not injected.
+const noMatch = await retrieveActiveMemoriesForContext(db, "u1", "zzzz", 5);
+assert(
+  noMatch.every((memory) => memory.type !== "experience"),
+  "a non-matching query does not inject an experience"
+);
+assert(
+  noMatch.some((memory) => memory.type === "principle"),
+  "a non-matching query falls back to principles"
 );
 
 finish("memory value tests passed.");

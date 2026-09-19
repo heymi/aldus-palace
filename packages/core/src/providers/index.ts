@@ -1,6 +1,6 @@
 import { AnthropicProvider } from "./anthropic.js";
 import { DevLLMProvider } from "./dev.js";
-import { withMessageGuard, type MessageGuard } from "./guard.js";
+import { type MessageGuard } from "./guard.js";
 import { OpenAICompatibleProvider } from "./openai_compatible.js";
 import type { LLMProvider } from "./types.js";
 
@@ -13,6 +13,7 @@ export type { AnthropicOptions } from "./anthropic.js";
 export {
   PRIVACY_GUARDED,
   PrivacyBlockedError,
+  PrivacyGuardRequiredError,
   isPrivacyGuarded,
   withMessageGuard,
   type MessageGuard,
@@ -78,20 +79,19 @@ export function createLLMProvider(
     );
   }
 
-  const provider = buildCloudProvider(config, apiKey, log);
-
   if (!guard) {
     throw new ProviderConfigError(
       `provider "${config.kind}" requires a privacy guard (build one with createMessageGuard and pass it to createLLMProvider)`
     );
   }
-  return withMessageGuard(provider, guard);
+  return buildCloudProvider(config, apiKey, log, guard);
 }
 
 function buildCloudProvider(
   config: ProviderConfig,
   apiKey: string,
-  log: (message: string) => void
+  log: (message: string) => void,
+  guard: MessageGuard
 ): LLMProvider {
   if (config.kind === "anthropic") {
     const model = config.model?.trim() || DEFAULT_ANTHROPIC_MODEL;
@@ -99,6 +99,7 @@ function buildCloudProvider(
     return new AnthropicProvider({
       apiKey,
       model,
+      guard,
       baseUrl: config.baseUrl,
       version: config.version,
       maxTokens: config.maxTokens,
@@ -135,6 +136,7 @@ function buildCloudProvider(
     apiKey,
     baseUrl,
     model,
+    guard,
     name: config.name ?? config.kind,
   });
 }
