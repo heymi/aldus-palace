@@ -9,6 +9,13 @@ export { OpenAICompatibleProvider } from "./openai_compatible.js";
 export type { OpenAICompatibleOptions } from "./openai_compatible.js";
 export { AnthropicProvider } from "./anthropic.js";
 export type { AnthropicOptions } from "./anthropic.js";
+export {
+  PRIVACY_GUARDED,
+  PrivacyBlockedError,
+  isPrivacyGuarded,
+  withMessageGuard,
+  type MessageGuard,
+} from "./guard.js";
 
 export const DEFAULT_OPENAI_COMPATIBLE_MODEL = "deepseek-chat";
 export const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5";

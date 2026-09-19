@@ -11,8 +11,19 @@ import {
   memoryPermission,
   revokeScope,
 } from "../src/services/permissions.js";
-import { prepareCloudPayload } from "../src/services/privacyGateway.js";
+import {
+  createMessageGuard,
+  prepareCloudPayload,
+  resolvePrivacyLevel,
+} from "../src/services/privacyGateway.js";
 import { PURGE_TABLES, purgeUserData } from "../src/services/dataLifecycle.js";
+import {
+  PrivacyBlockedError,
+  isPrivacyGuarded,
+  withMessageGuard,
+  type ChatMessage,
+  type LLMProvider,
+} from "../src/providers/index.js";
 import { createTestDb, finish } from "./support/db.js";
 
 function assert(condition: boolean, message: string): asserts condition {
@@ -138,6 +149,104 @@ const revoked = await revokeScope(db, "u1", "mail.read");
 assert(revoked.ok && !revoked.scopes.includes("mail.read"), "a scope can be revoked");
 const revokedAgain = await revokeScope(db, "u1", "mail.read");
 assert(!revokedAgain.ok && revokedAgain.error === "not_granted", "revoking twice is a miss");
+
+// --- the message guard ------------------------------------------------------
+
+assert(resolvePrivacyLevel({}) === 2, "the default privacy level is 2");
+assert(resolvePrivacyLevel({ PRIVACY_LEVEL: "3" }) === 3, "the level can be raised");
+assert(resolvePrivacyLevel({ PRIVACY_LEVEL: "9" }) === 4, "the level is clamped to 4");
+assert(resolvePrivacyLevel({ PRIVACY_LEVEL: "nope" }) === 2, "a bad level falls back");
+
+const guardDb = await createTestDb();
+await guardDb
+  .prepare(
+    `INSERT INTO users (id, name, timezone, language, created_at, updated_at)
+     VALUES ('gu', 'Guard', 'UTC', 'en', ?, ?)`
+  )
+  .run(now, now);
+await guardDb
+  .prepare(
+    `INSERT INTO projects (id, user_id, name, aliases, status, created_at, updated_at)
+     VALUES ('gp', 'gu', 'Orvia', '["orvia"]', 'active', ?, ?)`
+  )
+  .run(now, now);
+
+async function guardLogCount(): Promise<number> {
+  const row = (await guardDb
+    .prepare(
+      `SELECT COUNT(*) AS count FROM action_logs
+       WHERE user_id = 'gu' AND action_type = 'privacy_gateway_redacted'`
+    )
+    .get()) as { count: number };
+  return Number(row.count);
+}
+
+const guard = createMessageGuard(guardDb, "gu", { level: 2 });
+const redactedMessages = await guard([
+  { role: "system", content: "Return JSON only." },
+  { role: "user", content: "Discuss Orvia with Zhang, budget ¥2,000,000" },
+]);
+assert(
+  redactedMessages[0].content === "Return JSON only.",
+  "the system prompt is left untouched"
+);
+assert(redactedMessages[1].content.includes("[business]"), "the user message is redacted");
+assert(redactedMessages[1].content.includes("[amount]"), "the amount is redacted");
+assert((await guardLogCount()) === 1, "one audit row per call, not per message");
+
+const strict = createMessageGuard(guardDb, "gu", { level: 4 });
+let blocked: unknown;
+try {
+  await strict([{ role: "user", content: "x" }]);
+} catch (error) {
+  blocked = error;
+}
+assert(blocked instanceof PrivacyBlockedError, "level 4 throws before sending");
+
+function recordingProvider(): { provider: LLMProvider; seen: ChatMessage[][] } {
+  const seen: ChatMessage[][] = [];
+  const provider: LLMProvider = {
+    name: "recording-cloud",
+    async complete(messages) {
+      seen.push(messages);
+      return "{}";
+    },
+  };
+  return { provider, seen };
+}
+
+const relaxed = recordingProvider();
+const guarded = withMessageGuard(
+  relaxed.provider,
+  createMessageGuard(guardDb, "gu", { level: 2 })
+);
+assert(isPrivacyGuarded(guarded), "the provider is branded as guarded");
+assert(withMessageGuard(guarded, guard) === guarded, "wrapping twice is a no-op");
+await guarded.complete([{ role: "user", content: "Discuss Orvia" }]);
+assert(
+  relaxed.seen.length === 1 && relaxed.seen[0][0].content.includes("[business]"),
+  "the inner provider receives redacted text"
+);
+
+const restricted = recordingProvider();
+const strictGuarded = withMessageGuard(
+  restricted.provider,
+  createMessageGuard(guardDb, "gu", { level: 4 })
+);
+let strictThrew = false;
+try {
+  await strictGuarded.complete([{ role: "user", content: "x" }]);
+} catch {
+  strictThrew = true;
+}
+assert(strictThrew, "a level-4 provider throws");
+assert(restricted.seen.length === 0, "the inner provider is not called at level 4");
+
+const logsBefore = await guardLogCount();
+const open = createMessageGuard(guardDb, "gu", { level: 0 });
+const passthrough = await open([{ role: "user", content: "Discuss Orvia" }]);
+assert(passthrough[0].content === "Discuss Orvia", "level 0 passes through");
+assert((await guardLogCount()) === logsBefore, "level 0 writes no audit row");
 
 // --- true deletion ----------------------------------------------------------
 
