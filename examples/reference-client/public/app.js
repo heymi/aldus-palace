@@ -1,7 +1,17 @@
-/* Reference client: five reads of the same context — capture, Now, memory,
-   evidence, and the decisions that wait for a human. */
+/* Reference client: capture, then two consequences (Today, Memory) and the
+   decisions that wait for a human. */
 
 const $ = (id) => document.getElementById(id);
+
+const state = {
+  today: null,
+  memories: [],
+  actions: [],
+  showCandidates: false,
+  expanded: new Set(),
+  evidence: new Map(),
+  captureBusy: false,
+};
 
 function esc(value) {
   return String(value ?? "").replace(
@@ -24,9 +34,8 @@ async function api(path, options = {}) {
 function when(value) {
   if (!value) return "";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
+  if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -34,50 +43,39 @@ function when(value) {
   }).format(date);
 }
 
-function line(tag, value, tail) {
-  return `<div class="line"><span class="tag">${esc(tag)}</span><span class="value">${esc(
-    value
-  )}</span>${tail ? `<span class="when">${esc(tail)}</span>` : ""}</div>`;
+function clock(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
-/* --- Now ----------------------------------------------------------------- */
-
-function renderNow(payload) {
-  const now = payload.now;
-  const plan = payload.plan ?? { core: [], optional: [], deferred: [] };
-  const metrics = `
-    <dl class="metrics">
-      <div><dt>core</dt><dd>${plan.core.length}</dd></div>
-      <div><dt>optional</dt><dd>${plan.optional.length}</dd></div>
-      <div><dt>deferred</dt><dd>${plan.deferred.length}</dd></div>
-      <div><dt>unscheduled</dt><dd>${payload.unscheduled_total ?? 0}</dd></div>
-      <div><dt>done</dt><dd>${payload.planning?.completed_today ?? 0}</dd></div>
-    </dl>`;
-
-  const timeline = (payload.timeline ?? [])
-    .slice(0, 5)
-    .map((item) => line(item.kind_label ?? "planned", item.title, when(item.ai_slot_start)))
-    .join("");
-
-  const risks = (payload.risks ?? [])
-    .map((item) => line("at risk", item.title, when(item.deadline)))
-    .join("");
-
-  $("now").innerHTML = `
-    ${
-      now
-        ? `<p class="now-focus">${esc(now.title)}</p>
-           <p class="now-reason">${esc((now.now_reason ?? []).join(" · "))}</p>`
-        : `<p class="empty">Nothing is scheduled for today yet.</p>`
-    }
-    ${metrics}
-    ${timeline ? `<div class="stack">${timeline}</div>` : ""}
-    ${risks ? `<div class="warn">${risks}</div>` : ""}
-  `;
-  $("status").textContent = `${payload.date_key} · plan ${payload.planning?.mode ?? "—"}`;
+function dayLabel(dateKey) {
+  if (!dateKey) return "";
+  const date = new Date(`${dateKey}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return dateKey;
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(date);
 }
 
-/* --- Memory + evidence --------------------------------------------------- */
+const KIND = {
+  preference: "prefers",
+  principle: "principle",
+  project_context: "project",
+  decision: "decision",
+  experience: "experience",
+};
+
+function freshness(decay) {
+  const value = Number(decay ?? 0);
+  if (value >= 0.9) return "fresh";
+  if (value >= 0.7) return "settling";
+  if (value >= 0.4) return "fading";
+  return "old";
+}
 
 const SOURCE_LABEL = {
   user_explicit: "you said it",
@@ -85,156 +83,320 @@ const SOURCE_LABEL = {
   decision_promote: "from a decision",
 };
 
-function renderMemories(items) {
-  if (!items.length) {
-    $("memory").innerHTML = `<p class="empty">Nothing remembered yet. Capture a preference.</p>`;
+/* --- Today ---------------------------------------------------------------- */
+
+function renderToday() {
+  const payload = state.today;
+  const node = $("now");
+  if (!payload) {
+    node.innerHTML = `<p class="empty">Loading…</p>`;
     return;
   }
-  $("memory").innerHTML = items
-    .map(
-      (m) => `
-      <button class="memory-item" data-memory="${esc(m.id)}" data-input="${esc(
-        m.source_input_id ?? ""
-      )}" aria-pressed="false">
-        <span class="memory-head">
-          <span class="type">${esc(m.type)}</span>
-          <span>L${esc(m.level)}</span>
-          <span>decay ${Number(m.decay ?? 0).toFixed(2)}</span>
-          <span>${esc(m.state)}</span>
+  const plan = payload.plan ?? { core: [], optional: [], deferred: [] };
+  const total = plan.core.length + plan.optional.length + plan.deferred.length;
+  const now = payload.now;
+  const timeline = (payload.timeline ?? []).slice(0, 5);
+  const risks = (payload.risks ?? []).slice(0, 3);
+
+  const bar = total
+    ? `<div class="plan" title="How the day is classified">
+         <span class="plan-bar" aria-hidden="true">
+           <span class="plan-core" style="width:${(plan.core.length / total) * 100}%"></span>
+           <span class="plan-optional" style="width:${(plan.optional.length / total) * 100}%"></span>
+         </span>
+         <span>core ${plan.core.length} · optional ${plan.optional.length} · later ${plan.deferred.length}</span>
+       </div>`
+    : "";
+
+  const later = timeline.length
+    ? `<span class="list-label">${now ? "Then" : "Scheduled"}</span>
+       <div class="stack">${timeline
+         .filter((item) => !now || item.id !== now.id)
+         .map(
+           (item) => `
+         <div class="line">
+           <span class="value">${esc(item.title)}</span>
+           <span class="when">${esc(clock(item.ai_slot_start) || item.kind_label || "")}</span>
+         </div>`
+         )
+         .join("")}</div>`
+    : "";
+
+  const riskList = risks.length
+    ? `<div class="stack" style="margin-top:1rem"><span class="list-label">At risk</span>${risks
+        .map(
+          (item) => `
+        <div class="line risk-line">
+          <span class="value">${esc(item.title)}</span>
+          <span class="when">${esc(when(item.deadline))}</span>
+        </div>`
+        )
+        .join("")}</div>`
+    : "";
+
+  node.innerHTML = `
+    ${
+      now
+        ? `<p class="now-focus">${esc(now.title)}</p>
+           <p class="now-why">do now · ${esc((now.now_reason ?? []).join(" · "))}</p>`
+        : `<p class="empty"><strong>Nothing planned for today.</strong> Capture something with “today” in it, and it appears here.</p>`
+    }
+    ${bar}
+    ${later}
+    ${riskList}
+  `;
+
+  $("today-note").textContent = payload.date_key ? dayLabel(payload.date_key) : "";
+  const tally = timeline.length ? String(timeline.length) : "";
+  $("today-tally").textContent = tally;
+  $("status").textContent = payload.planning
+    ? `${dayLabel(payload.date_key)} · ${payload.planning.mode.replace("_", " ")} day`
+    : dayLabel(payload.date_key);
+}
+
+/* --- Memory, with evidence in place --------------------------------------- */
+
+function memoryItems() {
+  return state.memories.filter(
+    (memory) => state.showCandidates || memory.state === "active"
+  );
+}
+
+function renderMemories() {
+  const items = memoryItems();
+  const node = $("memory-list");
+  const active = state.memories.filter((m) => m.state === "active").length;
+  const candidates = state.memories.length - active;
+  $("memory-tally").textContent = active ? String(active) : "";
+
+  if (!items.length) {
+    node.innerHTML = `<p class="empty"><strong>Nothing remembered yet.</strong> A sentence like “I prefer simple tools” becomes a memory you can inspect.</p>`;
+    return;
+  }
+
+  node.innerHTML = items
+    .map((memory) => {
+      const open = state.expanded.has(memory.id);
+      const evidence = state.evidence.get(memory.id);
+      return `
+      <button class="memory-item" data-memory="${esc(memory.id)}"
+              data-input="${esc(memory.source_input_id ?? "")}"
+              aria-expanded="${open}">
+        <span class="memory-body">${esc(memory.content)}</span>
+        <span class="memory-meta">
+          <span class="kind">${esc(KIND[memory.type] ?? memory.type)}</span>
+          <span class="pill">L${esc(memory.level)}</span>
+          <span>${esc(freshness(memory.decay))}</span>
+          ${
+            memory.state !== "active"
+              ? `<span class="pill pill-candidate">candidate</span>`
+              : ""
+          }
+          <span class="memory-open">${open ? "hide evidence ↑" : "evidence ↓"}</span>
         </span>
-        <span class="memory-body">${esc(m.content)}</span>
-        <span class="memory-note">${esc(SOURCE_LABEL[m.source] ?? m.source)} · ${esc(
-          when(m.updated_at)
-        )}</span>
-      </button>`
-    )
-    .join("");
+      </button>
+      ${
+        open
+          ? `<div class="memory-evidence">${renderEvidence(evidence)}</div>`
+          : ""
+      }`;
+    })
+    .join("") +
+    (candidates && !state.showCandidates
+      ? `<p class="panel-note" style="margin-top:.6rem">${candidates} candidate memory${candidates === 1 ? "" : "ies"} waiting — turn on “candidates”.</p>`
+      : "");
 }
 
-async function showEvidence(button) {
-  const id = button.dataset.input;
-  const memoryId = button.dataset.memory;
-  document
-    .querySelectorAll(".memory-item")
-    .forEach((node) => node.setAttribute("aria-pressed", String(node === button)));
+function renderEvidence(evidence) {
+  if (!evidence || evidence.status === "loading") {
+    return `<p class="empty">Reading the source…</p>`;
+  }
+  if (evidence.status === "error") {
+    return `<p class="empty">Could not load the source: ${esc(evidence.message)}</p>`;
+  }
+  const { raw, memory } = evidence.data;
+  return `
+    <blockquote>${esc(raw.content)}</blockquote>
+    <dl class="fields">
+      <dt>source</dt><dd>${esc(raw.source)}</dd>
+      <dt>captured</dt><dd>${esc(when(raw.created_at))}</dd>
+      <dt>reading</dt><dd>${esc(memory.type ?? "memory")} · ${esc(memory.status ?? "")}</dd>
+      <dt>excerpt</dt><dd>${esc(memory.evidence ?? "")}</dd>
+    </dl>`;
+}
 
-  if (!id) {
-    $("evidence").innerHTML = `<p class="empty">This memory has no source sentence.</p>`;
+async function toggleMemory(id, inputId) {
+  if (state.expanded.has(id)) {
+    state.expanded.delete(id);
+    renderMemories();
     return;
   }
-  $("evidence").innerHTML = `<p class="empty">Reading the source…</p>`;
-  try {
-    const data = await api(`/v1/inputs/${encodeURIComponent(id)}`);
-    const raw = data.raw_input ?? {};
-    const memory = (data.memories ?? []).find((row) => row.id === memoryId) ?? {};
-    $("evidence").innerHTML = `
-      <blockquote>${esc(raw.content)}</blockquote>
-      <dl class="fields">
-        <dt>source</dt><dd>${esc(raw.source)}</dd>
-        <dt>captured</dt><dd>${esc(when(raw.created_at))}</dd>
-        <dt>status</dt><dd>${esc(raw.processing_status)}</dd>
-        <dt>reading</dt><dd>${esc(memory.type ?? "memory")} · ${esc(memory.status ?? "")}</dd>
-        <dt>excerpt</dt><dd>${esc(memory.evidence ?? "")}</dd>
-      </dl>`;
-  } catch (error) {
-    $("evidence").innerHTML = `<p class="empty">Could not load the source: ${esc(
-      error.message
-    )}</p>`;
+  state.expanded.add(id);
+  if (inputId && !state.evidence.has(id)) {
+    state.evidence.set(id, { status: "loading" });
+    renderMemories();
+    try {
+      const data = await api(`/v1/inputs/${encodeURIComponent(inputId)}`);
+      const memory = (data.memories ?? []).find((row) => row.id === id) ?? {};
+      state.evidence.set(id, { status: "ready", data: { raw: data.raw_input ?? {}, memory } });
+    } catch (error) {
+      state.evidence.set(id, { status: "error", message: error.message });
+    }
   }
+  renderMemories();
 }
 
-/* --- Action approval ----------------------------------------------------- */
+/* --- Decisions ------------------------------------------------------------ */
 
-function renderActions(items) {
+const ACTION_LABEL = {
+  user_data_purge: "Delete all data",
+  memory_deleted: "Delete a memory",
+  commitment_deleted: "Delete a commitment",
+};
+
+function renderActions() {
+  const items = state.actions.filter(
+    (action) => action.status === "proposed" || action.status === "pending_second"
+  );
+  const node = $("actions");
+  const tally = $("decision-tally");
+  tally.hidden = items.length === 0;
+  tally.textContent = String(items.length);
+
+  $("decisions-note").textContent = items.length ? "" : "the gate is quiet";
+
   if (!items.length) {
-    $("actions").innerHTML = `<p class="empty">Nothing needs a decision.</p>`;
+    node.innerHTML = `<p class="empty"><strong>Nothing needs a decision.</strong> High-risk actions wait here for one approval, critical ones for two. In this demo the only source is deleting everything; every captured sentence is still graded by the same table.</p>`;
     return;
   }
-  $("actions").innerHTML = items
+
+  node.innerHTML = items
     .map((action) => {
-      const outcome = action.result ?? action.error ?? action.execution_status;
+      const second = action.status === "pending_second";
       return `
       <div class="action" data-action="${esc(action.id)}">
         <span class="risk risk-${esc(action.risk)}">${esc(action.risk)}</span>
-        <span class="action-type">${esc(action.action_type)}</span>
-        <span class="action-reason">${esc(action.reason ?? "")}</span>
+        <span class="action-what">${esc(ACTION_LABEL[action.action_type] ?? action.action_type)}</span>
+        <span class="action-why">${esc(action.reason ?? "")}</span>
+        ${
+          second
+            ? `<span class="pill pill-candidate">1 of 2 approvals</span>`
+            : ""
+        }
         <span class="buttons">
-          <button class="primary" data-decide="approve" data-id="${esc(action.id)}">Approve</button>
+          <button class="primary" data-decide="approve" data-id="${esc(action.id)}">
+            ${second ? "Approve again" : "Approve"}
+          </button>
           <button class="ghost" data-decide="reject" data-id="${esc(action.id)}">Reject</button>
         </span>
-        <span class="action-outcome">${esc(outcome ?? "")}</span>
+        <span class="action-outcome">${esc(action.error ?? "")}</span>
       </div>`;
     })
     .join("");
 }
 
-/* --- Capture ------------------------------------------------------------- */
+/* --- Capture receipt ------------------------------------------------------ */
 
-function renderReceipt(card, id, note) {
+function renderReceipt(card, note) {
   const node = $("receipt");
   node.hidden = false;
   if (!card) {
-    node.innerHTML = `<p class="summary">${esc(note ?? "Filed.")}</p>`;
+    node.innerHTML = `<p class="receipt-title">${esc(note ?? "Filed.")}</p>`;
     return;
   }
-  const commitments = (card.commitments ?? [])
-    .map((c) => line("commitment", c.title, when(c.window_end ?? c.deadline)))
-    .join("");
-  const candidates = (card.memory_candidates ?? [])
-    .map((m) => line("memory", m.content, m.type ?? ""))
-    .join("");
-  const thoughts = (card.thoughts ?? [])
-    .map((t) => line("thought", t.content ?? t.summary ?? "", ""))
-    .join("");
-  const warnings = (card.warnings ?? []).map((w) => esc(w)).join("<br />");
-  const project =
-    card.project_match?.project_name ?? card.project_suggestion?.suggested_name;
+
+  const group = (label, rows) =>
+    rows.length
+      ? `<div class="receipt-group"><span class="receipt-group-label">${esc(label)}</span>${rows.join("")}</div>`
+      : "";
+
+  const commitments = (card.commitments ?? []).map(
+    (c) => `<div class="receipt-item"><span class="value">${esc(c.title)}</span><span class="tail">${esc(
+      when(c.window_end ?? c.deadline) || "no date"
+    )}</span></div>`
+  );
+  const memories = (card.memory_candidates ?? []).map(
+    (m) => `<div class="receipt-item"><span class="value">${esc(m.content)}</span><span class="tail">${esc(
+      KIND[m.type] ?? m.type
+    )}</span></div>`
+  );
+  const thoughts = (card.thoughts ?? []).map(
+    (t) => `<div class="receipt-item"><span class="value">${esc(t.title ?? t.content ?? "")}</span></div>`
+  );
+  const decisions = (card.decisions ?? []).map(
+    (d) => `<div class="receipt-item"><span class="value">${esc(d.title)}</span><span class="tail">decision</span></div>`
+  );
+
+  const parts = [];
+  if (commitments.length) parts.push(`${commitments.length} commitment${commitments.length === 1 ? "" : "s"}`);
+  if (memories.length) parts.push(`${memories.length} memory${memories.length === 1 ? "" : "ies"}`);
+  if (thoughts.length) parts.push(`${thoughts.length} thought${thoughts.length === 1 ? "" : "s"}`);
+  if (decisions.length) parts.push(`${decisions.length} decision${decisions.length === 1 ? "" : "s"}`);
+
+  const links = [
+    commitments.length ? `<a class="receipt-link" href="#today">See it in Today ↓</a>` : "",
+    memories.length || card.memory_candidates?.length
+      ? `<a class="receipt-link" href="#memory">See it in Memory ↓</a>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("&nbsp;&nbsp;");
 
   node.innerHTML = `
-    <p class="summary">${esc(card.summary ?? "Captured.")}</p>
-    ${project ? line("project", project, "") : ""}
-    ${commitments}
-    ${candidates}
-    ${thoughts}
-    ${warnings ? `<p class="warn">${warnings}</p>` : ""}
-    ${note ? `<p class="warn">${esc(note)}</p>` : ""}
-    <input type="hidden" id="receipt-id" value="${esc(id ?? "")}" />`;
+    <p class="receipt-title">
+      ${parts.length ? `Captured ${esc(parts.join(", "))}` : esc(card.summary ?? "Captured")}
+      ${note ? `<span class="muted">· ${esc(note)}</span>` : ""}
+    </p>
+    ${group("Commitments", commitments)}
+    ${group("Memories", memories)}
+    ${group("Thoughts", thoughts)}
+    ${group("Decisions", decisions)}
+    ${(card.warnings ?? []).length ? `<p class="warn">${card.warnings.map(esc).join("<br />")}</p>` : ""}
+    ${links ? `<p style="margin:.7rem 0 0">${links}</p>` : ""}`;
 }
 
 async function capture(content) {
-  const hint = $("capture-hint");
-  hint.textContent = "reading…";
+  if (state.captureBusy) return;
+  state.captureBusy = true;
+  const button = $("file-button");
+  button.disabled = true;
+  $("capture-hint").textContent = "reading…";
   try {
     const result = await api("/v1/inputs", {
       method: "POST",
       body: JSON.stringify({ content, source: "text", mode: "progressive" }),
     });
-    renderReceipt(result.action_card, result.id, result.enriching ? "reading with the model…" : "");
-
+    renderReceipt(result.action_card, result.enriching ? "reading with the model…" : "");
     if (result.enriching) {
       const enriched = await api(`/v1/inputs/${encodeURIComponent(result.id)}/enrich`, {
         method: "POST",
       });
-      renderReceipt(enriched.action_card, result.id, "model reading applied");
+      renderReceipt(enriched.action_card, "model reading applied");
     }
-    hint.textContent = "filed";
+    $("capture-hint").textContent = "filed";
     await refresh();
   } catch (error) {
-    hint.textContent = `failed: ${error.message}`;
+    $("capture-hint").textContent = `failed: ${error.message}`;
+  } finally {
+    state.captureBusy = false;
+    button.disabled = false;
   }
 }
 
-/* --- Wire up ------------------------------------------------------------- */
+/* --- Wiring --------------------------------------------------------------- */
 
 async function refresh() {
   const [today, memories, actions] = await Promise.all([
     api("/v1/today"),
-    api("/v1/memories?state=active"),
-    api("/v1/actions?status=proposed"),
+    api("/v1/memories"),
+    api("/v1/actions?status=all"),
   ]);
-  renderNow(today);
-  renderMemories(memories.items ?? []);
-  renderActions(actions.items ?? []);
+  state.today = today;
+  state.memories = memories.items ?? [];
+  state.actions = actions.items ?? [];
+  renderToday();
+  renderMemories();
+  renderActions();
 }
 
 $("capture-form").addEventListener("submit", (event) => {
@@ -260,30 +422,37 @@ $("input").addEventListener("keydown", (event) => {
   }
 });
 
-$("memory").addEventListener("click", (event) => {
+$("memory-list").addEventListener("click", (event) => {
   const button = event.target.closest(".memory-item");
-  if (button) void showEvidence(button);
+  if (button) void toggleMemory(button.dataset.memory, button.dataset.input);
+});
+
+$("show-candidates").addEventListener("change", (event) => {
+  state.showCandidates = event.target.checked;
+  renderMemories();
 });
 
 $("actions").addEventListener("click", async (event) => {
   const button = event.target.closest("[data-decide]");
   if (!button) return;
   button.disabled = true;
+  const row = button.closest(".action");
   try {
-    const result = await api(
-      `/v1/actions/${encodeURIComponent(button.dataset.id)}/decide`,
-      { method: "POST", body: JSON.stringify({ decision: button.dataset.decide }) }
-    );
+    const result = await api(`/v1/actions/${encodeURIComponent(button.dataset.id)}/decide`, {
+      method: "POST",
+      body: JSON.stringify({ decision: button.dataset.decide }),
+    });
     const outcome = result.execution?.ok
       ? `executed (${result.execution.status ?? "ok"})`
-      : result.execution?.error ?? result.proposal?.execution_status ?? "decided";
-    button.closest(".action").querySelector(".action-outcome").textContent = outcome;
+      : (result.execution?.error ?? result.proposal?.execution_status ?? "decided");
+    row.querySelector(".action-outcome").textContent = outcome;
   } catch (error) {
-    button.closest(".action").querySelector(".action-outcome").textContent = error.message;
+    row.querySelector(".action-outcome").textContent = error.message;
   }
   await refresh();
 });
 
 refresh().catch((error) => {
   $("status").textContent = `offline: ${error.message}`;
+  $("now").innerHTML = `<p class="empty">Could not reach the API: ${esc(error.message)}</p>`;
 });

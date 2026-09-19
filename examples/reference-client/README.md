@@ -5,15 +5,15 @@ A minimal browser client for the HTTP API.
 **Online demo:** <https://aldus-palace-demo.iheymi.workers.dev> — each visitor
 gets a private context, so what you capture is yours alone.
 
-One page, five reads of the same context:
+One page, four sections. Capture is the primary act; Today and Memory are its
+two consequences, and decisions wait at the end:
 
-| Panel | Route | What it shows |
+| Section | Route | What it shows |
 |---|---|---|
-| Capture | `POST /v1/inputs`, `POST /v1/inputs/:id/enrich` | the sentence you wrote and what it became |
-| Now | `GET /v1/today` | the one thing to do now, the day's plan, what is at risk |
-| Memory | `GET /v1/memories?state=active` | what the system remembers, with level and decay |
-| Evidence | `GET /v1/inputs/:id` | the original sentence behind a memory |
-| Waiting for you | `GET /v1/actions?status=proposed`, `POST /v1/actions/:id/decide` | proposed actions, and approve / reject |
+| Capture | `POST /v1/inputs`, `POST /v1/inputs/:id/enrich` | the sentence you wrote, and a receipt of what it became |
+| Today | `GET /v1/today` | the one thing to do now, the day's plan, what is at risk |
+| Memory | `GET /v1/memories` | what the system remembers, active or candidate; open one to see its source inline (`GET /v1/inputs/:id`) |
+| Needs a decision | `GET /v1/actions?status=all`, `POST /v1/actions/:id/decide` | proposed and half-approved actions, with approve / reject |
 
 No framework, no build step, no dependencies: a static page plus a small host
 that proxies `/api/*` with the bearer token, so the token never reaches the
@@ -52,8 +52,9 @@ Two sentences show every panel:
 | `ALDUS_API_URL` | `http://127.0.0.1:8787` | where the API runs |
 | `ALDUS_API_TOKEN` | `dev-local-token` | bearer token the host sends upstream |
 
-`⌘↵` (or `Ctrl↵`) files the current sentence. Clicking a memory shows the raw
-input it came from.
+`⌘↵` (or `Ctrl↵`) files the current sentence. Clicking a memory opens the raw
+input it came from, in place. The nav counts what is scheduled, remembered and
+waiting.
 
 ## Deploy the online demo
 

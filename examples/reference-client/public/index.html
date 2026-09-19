@@ -7,18 +7,35 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header class="masthead reveal" style="--i: 0">
-      <h1>Aldus</h1>
+    <a class="skip" href="#capture">Skip to capture</a>
+
+    <header class="masthead">
+      <div class="masthead-row">
+        <h1>Aldus</h1>
+        <p class="status" id="status">connecting…</p>
+      </div>
       <p class="deck">
-        A trustworthy context layer. Write a sentence and watch what it
-        becomes, what it remembers, and what it asks before it acts.
+        A trustworthy context layer. Write a sentence and watch what it becomes,
+        what it remembers, and what it asks before it acts.
       </p>
-      <p class="status" id="status">connecting…</p>
     </header>
 
+    <nav class="tabs" aria-label="Sections">
+      <a href="#capture">Capture</a>
+      <a href="#today">Today <span class="tally" id="today-tally"></span></a>
+      <a href="#memory">Memory <span class="tally" id="memory-tally"></span></a>
+      <a href="#decisions">
+        Decisions <span class="tally tally-accent" id="decision-tally" hidden></span>
+      </a>
+    </nav>
+
     <main>
-      <section class="capture reveal" style="--i: 1">
-        <h2>Capture</h2>
+      <section id="capture" class="capture" aria-labelledby="capture-title">
+        <h2 id="capture-title" class="hero">What is on your mind?</h2>
+        <p class="capture-sub">
+          One sentence. Time-bound work lands in Today; anything durable is
+          remembered under Memory.
+        </p>
         <form id="capture-form">
           <textarea
             id="input"
@@ -27,53 +44,59 @@
             aria-label="A sentence to capture"
           ></textarea>
           <div class="row">
-            <button type="submit" class="primary">File it</button>
-            <span class="hint" id="capture-hint">⌘↵ to file · offline rules need no key</span>
+            <button type="submit" class="primary" id="file-button">File it</button>
+            <span class="hint" id="capture-hint">⌘↵ to file · no key needed</span>
           </div>
         </form>
-        <div class="examples" id="examples">
-          <span class="examples-label">Try</span>
+        <div class="chips" id="examples">
+          <span class="chips-label">Try</span>
           <button type="button" class="chip" data-example="Ship the onboarding page today.">
             Ship the onboarding page today.
           </button>
           <button type="button" class="chip" data-example="I prefer simple tools and fewer settings.">
             I prefer simple tools and fewer settings.
           </button>
+          <button type="button" class="chip" data-example="AI should assist, not dominate.">
+            AI should assist, not dominate.
+          </button>
         </div>
-        <div id="receipt" class="receipt" hidden></div>
+        <div id="receipt" class="receipt" hidden aria-live="polite"></div>
       </section>
 
-      <section class="now reveal" style="--i: 2">
-        <h2>Now</h2>
-        <div id="now" class="stack"><p class="empty">Nothing planned yet.</p></div>
-      </section>
+      <div class="work">
+        <section id="today" class="panel" aria-labelledby="today-title">
+          <header class="panel-head">
+            <h2 id="today-title">Today</h2>
+            <span class="panel-note" id="today-note"></span>
+          </header>
+          <div id="now"></div>
+        </section>
 
-      <section class="memory reveal" style="--i: 3">
-        <h2>Memory</h2>
-        <div id="memory" class="stack"><p class="empty">Nothing remembered yet.</p></div>
-      </section>
+        <section id="memory" class="panel" aria-labelledby="memory-title">
+          <header class="panel-head">
+            <h2 id="memory-title">Memory</h2>
+            <label class="toggle">
+              <input type="checkbox" id="show-candidates" />
+              <span>candidates</span>
+            </label>
+          </header>
+          <div id="memory-list"></div>
+        </section>
+      </div>
 
-      <aside class="evidence reveal" style="--i: 4">
-        <h2>Evidence</h2>
-        <div id="evidence">
-          <p class="empty">
-            Choose a memory to see the sentence it came from.
-          </p>
-        </div>
-      </aside>
-
-      <section class="actions reveal" style="--i: 5">
-        <h2>Waiting for you</h2>
-        <div id="actions" class="stack">
-          <p class="empty">Nothing needs a decision.</p>
-        </div>
+      <section id="decisions" class="panel" aria-labelledby="decisions-title">
+        <header class="panel-head">
+          <h2 id="decisions-title">Needs a decision</h2>
+          <span class="panel-note" id="decisions-note"></span>
+        </header>
+        <div id="actions"></div>
       </section>
     </main>
 
     <footer>
       <p>
-        Local-first. The client talks to <code>/api</code>; the token stays on
-        the host, not in this page.
+        Local-first. This page talks to <code>/api</code>; the token stays on the
+        host, not in the browser.
       </p>
     </footer>
 
