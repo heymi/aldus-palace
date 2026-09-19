@@ -77,6 +77,18 @@ assert(calls[9].method === "DELETE", "removal is a DELETE");
 await client.purge();
 assert((calls[10].body as { confirm: boolean }).confirm === true, "purge confirms");
 
+await client.me();
+assert(calls[11].url === "http://localhost:8787/v1/me", "me path");
+
+await client.commitments({ status: "planned", limit: 5 });
+assert(
+  calls[12].url === "http://localhost:8787/v1/commitments?status=planned&limit=5",
+  `commitment filters travel, got ${calls[12].url}`
+);
+
+await client.actions();
+assert(calls[13].url === "http://localhost:8787/v1/actions", "all actions omit the filter");
+
 // --- errors -----------------------------------------------------------------
 
 const failing = fakeFetch({ status: 404, body: { error: "not_found" } });

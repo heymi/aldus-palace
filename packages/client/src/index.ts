@@ -53,6 +53,17 @@ export type Today = {
   plan?: { core: string[]; optional: string[]; deferred: string[] };
 };
 
+export type ReconcileResult = {
+  date_key: string;
+  mode: "balanced" | "high_capacity" | "paused";
+  effective_cap: number;
+  completed_today: number;
+  remaining_today: number;
+  picked: Array<{ id: string; title: string; reason: string }>;
+  tip: string | null;
+  auto_fill_paused: boolean;
+};
+
 export type MigrationResult = {
   migrated: Array<{ id: string; title: string; deferral_count: number; reason: string }>;
   needs_confirmation: Array<{ id: string; title: string; deferral_count: number; reason: string }>;
@@ -138,7 +149,7 @@ export class AldusClient {
 
   // --- account and permissions ---------------------------------------------
 
-  me(): Promise<Record<string, unknown>> {
+  me(): Promise<{ user: Record<string, unknown> }> {
     return this.request("/v1/me");
   }
 
@@ -187,7 +198,7 @@ export class AldusClient {
     return this.request("/v1/today");
   }
 
-  planToday(planVersion?: string): Promise<Today & { migration: MigrationResult }> {
+  planToday(planVersion?: string): Promise<ReconcileResult & { migration: MigrationResult }> {
     return this.request("/v1/plan/today", {
       method: "POST",
       body: planVersion ? { plan_version: planVersion } : {},
@@ -198,8 +209,14 @@ export class AldusClient {
     return this.request("/v1/plan/migrate", { method: "POST" });
   }
 
-  commitments(status?: string): Promise<Commitment[]> {
-    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  commitments(
+    options: { status?: string; limit?: number; cursor?: string } = {}
+  ): Promise<{ items: Commitment[]; next_cursor: string | null }> {
+    const params = new URLSearchParams();
+    if (options.status) params.set("status", options.status);
+    if (options.limit) params.set("limit", String(options.limit));
+    if (options.cursor) params.set("cursor", options.cursor);
+    const query = params.size ? `?${params.toString()}` : "";
     return this.request(`/v1/commitments${query}`);
   }
 
