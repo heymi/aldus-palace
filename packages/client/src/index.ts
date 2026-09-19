@@ -174,8 +174,25 @@ export class AldusClient {
     });
   }
 
-  purge(): Promise<PurgeResult> {
-    return this.request("/v1/me/purge", { method: "POST", body: { confirm: true } });
+  /**
+   * True deletion goes through the Action Gate: propose, then approve. The
+   * approval runs the purge executor and returns its result.
+   */
+  async purge(): Promise<PurgeResult> {
+    const proposed = await this.request<{ proposal: { id: string } }>(
+      "/v1/me/purge",
+      { method: "POST", body: { confirm: true } }
+    );
+    const decided = await this.request<{
+      proposal: ActionProposal;
+      execution?: { ok: boolean; status: string; result?: PurgeResult };
+    }>(`/v1/actions/${encodeURIComponent(proposed.proposal.id)}/decide`, {
+      method: "POST",
+      body: { decision: "approve" },
+    });
+    const result = decided.execution?.result;
+    if (!result) throw new Error("purge_did_not_execute");
+    return result;
   }
 
   // --- capture and understanding -------------------------------------------

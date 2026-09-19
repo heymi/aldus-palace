@@ -133,14 +133,14 @@ const meta = {
     response: "CloudPayload",
   },
   "POST /v1/me/purge": {
-    summary: "Delete every row the user owns (requires confirm)",
+    summary: "Propose deletion of every row the user owns (runs on approval)",
     tag: "Privacy",
     request: {
       type: "object",
       required: ["confirm"],
       properties: { confirm: { type: "boolean", enum: [true] } },
     },
-    response: "PurgeResult",
+    response: "ActionProposal",
   },
   "GET /v1/autonomy": { summary: "The trust score and autonomy level derived from decided actions", tag: "Actions", response: "AutonomyState" },
   "POST /v1/autonomy": {
@@ -165,6 +165,11 @@ const meta = {
       },
     },
     response: "ActionProposal",
+  },
+  "POST /v1/actions/{id}/execute": {
+    summary: "Run an approved action whose executor is registered",
+    tag: "Actions",
+    response: "ExecutionResult",
   },
   "POST /v1/actions/{id}/revoke": {
     summary: "Revoke a proposal or an approval",
@@ -438,6 +443,20 @@ const spec = {
           },
         },
         required: ["score", "level", "ceiling", "effective_level"],
+      },
+      ExecutionResult: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          executed: { type: "boolean" },
+          status: {
+            type: "string",
+            enum: ["pending", "running", "succeeded", "failed", "skipped"],
+          },
+          result: { description: "What the executor returned." },
+          reason: { type: ["string", "null"] },
+        },
+        required: ["ok", "status"],
       },
       ActionProposal: {
         type: "object",

@@ -570,6 +570,10 @@ async function logExecution(
       : status === "failed"
         ? "action_execution_failed"
         : "action_execution_skipped";
+  // An action can remove its own user (a purge). There is then no row left to
+  // attach the audit entry to, and nothing to audit.
+  const user = await db.prepare(`SELECT 1 FROM users WHERE id = ?`).get(userId);
+  if (!user) return;
   await writeActionLog(db, {
     user_id: userId,
     actor: "agent",

@@ -204,7 +204,7 @@ context        active memories and projects feed the next capture
 |---|---|---|
 | **Memory** | 抽取、污染门、激活门、每行证据、去重、冲突检测、版本化 supersede、分级 + 衰减 + 价值评分、按价值排序回注下一次捕获 | 更多类型与信号、身份级、记忆图谱 |
 | **Planning** | 四类时间、约束处理（截止、窗口、偏好、blocked-by 依赖）、优先级评分、时段搜索、按项目历史估算时长、每日缓冲、未开始灵活工作的自动顺延、带上下文匹配的评分 Now、早晨的 core/optional/deferred 计划、变更后自动重排、Today、风险、自适应上限、行为模型 | 软约束权衡、混合优先级、感知节奏的 Now、会议事件接入 |
-| **Trust & autonomy** | Action Gate（低/中直接执行，高风险等批准，关键级要两次）、信任分与自主等级 0–4，以及受用户上限约束的权限演进 | 主动规则 |
+| **Trust & autonomy** | Action Gate（低/中直接执行，高风险等批准，关键级要两次）并支持幂等的持久化执行、信任分与自主等级 0–4，以及受用户上限约束的权限演进 | 主动规则 |
 | **Model orchestration** | 一个 `LLMProvider` 接口与三种实现，配置由调用方解析 | 按任务路由——快速分类、推理、embedding、敏感输入的本地模型 |
 
 运行时代码都在 `packages/core/src`：`agent/understand.ts` 负责捕获，`services/` 是规划、记忆、Action Gate 与隐私，`lib/` 是纯函数，`providers/` 是模型接口。能力到代码的映射见 [`docs/MAP.md`](docs/MAP.md)，完整设计（每个引擎的已交付与计划部分）见 [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md)。

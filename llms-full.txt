@@ -244,7 +244,7 @@ context        active memories and projects feed the next capture
 |---|---|---|
 | **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, graded levels with decay and a value score, ranked retrieval into the next capture | more kinds and extraction signals, an identity level, a memory graph |
 | **Planning** | four kinds of time, constraint handling (deadline, window, preference, blocked-by dependencies), priority scoring, slot search, duration estimation from project history, a daily buffer, migration for slipped flexible work, a scored Now with context match, a morning core/optional/deferred plan, replanning after a change, Today, risk, adaptive limits, a learned behaviour model | soft-constraint trade-offs, a blended priority score, a rhythm-aware Now, an events surface for meetings |
-| **Trust & autonomy** | an Action Gate (low and medium run, high waits, critical needs two), a trust score with levels 0–4, and permission evolution capped by a user ceiling | proactive rules |
+| **Trust & autonomy** | an Action Gate (low and medium run, high waits, critical needs two) with durable, idempotent execution; a trust score with levels 0–4; permission evolution capped by a user ceiling | proactive rules |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
 The runtime lives in `packages/core/src`: `agent/understand.ts` for capture, `services/` for planning, memory, the Action Gate and privacy, `lib/` for the pure helpers, and `providers/` for the model interface. The capability-by-capability map is in [`docs/MAP.md`](docs/MAP.md), and the full design, with each engine's shipped and planned parts in depth, is in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
@@ -456,6 +456,7 @@ If you cannot run the repository, the real output is committed:
 | A fresh principle outranks an old experience | `packages/core/test/memoryValue.test.ts` | levels, decay and the value score rank retrieval |
 | A cloud call can be redacted before it leaves | `packages/core/test/privacy.test.ts` | names, money and emails become placeholders; level 4 stays local |
 | A cloud provider cannot be built without the guard | `packages/core/test/providers.test.ts` | `createLLMProvider` refuses a cloud kind without a guard |
+| An approved action runs once, and deletion runs through the gate | `packages/core/test/actionGate.test.ts`, `apps/server/test/actionGate.test.ts` | the executor runs once; purge proposes and approval deletes |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
 | Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
@@ -982,6 +983,11 @@ earned.*
   notification), high waits for one approval, critical needs two, and an
   unclassified action waits. `action_proposals` holds the trail; a revocation is
   a status change, and every step writes an `action_log` entry.
+- **Durable execution.** An approved action carries an executable descriptor, an
+  idempotency key and an execution status; a registered executor runs it under a
+  lease, the outcome is recorded, and a succeeded action never runs twice
+  (`executeApprovedAction`). Deletion is the first real one: `POST /v1/me/purge`
+  proposes `user_data_purge` and approval runs it.
 - **A trust score and autonomy levels 0–4.** Trust is the Laplace-smoothed
   approval rate of the decisions the user made in the last 90 days; automatic
   runs do not count, so trust grows from decisions. The level follows thresholds
@@ -1414,7 +1420,7 @@ it, the doc that explains it and the suite that pins it.
 | MCP server | `packages/mcp/src/` | [09](capabilities/09-mcp.md) | `packages/mcp/test/tools.test.ts` |
 | HTTP client | `packages/client/src/` | [client README](../packages/client/README.md) | `packages/client/test/client.test.ts` |
 | Text projections | `packages/core/src/lib/format.ts` | [EVALUATION](../EVALUATION.md) | `packages/core/test/format.test.ts` |
-| Action Gate | `packages/core/src/services/actionGate.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [ADR 0005](adr/0005-action-gate-with-published-risk.md) | `packages/core/test/actionGate.test.ts` |
+| Action Gate | `packages/core/src/services/actionGate.ts`, `apps/server/src/actions.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [ADR 0005](adr/0005-action-gate-with-published-risk.md) | `packages/core/test/actionGate.test.ts`, `apps/server/test/actionGate.test.ts` |
 | Privacy | `providers/guard.ts`, `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts`, `lib/redaction.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [SECURITY](../SECURITY.md) | `packages/core/test/privacy.test.ts` |
 | Acceptance fixtures | `eval/fixtures/` | [EVAL](EVAL.md) | `pnpm eval` |
 | The engine design | `docs/INTELLIGENCE.md` (design) | [INTELLIGENCE](INTELLIGENCE.md) | shipped parts above |
@@ -1508,6 +1514,8 @@ The shared vocabulary. Planning-specific terms live in
 | **Message guard** | the port a cloud provider calls before sending; redacts user-role messages by level and refuses level 4 (`providers/guard.ts`) |
 | **Permission scope** | a grantable capability (`calendar.read`, `mail.read`, `memory.ai_assist`, …); absent means not granted |
 | **Purge** | true deletion of every row the user owns, in one transaction, after confirmation |
+| **Execution** | running an approved action under a lease, once, with the result or error recorded (`executeApprovedAction`) |
+| **Executor** | the function registered per action type that performs the effect; only the composition root knows effects |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |
 | **Autonomy level** | 0–4, derived from the trust score with minimum samples |
 | **Autonomy ceiling** | how far earned trust may widen autonomy (default 2, up to 4); raising it is the user's explicit consent |

@@ -6,7 +6,9 @@ import {
   decayWeight,
   memoryLevelFor,
   decideAction,
+  executeApprovedAction,
   getAutonomyState,
+  proposeAction,
   ensureDefaultScopes,
   grantScope,
   listActionProposals,
@@ -14,7 +16,6 @@ import {
   memoryPermission,
   migrateStaleWork,
   prepareCloudPayload,
-  purgeUserData,
   removeDependency,
   replanAfterChange,
   revokeAction,
@@ -56,12 +57,14 @@ import {
 } from "@aldus-palace/core";
 import type { AppVariables } from "../middleware/auth.js";
 import { requireUser } from "../middleware/auth.js";
+import { createActionExecutors } from "../actions.js";
 import type { AppDeps } from "../context.js";
 
 export function createListRoutes(deps: AppDeps): Hono<{
   Variables: AppVariables;
 }> {
   const { db, llm } = deps;
+  const actionExecutors = createActionExecutors(db);
   const listRoutes = new Hono<{ Variables: AppVariables }>();
   const titleOf = makeThoughtTitle;
 
@@ -1086,16 +1089,26 @@ export function createListRoutes(deps: AppDeps): Hono<{
     return c.json(payload);
   });
 
-  /** True deletion: every row the user owns goes, in one transaction. */
+  /**
+   * True deletion: every row the user owns goes, in one transaction.
+   *
+   * Deletion is a critical effect, so it goes through the Action Gate: this
+   * proposes a `user_data_purge` action, and the executor runs it on approval.
+   */
   listRoutes.post("/me/purge", async (c) => {
     const user = await requireUser(c, db);
     const body = (await c.req.json().catch(() => ({}))) as { confirm?: boolean };
-    const result = await purgeUserData(db, user.id, {
-      confirm: body.confirm === true,
+    if (body.confirm !== true) {
+      return c.json({ error: "confirmation_required" }, 400);
+    }
+    const proposed = await proposeAction(db, user.id, {
+      action_type: "user_data_purge",
+      payload: { confirm: true },
+      actor: "user",
+      reason: "user requested deletion",
       locale: localeOf(user.language),
     });
-    if (!result.ok) return c.json({ error: result.error }, 400);
-    return c.json(result.result);
+    return c.json({ proposal: proposed.proposal }, 202);
   });
 
   /** The trust score and autonomy level derived from decided actions. */
@@ -1151,7 +1164,32 @@ export function createListRoutes(deps: AppDeps): Hono<{
     if (!result.ok) {
       return c.json({ error: result.error }, result.error === "not_found" ? 404 : 400);
     }
-    return c.json({ proposal: result.proposal });
+    // Approval runs any executor registered for the action type; an action with
+    // none stays approved and can be executed explicitly later.
+    const execution = await executeApprovedAction(
+      db,
+      user.id,
+      c.req.param("id"),
+      actionExecutors,
+      { locale: localeOf(user.language) }
+    );
+    return c.json({ proposal: result.proposal, execution });
+  });
+
+  /** Run an approved action whose executor is registered. */
+  listRoutes.post("/actions/:id/execute", async (c) => {
+    const user = await requireUser(c, db);
+    const execution = await executeApprovedAction(
+      db,
+      user.id,
+      c.req.param("id"),
+      actionExecutors,
+      { locale: localeOf(user.language) }
+    );
+    if (!execution.ok) {
+      return c.json({ error: execution.error }, execution.error === "not_found" ? 404 : 400);
+    }
+    return c.json(execution);
   });
 
   listRoutes.post("/actions/:id/revoke", async (c) => {

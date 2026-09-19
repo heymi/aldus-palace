@@ -61,6 +61,8 @@ The shared vocabulary. Planning-specific terms live in
 | **Message guard** | the port a cloud provider calls before sending; redacts user-role messages by level and refuses level 4 (`providers/guard.ts`) |
 | **Permission scope** | a grantable capability (`calendar.read`, `mail.read`, `memory.ai_assist`, …); absent means not granted |
 | **Purge** | true deletion of every row the user owns, in one transaction, after confirmation |
+| **Execution** | running an approved action under a lease, once, with the result or error recorded (`executeApprovedAction`) |
+| **Executor** | the function registered per action type that performs the effect; only the composition root knows effects |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |
 | **Autonomy level** | 0–4, derived from the trust score with minimum samples |
 | **Autonomy ceiling** | how far earned trust may widen autonomy (default 2, up to 4); raising it is the user's explicit consent |
