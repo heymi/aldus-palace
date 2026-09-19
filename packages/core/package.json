@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/core",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "description": "A trustworthy context layer for AI that remembers, plans and acts — free text into typed commitments, decisions and memories, each with its evidence, in a SQLite file you own.",
   "license": "Apache-2.0",
   "type": "module",

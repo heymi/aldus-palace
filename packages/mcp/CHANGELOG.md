@@ -1,5 +1,34 @@
 # @aldus-palace/mcp
 
+## 0.7.0
+
+### Minor Changes
+
+- ccff588: Expose the Action Gate: `list_actions`, `decide_action` and `revoke_action`,
+  with an `actions` profile and the `aldus-palace-mcp-actions` binary. The tools
+  return a human card with the full payload in `structuredContent`.
+- 04d25f0: `list_actions` returns the trust score and autonomy level alongside the queue,
+  in the card footer and in `structuredContent`.
+- 7e481cb: `capture` and `list_today` return a short human card as text content, with the
+  full payload in `structuredContent` and an output schema. The model quotes a
+  receipt instead of reading a JSON wall.
+
+### Patch Changes
+
+- Updated dependencies [747243d]
+- Updated dependencies [4ea1c06]
+- Updated dependencies [60768cf]
+- Updated dependencies [1c253c9]
+- Updated dependencies [ccff588]
+- Updated dependencies [93201b4]
+- Updated dependencies [dbe23fc]
+- Updated dependencies [120bd72]
+- Updated dependencies [8bdc95c]
+- Updated dependencies [9a4d5e0]
+- Updated dependencies [5bcbd6b]
+- Updated dependencies [04d25f0]
+  - @aldus-palace/core@0.6.0
+
 ## 0.6.3
 
 ### Patch Changes

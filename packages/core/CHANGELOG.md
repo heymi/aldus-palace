@@ -1,5 +1,57 @@
 # @aldus-palace/core
 
+## 0.6.0
+
+### Minor Changes
+
+- 747243d: Add the Action Gate: `assessActionRisk`, `proposeAction`, `decideAction`,
+  `revokeAction`, `listActionProposals` and `runGatedAction`. Low-risk actions run,
+  medium-risk actions run and are recorded, high-risk actions wait for one
+  approval and critical actions need two. Every proposal, decision and revocation
+  writes an action-log entry. ADR 0005.
+- 4ea1c06: Add the daily buffer and task migration. `planCapacityMinutes` keeps a quarter
+  of the daytime window free and auto-fill respects it; `migrateStaleWork` moves
+  slipped, flexible, unstarted work forward, counts the deferral, and surfaces an
+  item after three deferrals instead of moving it again. A commitment with a
+  deadline never migrates silently. ADR 0008.
+- 60768cf: Add dependency constraints: `addDependency`, `removeDependency`,
+  `listDependencies` and `blockedCommitmentIds`. The planner skips a commitment
+  while a blocker is open, a finished blocker releases it, and cycles are refused.
+  ADR 0009.
+- 1c253c9: Size Today slots from project history. `estimateDurationMinutes` keeps a stated
+  estimate, calibrates it against the median of completed work in the same project,
+  and fills a missing estimate from that median. The planner uses the result for
+  slot length and records the reason.
+- ccff588: Add `formatActionProposals`: a locale-aware card for the Action Gate queue,
+  shared with the MCP tools.
+- 93201b4: Add `formatActionCard` and `formatTodayText`: locale-aware text projections of
+  the ActionCard and the Today payload. Pure functions, shared by the examples and
+  the MCP tool returns.
+- dbe23fc: Add the memory value model: `memoryLevelFor`, `decayWeight`,
+  `memoryValueScore` and `memoryRetrievalScore`. Retrieval now weighs the keyword
+  match by level, decay and value, so a fresh principle outranks an old
+  experience. The memory list exposes `level` and `decay`.
+- 120bd72: Permission evolution: `getAutonomyState` returns the earned level, the user's
+  ceiling and the effective level (`min(max(earned, 2), ceiling)`), the gate
+  applies it by default, and `setAutonomyCeiling` accepts 2, 3 or 4 and logs the
+  change. High-risk autonomy needs the ceiling raised. ADR 0007.
+- 8bdc95c: Add the scored Now and the morning plan. `scoreNow` weighs urgency, importance,
+  time fit and context match, and the reason travels with the Now item;
+  `classifyDay` splits the day into core, optional and deferred and the Today
+  payload carries it.
+- 9a4d5e0: Add the privacy mechanisms: `redactText`, `prepareCloudPayload` (redaction by
+  data level, level 4 stays local), permission scopes with Memory private by
+  default (`grantScope`, `revokeScope`, `memoryPermission`), and `purgeUserData`
+  for true deletion. ADR 0010.
+- 5bcbd6b: Add `replanAfterChange`: finishing a commitment re-derives the Today plan, and
+  a planning failure never fails the change that triggered it. `POST
+/v1/commitments/:id/complete` returns the replan result.
+- 04d25f0: Add the trust score and autonomy levels: `computeTrustScore`,
+  `autonomyLevelFor`, `effectiveStatusFor` and `getAutonomyState`. Trust is the
+  Laplace-smoothed approval rate of decided actions; a level passed to
+  `proposeAction` widens what runs without asking. `formatActionProposals` takes
+  an optional autonomy footer. ADR 0006.
+
 ## 0.5.3
 
 ### Patch Changes

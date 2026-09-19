@@ -1,5 +1,23 @@
 # @aldus-palace/server
 
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [747243d]
+- Updated dependencies [4ea1c06]
+- Updated dependencies [60768cf]
+- Updated dependencies [1c253c9]
+- Updated dependencies [ccff588]
+- Updated dependencies [93201b4]
+- Updated dependencies [dbe23fc]
+- Updated dependencies [120bd72]
+- Updated dependencies [8bdc95c]
+- Updated dependencies [9a4d5e0]
+- Updated dependencies [5bcbd6b]
+- Updated dependencies [04d25f0]
+  - @aldus-palace/core@0.6.0
+
 ## 0.1.5
 
 ### Patch Changes
