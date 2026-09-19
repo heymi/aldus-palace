@@ -55,6 +55,7 @@ If you cannot run the repository, the real output is committed:
 | Finishing early refills the day | `packages/core/test/planningIntelligence.test.ts` | a completion replans and the next candidate is scheduled |
 | A fresh principle outranks an old experience | `packages/core/test/memoryValue.test.ts` | levels, decay and the value score rank retrieval |
 | A cloud call can be redacted before it leaves | `packages/core/test/privacy.test.ts` | names, money and emails become placeholders; level 4 stays local |
+| A cloud provider cannot be built without the guard | `packages/core/test/providers.test.ts` | `createLLMProvider` refuses a cloud kind without a guard |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
 | Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |

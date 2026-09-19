@@ -124,11 +124,20 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 
 ```ts
 import { DevLLMProvider, createLLMProvider, resolveProviderConfig } from "@aldus-palace/core/providers";
+import { createMessageGuard, resolvePrivacyLevel } from "@aldus-palace/core";
 
-new DevLLMProvider();                                   // deterministic, offline, no key
-createLLMProvider({ kind: "anthropic", apiKey: "…" });  // Messages API
-createLLMProvider(resolveProviderConfig(process.env));  // auto: key if present, else dev
+new DevLLMProvider();  // deterministic, offline, no key
+
+const guard = createMessageGuard(db, user.id, {
+  level: resolvePrivacyLevel(process.env),   // default 2
+});
+createLLMProvider({ kind: "anthropic", apiKey: "…" }, guard);  // Messages API
+createLLMProvider(resolveProviderConfig(process.env), guard);  // auto: key if present, else dev
 ```
+
+A cloud provider is only built with a guard. The guard redacts user content by
+data level before it leaves, refuses level 4, and writes one audit row per call;
+`dev` runs on the device and needs no guard.
 
 ## Guarantees worth knowing
 

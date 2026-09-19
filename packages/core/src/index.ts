@@ -49,6 +49,11 @@ export {
   type ProviderKind,
   type OpenAICompatibleOptions,
   type AnthropicOptions,
+  PRIVACY_GUARDED,
+  PrivacyBlockedError,
+  isPrivacyGuarded,
+  withMessageGuard,
+  type MessageGuard,
 } from "./providers/index.js";
 
 // Repositories

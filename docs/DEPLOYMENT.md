@@ -120,6 +120,11 @@ Full understanding quality needs a model. `dev` is not a degraded mode you have 
 tolerate — it is what makes the runtime testable and always available — but it
 understands phrasing, not nuance.
 
+`PRIVACY_LEVEL` (0–4, default 2) sets what the gateway redacts before a cloud
+call: level 1 replaces project names, level 2 adds money, level 3 adds email
+addresses and phone numbers, and level 4 keeps the call on the device. It applies
+to cloud providers only; `dev` never sends anything.
+
 ## Clients
 
 | Client | How |

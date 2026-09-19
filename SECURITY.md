@@ -22,7 +22,7 @@ value first.
 | SQL injection through input content | every query uses bound parameters |
 | Model output corrupting stored data | output is validated with `zod` and gated server-side |
 | Prompt injection *within* a capture | the model fills derived fields only; `raw_inputs` is immutable |
-| Sensitive data reaching a model | the Privacy Gateway redacts by data level; level 4 stays local |
+| Sensitive data reaching a model | the Privacy Gateway redacts by data level, a cloud provider is only built with the guard attached, and level 4 refuses |
 | Control over what is kept | permissions are scopes, Memory is private by default, and deletion is real |
 
 ## Design rules that reduce risk

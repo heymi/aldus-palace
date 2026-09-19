@@ -282,9 +282,10 @@ by default, and `purgeUserData` deletes every row the user owns in one
 transaction. [`SECURITY.md`](SECURITY.md) records the posture and the current
 threat model.
 
-**Designed next** — local encrypted storage (Keychain / Secure Enclave), and
-routing every cloud call through the gateway rather than leaving that to the
-caller.
+Cloud providers are only built together with that guard, so a call cannot leave
+the device unredacted.
+
+**Designed next** — local encrypted storage (Keychain / Secure Enclave).
 
 ## Where the difficulty lives
 
@@ -454,6 +455,7 @@ If you cannot run the repository, the real output is committed:
 | Finishing early refills the day | `packages/core/test/planningIntelligence.test.ts` | a completion replans and the next candidate is scheduled |
 | A fresh principle outranks an old experience | `packages/core/test/memoryValue.test.ts` | levels, decay and the value score rank retrieval |
 | A cloud call can be redacted before it leaves | `packages/core/test/privacy.test.ts` | names, money and emails become placeholders; level 4 stays local |
+| A cloud provider cannot be built without the guard | `packages/core/test/providers.test.ts` | `createLLMProvider` refuses a cloud kind without a guard |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
 | Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
@@ -1037,16 +1039,18 @@ is the shape of it, not a feature on top.*
 - **A Privacy Gateway** (`services/privacyGateway.ts`): a cloud call is prepared
   by data level — project names, money, emails and phone numbers are replaced,
   level 4 stays local, and each call is logged without its content.
+- **The gateway is a boundary** (`providers/guard.ts`): a cloud provider is only
+  constructed with a message guard, which redacts user-role messages and refuses
+  level 4, so a call cannot leave unredacted.
 - **Progressive, fine-grained permissions** (`services/permissions.ts`): calendar
   read by default; mail, files and memory scopes on request; Memory is private
   until a memory scope is granted.
 - **True deletion** (`services/dataLifecycle.ts`): `purgeUserData` deletes every
   row the user owns in one transaction, after an explicit confirmation.
 
-`SECURITY.md` records the current posture and the threat model; the design below
-adds at-rest encryption and the rest of the architecture.
+`SECURITY.md` records the current posture and the threat model.
 
-### Designed
+### The privacy model
 
 **Three principles**
 
@@ -1106,23 +1110,27 @@ The audit log is viewable and revocable.
 user deletes, the deletion is real: local database, cloud sync and vector indexes
 are all covered.
 
----
+### Designed
+
+- **Local encrypted storage** for Memory — Keychain plus an encrypted database on
+  macOS, Secure Enclave plus encrypted storage on iOS.
+- **A level per call** — today the guard uses one level per provider
+  (`PRIVACY_LEVEL`, default 2); a capture about money could ask for a higher one
+  at the call site.
 
 ## Action items
 
-These are the concrete pieces the privacy design adds on top of today's runtime:
-
-- [ ] A **Local Intelligence Layer** — input parsing, sensitive detection, Memory
-      indexing, basic planning.
-- [ ] A **Privacy Gateway** and redaction flow, so the cloud receives only
-      temporary context.
+- [x] A **Local Intelligence Layer** — input parsing, classification, Memory
+      indexing and planning run on the device.
+- [x] A **Privacy Gateway** and redaction flow, enforced at the provider
+      boundary.
+- [x] **Progressive and fine-grained permissions**, with Memory private by
+      default.
+- [x] An **Action Gate** with risk levels, and a viewable, revocable audit log.
+- [x] A **delete policy** that reaches the local database, cloud sync and vector
+      indexes.
 - [ ] **Local encrypted storage** for Memory (Keychain / Secure Enclave plus an
       encrypted database).
-- [ ] **Progressive and fine-grained permissions**, with Memory private by
-      default.
-- [ ] An **Action Gate** with risk levels, and a viewable, revocable audit log.
-- [ ] A **delete policy** that reaches the local database, cloud sync and vector
-      indexes.
 
 ---
 
@@ -1407,7 +1415,7 @@ it, the doc that explains it and the suite that pins it.
 | HTTP client | `packages/client/src/` | [client README](../packages/client/README.md) | `packages/client/test/client.test.ts` |
 | Text projections | `packages/core/src/lib/format.ts` | [EVALUATION](../EVALUATION.md) | `packages/core/test/format.test.ts` |
 | Action Gate | `packages/core/src/services/actionGate.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [ADR 0005](adr/0005-action-gate-with-published-risk.md) | `packages/core/test/actionGate.test.ts` |
-| Privacy | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts`, `lib/redaction.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [SECURITY](../SECURITY.md) | `packages/core/test/privacy.test.ts` |
+| Privacy | `providers/guard.ts`, `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts`, `lib/redaction.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [SECURITY](../SECURITY.md) | `packages/core/test/privacy.test.ts` |
 | Acceptance fixtures | `eval/fixtures/` | [EVAL](EVAL.md) | `pnpm eval` |
 | The engine design | `docs/INTELLIGENCE.md` (design) | [INTELLIGENCE](INTELLIGENCE.md) | shipped parts above |
 
@@ -1496,7 +1504,8 @@ The shared vocabulary. Planning-specific terms live in
 | **Action log** | an append-only row written on every mutation, with a reason |
 | **Action Gate** | the published risk table that decides whether a proposed agent action runs or waits; a decision is logged and revocable (`services/actionGate.ts`) |
 | **Data level** | 0 public, 1 preference, 2 work context, 3 sensitive work, 4 private cognitive; level 4 never leaves the device |
-| **Privacy Gateway** | prepares a cloud call: sensitive detection, redaction, permission check, then the model |
+| **Privacy Gateway** | prepares a cloud call: sensitive detection, redaction, permission check, then the model; enforced at the provider boundary by the message guard |
+| **Message guard** | the port a cloud provider calls before sending; redacts user-role messages by level and refuses level 4 (`providers/guard.ts`) |
 | **Permission scope** | a grantable capability (`calendar.read`, `mail.read`, `memory.ai_assist`, …); absent means not granted |
 | **Purge** | true deletion of every row the user owns, in one transaction, after confirmation |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |
@@ -1660,8 +1669,9 @@ current posture. The privacy architecture takes shape in these pieces:
   one transaction (`services/dataLifecycle.ts`).
 - [ ] **Local encrypted storage** for Memory — Keychain plus an encrypted
   database on macOS, Secure Enclave plus encrypted storage on iOS.
-- [ ] **Routing every cloud call through the gateway** — the pipeline can call it
-  today; the provider layer does not do so yet.
+- [x] **Routing every cloud call through the gateway** — a cloud provider is only
+  built with the guard attached, so a call cannot leave unredacted
+  (`providers/guard.ts`, ADR 0011).
 
 ## Later
 

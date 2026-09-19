@@ -1,5 +1,6 @@
 import { AnthropicProvider } from "./anthropic.js";
 import { DevLLMProvider } from "./dev.js";
+import { withMessageGuard, type MessageGuard } from "./guard.js";
 import { OpenAICompatibleProvider } from "./openai_compatible.js";
 import type { LLMProvider } from "./types.js";
 
@@ -9,6 +10,13 @@ export { OpenAICompatibleProvider } from "./openai_compatible.js";
 export type { OpenAICompatibleOptions } from "./openai_compatible.js";
 export { AnthropicProvider } from "./anthropic.js";
 export type { AnthropicOptions } from "./anthropic.js";
+export {
+  PRIVACY_GUARDED,
+  PrivacyBlockedError,
+  isPrivacyGuarded,
+  withMessageGuard,
+  type MessageGuard,
+} from "./guard.js";
 
 export const DEFAULT_OPENAI_COMPATIBLE_MODEL = "deepseek-chat";
 export const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5";
@@ -47,8 +55,15 @@ export class ProviderConfigError extends Error {
  *
  * The library never reads `process.env`; callers (servers, CLIs, tests) own
  * configuration and can construct as many providers as they need.
+ *
+ * A cloud provider must be built with a `guard`: the provider layer refuses to
+ * create one without it, so a cloud call cannot leave the device unredacted.
+ * `dev` runs on the device and needs no guard.
  */
-export function createLLMProvider(config: ProviderConfig): LLMProvider {
+export function createLLMProvider(
+  config: ProviderConfig,
+  guard?: MessageGuard
+): LLMProvider {
   const log = config.log ?? ((message: string) => console.log(message));
 
   if (config.kind === "dev") {
@@ -63,6 +78,21 @@ export function createLLMProvider(config: ProviderConfig): LLMProvider {
     );
   }
 
+  const provider = buildCloudProvider(config, apiKey, log);
+
+  if (!guard) {
+    throw new ProviderConfigError(
+      `provider "${config.kind}" requires a privacy guard (build one with createMessageGuard and pass it to createLLMProvider)`
+    );
+  }
+  return withMessageGuard(provider, guard);
+}
+
+function buildCloudProvider(
+  config: ProviderConfig,
+  apiKey: string,
+  log: (message: string) => void
+): LLMProvider {
   if (config.kind === "anthropic") {
     const model = config.model?.trim() || DEFAULT_ANTHROPIC_MODEL;
     log(`[llm] provider=anthropic model=${model}`);
