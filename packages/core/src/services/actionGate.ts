@@ -377,18 +377,22 @@ export async function decideAction(
   }
 
   const t = nowIso();
-  await db
+  const reason =
+    options.reason ??
+    (next === "pending_second" ? "awaiting_second_confirmation" : String(row.reason ?? ""));
+  // Conditional on the status we read: two decisions racing cannot both write,
+  // and a confirmation counted from `proposed` is never applied to a row that
+  // already moved on.
+  const updated = await db
     .prepare(
       `UPDATE action_proposals
        SET status = ?, confirmations = ?, decided_by = ?, decided_at = ?,
            reason = COALESCE(?, reason), updated_at = ?
-       WHERE id = ? AND user_id = ?`
+       WHERE id = ? AND user_id = ? AND status = ?`
     )
-    .run(next, confirmations, actor, t, options.reason ?? null, t, proposalId, userId);
+    .run(next, confirmations, actor, t, options.reason ?? null, t, proposalId, userId, status);
+  if (Number(updated.changes ?? 0) !== 1) return { ok: false, error: "conflict" };
 
-  const reason =
-    options.reason ??
-    (next === "pending_second" ? "awaiting_second_confirmation" : String(row.reason ?? ""));
   await log(db, userId, proposalId, actionType, risk, next, reason, options.locale);
   return { ok: true, proposal: (await getProposal(db, userId, proposalId))! };
 }
@@ -409,13 +413,14 @@ export async function revokeAction(
   }
 
   const t = nowIso();
-  await db
+  const updated = await db
     .prepare(
       `UPDATE action_proposals
        SET status = 'revoked', reason = COALESCE(?, reason), updated_at = ?
-       WHERE id = ? AND user_id = ?`
+       WHERE id = ? AND user_id = ? AND status = ?`
     )
-    .run(options.reason ?? null, t, proposalId, userId);
+    .run(options.reason ?? null, t, proposalId, userId, status);
+  if (Number(updated.changes ?? 0) !== 1) return { ok: false, error: "conflict" };
 
   await log(
     db,
@@ -470,11 +475,24 @@ export async function runGatedAction<T>(
   execute: () => Promise<T>
 ): Promise<ProposeActionResult & { ran: boolean; result?: T }> {
   const proposed = await proposeAction(db, userId, action);
-  if (proposed.status === "approved" || proposed.status === "notified") {
-    const result = await execute();
-    return { ...proposed, ran: true, result };
+  if (proposed.status !== "approved" && proposed.status !== "notified") {
+    return { ...proposed, ran: false };
   }
-  return { ...proposed, ran: false };
+  // Go through the durable path so the run is recorded against the proposal: a
+  // later execute sees it succeeded instead of running the effect a second time.
+  const execution = await executeApprovedAction(
+    db,
+    userId,
+    String(proposed.proposal.id),
+    { [action.action_type]: async () => execute() },
+    { locale: action.locale }
+  );
+  const ran = execution.ok && execution.executed;
+  return {
+    ...proposed,
+    ran,
+    ...(execution.ok ? { result: execution.result as T } : {}),
+  };
 }
 
 // --------------------------------------------------------------------------
@@ -604,6 +622,7 @@ async function claimExecution(
       `UPDATE action_proposals
        SET execution_status = 'running', execution_leased_until = ?, updated_at = ?
        WHERE id = ? AND user_id = ?
+         AND status IN ('approved', 'notified')
          AND (execution_status != 'running'
               OR execution_leased_until IS NULL
               OR execution_leased_until < ?)`
@@ -694,42 +713,43 @@ export async function executeApprovedAction(
   }
 
   if (!(await claimExecution(db, userId, proposalId, at, now))) {
-    return { ok: false, error: "in_progress" };
+    // The claim also fails when the status left approved between the check and
+    // the claim (a revoke): report that distinctly from a busy lease.
+    const fresh = await getProposal(db, userId, proposalId);
+    const freshStatus = fresh ? String(fresh.status) : "";
+    return {
+      ok: false,
+      error: freshStatus === "approved" || freshStatus === "notified" ? "in_progress" : "not_approved",
+    };
   }
 
+  let result: unknown;
   try {
-    const result = await executor(context);
-    await markExecution(db, userId, proposalId, {
-      status: "succeeded",
-      result: JSON.stringify(result ?? null),
-      now,
-    });
-    await logExecution(
-      db,
-      userId,
-      proposalId,
-      actionType,
-      "succeeded",
-      context.idempotencyKey,
-      options.locale
-    );
-    return { ok: true, executed: true, status: "succeeded", result };
+    result = await executor(context);
   } catch (error) {
+    // The executor itself failed: record it so a retry is visible and allowed.
     const message = error instanceof Error ? error.message : String(error);
-    await markExecution(db, userId, proposalId, {
-      status: "failed",
-      error: message,
-      now,
-    });
-    await logExecution(
-      db,
-      userId,
-      proposalId,
-      actionType,
-      "failed",
-      message,
-      options.locale
-    );
+    await markExecution(db, userId, proposalId, { status: "failed", error: message, now });
+    await logExecution(db, userId, proposalId, actionType, "failed", message, options.locale);
     return { ok: true, executed: true, status: "failed", reason: message };
   }
+
+  // Bookkeeping runs after the side effect, on its own: if it throws, the status
+  // stays running and the lease expires, rather than being marked failed and
+  // inviting a second execution of work that already happened.
+  await markExecution(db, userId, proposalId, {
+    status: "succeeded",
+    result: JSON.stringify(result ?? null),
+    now,
+  });
+  await logExecution(
+    db,
+    userId,
+    proposalId,
+    actionType,
+    "succeeded",
+    context.idempotencyKey,
+    options.locale
+  );
+  return { ok: true, executed: true, status: "succeeded", result };
 }
