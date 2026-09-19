@@ -149,6 +149,42 @@ export function resolveRelativeDay(
   return { status: "none" };
 }
 
+const ZH_WEEKDAY: Record<string, number> = {
+  一: 1,
+  二: 2,
+  三: 3,
+  四: 4,
+  五: 5,
+  六: 6,
+  日: 0,
+  天: 0,
+};
+const EN_WEEKDAY: Record<string, number> = {
+  mon: 1,
+  tue: 2,
+  wed: 3,
+  thu: 4,
+  fri: 5,
+  sat: 6,
+  sun: 0,
+};
+
+/**
+ * A weekday phrase and whether it points at the coming week. "下周五" is the
+ * Friday of next week; "周五" is the next Friday, today included.
+ */
+function weekdayTarget(input: string): { day: number; nextWeek: boolean } | null {
+  const zhNext = input.match(/下(?:个)?(?:周|週|星期)([一二三四五六日天])/);
+  if (zhNext) return { day: ZH_WEEKDAY[zhNext[1]!]!, nextWeek: true };
+  const zh = input.match(/(?:周|週|星期)([一二三四五六日天])/);
+  if (zh) return { day: ZH_WEEKDAY[zh[1]!]!, nextWeek: false };
+  const enNext = input.match(/\bnext\s+(mon|tue|wed|thu|fri|sat|sun)(?:day)?\b/i);
+  if (enNext) return { day: EN_WEEKDAY[enNext[1]!.toLowerCase()]!, nextWeek: true };
+  const en = input.match(/\b(mon|tue|wed|thu|fri|sat|sun)(?:day)?\b/i);
+  if (en) return { day: EN_WEEKDAY[en[1]!.toLowerCase()]!, nextWeek: false };
+  return null;
+}
+
 /** Detect other relative phrases that can auto-resolve (no early-morning special case). */
 export function applySimpleRelativePhrases(
   input: string,
@@ -156,20 +192,35 @@ export function applySimpleRelativePhrases(
   at = new Date()
 ): { window_start?: string; window_end?: string; deadline?: string } | null {
   const local = getLocalParts(timezone, at);
-  if (/周五|這周五|这周五|本周五/.test(input) || /\bfriday\b/i.test(input)) {
-    // walk forward to Friday from local today
+  const weekday = weekdayTarget(input);
+  if (weekday) {
+    // Walk forward to the weekday from local today; a "next week" phrase skips
+    // the coming week's occurrence.
     let key = local.dateKey;
     for (let i = 0; i < 8; i++) {
       const [y, m, d] = key.split("-").map(Number);
       const wd = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
-      if (wd === 5) {
+      if (wd === weekday.day) {
+        if (weekday.nextWeek) key = addDaysToDateKey(key, 7);
         const w = localDayWindow(timezone, key, "full");
         return { deadline: w.end, window_start: w.start, window_end: w.end };
       }
       key = addDaysToDateKey(key, 1);
     }
   }
-  if (/下周/.test(input) || /\bnext week\b/i.test(input)) {
+  if (/下个月|下個月|\bnext month\b/i.test(input)) {
+    const y = Number(local.dateKey.slice(0, 4));
+    const m = Number(local.dateKey.slice(5, 7));
+    const ny = m === 12 ? y + 1 : y;
+    const nm = m === 12 ? 1 : m + 1;
+    const lastDay = new Date(Date.UTC(ny, nm, 0)).getUTCDate();
+    const prefix = `${ny}-${String(nm).padStart(2, "0")}`;
+    return {
+      window_start: localDayWindow(timezone, `${prefix}-01`, "full").start,
+      window_end: localDayWindow(timezone, `${prefix}-${String(lastDay).padStart(2, "0")}`, "full").end,
+    };
+  }
+  if (/下周|\bnext week\b/i.test(input)) {
     const startKey = addDaysToDateKey(local.dateKey, 1);
     // rough: next 7 days from tomorrow
     const endKey = addDaysToDateKey(local.dateKey, 7);

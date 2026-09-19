@@ -49,13 +49,16 @@ function dateSuppressionScope(
  * the past for a phrase that points at the future. Parse what parses, re-resolve
  * free text with the server rules, and drop a past date when the words point at
  * the future so the caller resolves it instead. A date-only value is read as a
- * local day, not UTC midnight, so it does not shift a day for the user.
+ * local day, not UTC midnight, so it does not shift a day for the user. A window
+ * phrase resolves to the field it fills: its end for a deadline, its start for a
+ * window start.
  */
 function normalizeModelDate(
   value: string | null | undefined,
   timezone: string,
   scope: string,
-  at: Date
+  at: Date,
+  field: "deadline" | "window_start" | "window_end" = "window_start"
 ): string | null {
   const trimmed = typeof value === "string" ? value.trim() : "";
   if (!trimmed) return null;
@@ -70,10 +73,19 @@ function normalizeModelDate(
     return new Date(ms).toISOString();
   }
   const simple = applySimpleRelativePhrases(trimmed, timezone, at);
-  if (simple?.deadline) return simple.deadline;
-  if (simple?.window_start) return simple.window_start;
+  if (simple) {
+    // A deadline sits at the end of the resolved window; a window start at its
+    // beginning, so "next week" does not make a deadline the first day.
+    const preferred =
+      field === "window_start"
+        ? (simple.window_start ?? simple.deadline ?? simple.window_end)
+        : (simple.deadline ?? simple.window_end ?? simple.window_start);
+    if (preferred) return preferred;
+  }
   const relative = resolveRelativeDay(trimmed, timezone, at);
-  if (relative.status === "resolved") return relative.window_start;
+  if (relative.status === "resolved") {
+    return field === "window_start" ? relative.window_start : relative.window_end;
+  }
   return null;
 }
 import type { ClarificationDTO } from "../domain/types.js";
@@ -851,9 +863,9 @@ export async function processRawInput(
     const id = newId("cmt");
     const modelAt = new Date();
     const dateScope = dateSuppressionScope(content, c);
-    let deadline = normalizeModelDate(c.deadline, user.timezone, dateScope, modelAt);
-    let window_start = normalizeModelDate(c.window_start, user.timezone, dateScope, modelAt);
-    let window_end = normalizeModelDate(c.window_end, user.timezone, dateScope, modelAt);
+    let deadline = normalizeModelDate(c.deadline, user.timezone, dateScope, modelAt, "deadline");
+    let window_start = normalizeModelDate(c.window_start, user.timezone, dateScope, modelAt, "window_start");
+    let window_end = normalizeModelDate(c.window_end, user.timezone, dateScope, modelAt, "window_end");
 
     // Server-side relative day overrides ambiguous auto dates
     if (relative.status === "needs_confirmation") {
