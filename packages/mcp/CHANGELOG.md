@@ -1,5 +1,13 @@
 # @aldus-palace/mcp
 
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies [d0d813e]
+- Updated dependencies [bde8de8]
+  - @aldus-palace/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
