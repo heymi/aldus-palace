@@ -2,7 +2,7 @@
 
 GENERATED FILE — do not edit.
 Regenerate: pnpm gen:llms
-Source: README.md, EVALUATION.md, docs/ARCHITECTURE.md, docs/DOMAIN-SCHEMA.md, docs/CAPABILITIES.md, docs/INTELLIGENCE.md, docs/EVAL.md, docs/POSITIONING.md, docs/MAP.md, docs/GLOSSARY.md, docs/BENCHMARKS.md, ROADMAP.md
+Source: README.md, EVALUATION.md, docs/ARCHITECTURE.md, docs/DOMAIN-SCHEMA.md, docs/CAPABILITIES.md, docs/INTELLIGENCE.md, docs/EVAL.md, docs/POSITIONING.md, docs/MAP.md, docs/GLOSSARY.md, docs/BENCHMARKS.md, docs/BENCHMARKS-LLM.md, ROADMAP.md
 
 
 <!-- README.md -->
@@ -135,7 +135,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP, a library and a typed client: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 26 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 27 suites and 11 fixtures replay each run |
 
 ## How you run it
 
@@ -318,7 +318,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Privacy | a cloud call is redacted by data level and level 4 stays local; Memory is private until a scope is granted; deletion empties every table for the user | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 26 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 27 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -327,7 +327,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 26 suites — deterministic, offline, no API key
+pnpm test     # 27 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -358,6 +358,7 @@ API key and no network.
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | the runtime, module boundaries, storage port |
 | [INTELLIGENCE.md](docs/INTELLIGENCE.md) | the four engines and the privacy design, shipped vs planned |
 | [BENCHMARKS.md](docs/BENCHMARKS.md) | measured rule-layer accuracy, with the command to reproduce it |
+| [BENCHMARKS-LLM.md](docs/BENCHMARKS-LLM.md) | the same pipeline through a live model, key-gated |
 | [MAP.md](docs/MAP.md) | capability → code → doc → test |
 | [GLOSSARY.md](docs/GLOSSARY.md) | the shared vocabulary |
 | [EVALUATION.md](EVALUATION.md) | every claim mapped to the command that proves it |
@@ -417,7 +418,7 @@ pnpm demo       # the offline capture demo
 A passing `pnpm verify` ends with fragments like:
 
 ```
-packages/core test: All 21 suites passed.
+packages/core test: All 22 suites passed.
 packages/mcp test: mcp tool tests passed.
 apps/server test: All 3 suites passed.
 All fixtures passed.
@@ -436,7 +437,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 26 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 27 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -457,6 +458,7 @@ If you cannot run the repository, the real output is committed:
 | A cloud call can be redacted before it leaves | `packages/core/test/privacy.test.ts` | names, money and emails become placeholders; level 4 stays local |
 | A cloud provider cannot be built without the guard | `packages/core/test/providers.test.ts` | `createLLMProvider` refuses a cloud kind without a guard |
 | An approved action runs once, and deletion runs through the gate | `packages/core/test/actionGate.test.ts`, `apps/server/test/actionGate.test.ts` | the executor runs once; purge proposes and approval deletes |
+| A live model's dates are resolved on the server | `packages/core/test/modelDateNormalization.test.ts` | free text becomes ISO; a past date for a future phrase is dropped |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
 | Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
@@ -1170,6 +1172,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | Suite | Locks down |
 |---|---|
 | `relativeDay` | relative date resolution and its timezone edge cases |
+| `modelDateNormalization` | a model's free-text or hallucinated dates are resolved or dropped |
 | `clarificationReply` | short replies to time clarifications |
 | `thoughtTitle` | summary quality gates, transfer grounding |
 | `projectMatch` | project matching by name/alias/description |
@@ -1379,7 +1382,7 @@ no API key. `pnpm verify` is green in a fresh clone.
 | Memory | a gate, candidates, evidence, versioning, levels and decay | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library · typed client | API | API | in-app | calendar API |
-| Replayable offline | 26 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 27 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 
@@ -1411,7 +1414,7 @@ it, the doc that explains it and the suite that pins it.
 |---|---|---|---|
 | Schema & domain | `packages/core/src/db/schema.ts` | [01](capabilities/01-schema-and-domain.md) | `pnpm spec:check` |
 | Providers | `packages/core/src/providers/` | [02](capabilities/02-providers.md) | `packages/core/test/providers.test.ts` |
-| Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
+| Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `modelDateNormalization.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
 | Progressive capture | `packages/core/src/services/enrichmentLease.ts` | [04](capabilities/04-progressive-capture.md) | `packages/core/test/enrichmentLease.test.ts` |
 | Memory | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `lib/memoryValue.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` | [05](capabilities/05-memory.md) | `memoryActivation.test.ts`, `memoryEvolution.test.ts`, `memoryValue.test.ts` |
 | Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `services/replan.ts`, `lib/nowScore.ts`, `lib/dayPlan.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts`, `planningIntelligence.test.ts` |
@@ -1561,6 +1564,55 @@ A case that fails exits non-zero, so a rule regression fails `pnpm verify`.
 
 Add an entry to the matching corpus in `packages/core/bench/run.ts`. Each case is
 a promise that must hold; a regression is a red run.
+
+## Live model
+
+[`BENCHMARKS-LLM.md`](BENCHMARKS-LLM.md) runs the same pipeline through a live
+model (`pnpm bench:llm`, key-gated) and reports object mode, memory behaviour,
+date resolution and latency.
+
+
+<!-- docs/BENCHMARKS-LLM.md -->
+
+# LLM benchmark
+
+Real captures through `deepseek-chat`, measured by `packages/core/bench/llm/run.ts`.
+
+```bash
+DEEPSEEK_API_KEY=… pnpm bench:llm
+```
+
+It needs a key and a network, so it is not part of `pnpm verify`. The corpus is
+ten labeled captures, English and Chinese, each with an expected object mode,
+commitment count, memory behaviour and resolved date.
+
+## Results (deepseek-chat, 10 cases)
+
+| Metric | Result |
+|---|---|
+| Object mode accuracy | 100% |
+| Commitment count | 90% |
+| Memory behaviour | 100% |
+| Date resolution | 100% |
+| Latency p50 / p95 | 1482 ms / 2915 ms |
+
+Object mode covers thought, commitment and mixed. Memory behaviour checks that a
+stated rule becomes active, that a mood is dropped, and that a platform decision
+becomes a memory. Date resolution checks the resolved window or deadline against
+the day the words point at.
+
+## What the run improved
+
+The first run showed date resolution at 25%: the model sometimes returned a
+free-text date ("next week", "Friday") or a hallucinated past date, which the
+runtime stored as written. `normalizeModelDate` in `agent/understand.ts` now
+resolves free text with the same server rules the deterministic path uses, and
+drops a past date when the words point at the future; resolution reached 100%.
+Locked by `packages/core/test/modelDateNormalization.test.ts`.
+
+The one remaining miss is a commitment the model created for "Keep Mac only, no
+Windows version", where the corpus expects a decision. It is reported, not
+hidden.
 
 
 <!-- ROADMAP.md -->

@@ -32,3 +32,4 @@ coverage/
 # Python
 __pycache__/
 .venv/
+packages/core/bench/llm/results.json

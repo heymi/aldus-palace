@@ -126,7 +126,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP, a library and a typed client: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 26 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 27 suites and 11 fixtures replay each run |
 
 ## How you run it
 
@@ -309,7 +309,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Privacy | a cloud call is redacted by data level and level 4 stays local; Memory is private until a scope is granted; deletion empties every table for the user | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 26 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 27 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -318,7 +318,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 26 suites — deterministic, offline, no API key
+pnpm test     # 27 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -349,6 +349,7 @@ API key and no network.
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | the runtime, module boundaries, storage port |
 | [INTELLIGENCE.md](docs/INTELLIGENCE.md) | the four engines and the privacy design, shipped vs planned |
 | [BENCHMARKS.md](docs/BENCHMARKS.md) | measured rule-layer accuracy, with the command to reproduce it |
+| [BENCHMARKS-LLM.md](docs/BENCHMARKS-LLM.md) | the same pipeline through a live model, key-gated |
 | [MAP.md](docs/MAP.md) | capability → code → doc → test |
 | [GLOSSARY.md](docs/GLOSSARY.md) | the shared vocabulary |
 | [EVALUATION.md](EVALUATION.md) | every claim mapped to the command that proves it |

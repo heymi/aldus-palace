@@ -10,6 +10,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | Suite | Locks down |
 |---|---|
 | `relativeDay` | relative date resolution and its timezone edge cases |
+| `modelDateNormalization` | a model's free-text or hallucinated dates are resolved or dropped |
 | `clarificationReply` | short replies to time clarifications |
 | `thoughtTitle` | summary quality gates, transfer grounding |
 | `projectMatch` | project matching by name/alias/description |

@@ -17,6 +17,41 @@ import {
   applySimpleRelativePhrases,
   resolveRelativeDay,
 } from "../lib/relativeDay.js";
+
+/** Words that point at the future, used to reject a hallucinated past date. */
+const FUTURE_DATE_MARKER =
+  /下周|下个月|明天|后天|周[一二三四五六日]|这周|next (week|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|tomorrow|today/i;
+
+/**
+ * Normalise a date a model returned.
+ *
+ * The model sometimes returns free text ("next week", "Friday") or a date in
+ * the past for a phrase that points at the future. Parse what parses, re-resolve
+ * free text with the server rules, and drop a past date when the words point at
+ * the future so the caller resolves it instead.
+ */
+function normalizeModelDate(
+  value: string | null | undefined,
+  timezone: string,
+  content: string,
+  at: Date
+): string | null {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) return null;
+  const ms = Date.parse(trimmed);
+  if (Number.isFinite(ms)) {
+    if (ms < at.getTime() - 24 * 3600 * 1000 && FUTURE_DATE_MARKER.test(content)) {
+      return null;
+    }
+    return new Date(ms).toISOString();
+  }
+  const simple = applySimpleRelativePhrases(trimmed, timezone, at);
+  if (simple?.deadline) return simple.deadline;
+  if (simple?.window_start) return simple.window_start;
+  const relative = resolveRelativeDay(trimmed, timezone, at);
+  if (relative.status === "resolved") return relative.window_start;
+  return null;
+}
 import type { ClarificationDTO } from "../domain/types.js";
 import {
   makeThoughtTitle,
@@ -786,9 +821,10 @@ export async function processRawInput(
     }
 
     const id = newId("cmt");
-    let deadline = c.deadline ?? null;
-    let window_start = c.window_start ?? null;
-    let window_end = c.window_end ?? null;
+    const modelAt = new Date();
+    let deadline = normalizeModelDate(c.deadline, user.timezone, content, modelAt);
+    let window_start = normalizeModelDate(c.window_start, user.timezone, content, modelAt);
+    let window_end = normalizeModelDate(c.window_end, user.timezone, content, modelAt);
 
     // Server-side relative day overrides ambiguous auto dates
     if (relative.status === "needs_confirmation") {

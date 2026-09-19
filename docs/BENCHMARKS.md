@@ -26,3 +26,9 @@ A case that fails exits non-zero, so a rule regression fails `pnpm verify`.
 
 Add an entry to the matching corpus in `packages/core/bench/run.ts`. Each case is
 a promise that must hold; a regression is a red run.
+
+## Live model
+
+[`BENCHMARKS-LLM.md`](BENCHMARKS-LLM.md) runs the same pipeline through a live
+model (`pnpm bench:llm`, key-gated) and reports object mode, memory behaviour,
+date resolution and latency.
