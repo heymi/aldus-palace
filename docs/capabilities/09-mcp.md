@@ -19,9 +19,13 @@ exposes it as tools any MCP client can call:
 | `list_memories` | candidates, active memories, and what you have since replaced |
 | `confirm_memory` | activates a candidate, optionally replacing an older belief |
 | `reject_memory` | archives a memory, including one the system stored on its own |
+| `list_actions` | what the Action Gate is holding, and what it decided |
+| `decide_action` | approve or reject a waiting action; critical needs two approvals |
+| `revoke_action` | take back a proposal or an approval |
 
-`capture` and `list_today` return a short human card, with the full payload kept
-in `structuredContent` ([ADR 0004](../adr/0004-mcp-tool-output-cards.md)).
+`capture`, `list_today` and the action tools return a short human card, with the
+full payload kept in `structuredContent`
+([ADR 0004](../adr/0004-mcp-tool-output-cards.md)).
 
 Two prompts ship as slash commands for deterministic writes:
 
@@ -31,9 +35,9 @@ Two prompts ship as slash commands for deterministic writes:
 ```
 
 **Tool sets instead of tool sprawl.** Install once; enable what you need with
-`ALDUS_PALACE_PROFILE` (`full`, `capture`, `today`, `memory`, `workstreams`) or a
-focused binary such as `aldus-palace-mcp-today`. A smaller tool surface is
-selected more accurately and costs fewer tokens.
+`ALDUS_PALACE_PROFILE` (`full`, `capture`, `today`, `memory`, `workstreams`,
+`actions`) or a focused binary such as `aldus-palace-mcp-today`. A smaller tool
+surface is selected more accurately and costs fewer tokens.
 
 **Two backends.** Local SQLite (`~/.aldus-palace/aldus.db`) with no server to run,
 or HTTP against a running instance — the same data either way, so a client on

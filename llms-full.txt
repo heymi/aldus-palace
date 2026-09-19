@@ -400,6 +400,7 @@ If you cannot run the repository, the real output is committed:
 | The model proposes, the server decides | `packages/core/test/inputObjectClassification.test.ts` | one object mode per capture |
 | A missing duration is estimated from history | `packages/core/test/adaptivePlanning.test.ts` | the slot follows the project median |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
+| The Action Gate is reachable from MCP | `packages/mcp/test/tools.test.ts` | the `actions` profile exposes list, decide and revoke |
 | The schema is the single source of truth | `pnpm spec:check` | `spec/schema.sql` matches `db/schema.ts` |
 | One record, three surfaces | `packages/mcp`, `apps/server`, `packages/core` | the same schema and migrations everywhere |
 | MCP tools return a readable card | `pnpm --filter @aldus-palace/mcp test` | card text asserted, payload in `structuredContent` |

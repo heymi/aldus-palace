@@ -45,15 +45,23 @@ version readable, and any memory can be archived.
 | `list_memories` | active memories, pending candidates, and what you have replaced — each with a note on why it is active |
 | `confirm_memory` | activates a candidate, optionally replacing an older belief |
 | `reject_memory` | archives a memory, including one the system stored on its own |
+| `list_actions` | what the Action Gate is holding, and what it decided |
+| `decide_action` | approve or reject a waiting action; critical needs two approvals |
+| `revoke_action` | take back a proposal or an approval |
 
-`capture` and `list_today` return a short card, with the full payload kept in
-`structuredContent`:
+`capture`, `list_today` and the action tools return a short card, with the full
+payload kept in `structuredContent`:
 
 ```
 capture  "Ship the onboarding page next week"
 
 Captured · 1 commitment
   commitment  Ship the onboarding page next week  ·  window 2026-09-19 → 2026-09-26
+
+list_actions
+
+Actions · 1 waiting
+  high      memory_deleted  ·  waiting  ·  replaces_a_belief
 ```
 
 Two prompts ship as slash commands:
@@ -70,18 +78,20 @@ accurately and costs fewer tokens.
 
 | Profile | Tools |
 |---|---|
-| `full` (default) | all seven |
+| `full` (default) | all ten |
 | `capture` | `capture` |
 | `today` | `list_today`, `list_commitments` |
 | `memory` | `list_memories`, `confirm_memory`, `reject_memory` |
 | `workstreams` | `list_work_streams` |
+| `actions` | `list_actions`, `decide_action`, `revoke_action` |
 
 ```bash
 ALDUS_PALACE_PROFILE=memory aldus-palace-mcp            # via env
 aldus-palace-mcp-today                                  # via a focused binary
 ```
 
-Focused binaries: `aldus-palace-mcp-capture`, `-today`, `-memory`, `-workstreams`.
+Focused binaries: `aldus-palace-mcp-capture`, `-today`, `-memory`, `-workstreams`,
+`-actions`.
 
 ## Claude Desktop
 
