@@ -46,6 +46,7 @@ The shared vocabulary. Planning-specific terms live in
 | **Memory level** | how much a kind shapes behaviour: experience 0, decision/project context 1, preference 2, principle 3 |
 | **Memory decay** | the half-life of a kind — a month for an experience, years for a principle |
 | **Value score** | explicitness, frequency, impact, scope and future relevance averaged into one weight |
+| **Retriever** | the port that ranks memories for a query; the default uses FTS5 (bm25) blended with level, decay and value (`lib/retriever.ts`) |
 
 ## Runtime
 

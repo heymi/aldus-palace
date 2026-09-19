@@ -19,7 +19,8 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `workMigration` | slipped flexible work, deferral counting, the confirmation threshold |
 | `dependencies` | blocked-by edges, cycle rejection, planner eligibility, the audit trail |
 | `planningIntelligence` | the Now score, the core/optional/deferred plan, context match |
-| `memoryValue` | levels, decay half-lives, the value score, ranked retrieval |
+| `memoryValue` | levels, decay half-lives, the value score |
+| `retriever` | FTS5 search, CJK segmentation, backfill, re-index and removal |
 | `privacy` | redaction by data level, the gateway, permission scopes, true deletion |
 | `client` (packages/client) | every method's path, method and body, plus error mapping |
 | `enrichmentLease` | concurrent enrichment and supersede semantics |

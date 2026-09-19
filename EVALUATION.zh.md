@@ -54,6 +54,7 @@ spec/schema.sql is up to date.
 | 没有 guard 就无法创建云端 provider | `packages/core/test/providers.test.ts` | `createLLMProvider` 拒绝不带 guard 的云端 kind |
 | 批准后的动作只执行一次，删除走 gate | `packages/core/test/actionGate.test.ts`、`apps/server/test/actionGate.test.ts` | executor 只跑一次；purge 先提出、批准后执行删除 |
 | 真实模型返回的日期由服务端解析 | `packages/core/test/modelDateNormalization.test.ts` | 自由文本变成 ISO；未来语气配过去日期会被丢弃 |
+| 记忆检索是全文检索，且支持中文 | `packages/core/test/retriever.test.ts` | FTS5 + bm25；中文子串可命中 |
 | 未经授权时 Memory 保持私有 | `packages/core/test/privacy.test.ts` | 默认权限不含 memory；可收回 |
 | 删除是真实的 | `packages/core/test/privacy.test.ts` | 需要 `confirm`，删除后用户所有表为空 |
 | 高风险 agent 动作会等待决定 | `packages/core/test/actionGate.test.ts` | 关键级需两次批准；撤销不可逆 |

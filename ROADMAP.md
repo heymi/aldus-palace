@@ -79,9 +79,9 @@ it:
 The design is in [`docs/RETRIEVER.md`](docs/RETRIEVER.md); FTS5 is confirmed on
 both runtimes, and vector search is not portable.
 
-- [ ] **An FTS5 retriever** — the `Retriever` port and its FTS5 implementation,
-  a `search_text` column the runtime segments (`lib/search.ts`), triggers and a
-  backfill, wired into context retrieval.
+- [x] **An FTS5 retriever** — `lib/retriever.ts` keeps `memory_search` in step
+  with a segmented `memories.search_text`, backfills on first search, and is
+  wired into context retrieval.
 - [ ] **Ranking and measurement** — blend `bm25` with the value score, and add
   `Recall@K` to the benchmarks.
 - [ ] **Optional embeddings** — a second `Retriever` behind the port, opt-in,

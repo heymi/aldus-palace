@@ -54,13 +54,14 @@ query ──► Retriever port
 
 ## Slices
 
-1. **FTS5 retriever.** Migration for `memory_search` plus triggers and a
-   backfill; the `Retriever` port and its FTS5 implementation; wire it into
-   `retrieveActiveMemoriesForContext`; a deterministic suite.
+1. **FTS5 retriever — shipped.** The `memory_search` table ships in the schema;
+   `lib/retriever.ts` indexes a memory (`indexMemory`), backfills on first search
+   (`ensureMemoryIndex`), and answers with ranked ids (`retrieveMemoryIds`), and
+   `retrieveActiveMemoriesForContext` uses it before the keyword fallback.
+   `lib/search.ts` segments CJK. Locked by `packages/core/test/retriever.test.ts`.
 2. **Ranking and measurement.** Blend `bm25` with `memoryRetrievalScore`, and add
    `Recall@K` to the rule benchmark and the LLM benchmark.
 3. **Optional embeddings.** A second `Retriever` behind the port, opt-in, with no
    change to the default behaviour.
 
-Slice 1 is the next visible capability; 2 and 3 are recorded in
-[`ROADMAP.md`](../ROADMAP.md).
+Slices 2 and 3 are recorded in [`ROADMAP.md`](../ROADMAP.md).

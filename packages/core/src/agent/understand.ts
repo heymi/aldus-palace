@@ -85,6 +85,7 @@ import {
   makeModelJudge,
   type MemoryConflict,
 } from "../services/memoryEvolution.js";
+import { indexMemory } from "../lib/retriever.js";
 import { isRealLLMProvider } from "../providers/index.js";
 import { pick, plural, localeOf, type Locale } from "../lib/locale.js";
 import {
@@ -1264,6 +1265,7 @@ export async function processRawInput(
       }
       throw e;
     }
+    await indexMemory(db, id, m.content);
     existingMems.push({
       id,
       type,

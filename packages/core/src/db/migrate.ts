@@ -237,6 +237,20 @@ const actionExecution: Migration = {
   },
 };
 
+const memorySearch: Migration = {
+  version: "2026-09-19-memory-search",
+  async up(db) {
+    await addColumnIfMissing(db, "memories", "search_text", "TEXT");
+    await db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS memory_search USING fts5(
+        memory_id UNINDEXED,
+        search_text,
+        tokenize = 'unicode61'
+      );
+    `);
+  },
+};
+
 export const MIGRATIONS: Migration[] = [
   workClassificationV1,
   progressiveCaptureColumns,
@@ -247,6 +261,7 @@ export const MIGRATIONS: Migration[] = [
   commitmentDependencies,
   permissionGrants,
   actionExecution,
+  memorySearch,
 ];
 
 /**
