@@ -1,5 +1,17 @@
 # @aldus-palace/mcp
 
+## 0.6.1
+
+### Patch Changes
+
+- README: replace "What it guarantees" and the three-row comparison with one
+  "Where this makes a difference" table — nine dimensions, each stating what the
+  system does, with the numbers re-verified. The single-writer constraint moves to
+  DEPLOYMENT.md and the offline provider's reach to EVAL.md; the positioning
+  document keeps the head-to-head table with vendor-neutral wording.
+- Updated dependencies
+  - @aldus-palace/core@0.5.1
+
 ## 0.6.0
 
 ### Minor Changes

@@ -78,6 +78,25 @@ const app = createApp({
 
 ---
 
+## One writer per SQLite file
+
+SQLite takes a single writer. Two processes pointed at the same `aldus.db`
+(the reference server plus a local MCP server, or two MCP servers) compete for
+the write lock. The SQLite adapter waits up to five seconds, then returns a busy
+error.
+
+Three ways to keep one writer:
+
+- Run the server and point every client at it (`ALDUS_PALACE_API_URL`).
+- Run one MCP server per file and use `ALDUS_PALACE_PROFILE` to expose the tools
+  that client needs.
+- Keep the second copy read-only, or on its own file.
+
+Readers never conflict: several MCP clients can read the same file while one
+process writes.
+
+---
+
 ## Choosing a model
 
 `LLM_PROVIDER` selects the understanding backend:

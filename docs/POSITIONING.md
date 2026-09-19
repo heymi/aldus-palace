@@ -45,7 +45,7 @@ such thing.** A missed date becomes a risk you can see and rearrange.
 ### 2. Memory you can audit — and that knows when you changed your mind
 
 Assistant memory is usually a black box: something gets written, nobody knows
-why, and it never changes.
+why, and it stays as written.
 
 Here, every memory can explain itself and can be taken back:
 
@@ -58,22 +58,22 @@ Here, every memory can explain itself and can be taken back:
 - **Evidence on every row.** Each memory carries the excerpt it came from, a
   confidence value, and the input id. Archive any of them, including one the
   system stored on its own.
-- **Temporary states are rejected.** “I'm tired today” never becomes a
-  personality trait — the gate drops it before it is stored.
+- **Temporary states are rejected.** “I'm tired today” stays a mood; the gate
+  drops it before it reaches your profile.
 - **Duplicates collapse.** Different phrasings of the same principle normalise to
   one key and merge.
 - **Contradictions surface.** Say the opposite of a confirmed belief and the
   candidate is flagged with the memory it conflicts with.
 - **Replacing keeps history.** Confirming a replacement marks the old memory
   `superseded` with a pointer and a reason. Nothing is deleted, so “why do you
-  think that about me?” always has an answer.
+  think that about me?” has an answer.
 
 *Proof:* `services/memoryLifecycle.ts`, `services/memoryEvolution.ts`,
 `lib/memoryExtract.ts`, `test/memoryEvolution.test.ts`.
 
-### 3. The raw input is never rewritten
+### 3. The raw input stays as written
 
-Everything you say is stored verbatim in `raw_inputs` and never modified. Models
+Everything you say is stored verbatim in `raw_inputs`. Models
 only fill *derived* fields, and every write passes server-side gates:
 
 - one object mode per capture (a thought cannot become the same commitment twice)
@@ -81,7 +81,7 @@ only fill *derived* fields, and every write passes server-side gates:
 - relative dates (“next Wednesday”) are resolved on the server, not trusted to a prompt
 - a failed model pass leaves the deterministic result in place instead of an empty record
 
-That makes the AI layer **auditable**: you can always diff what you said against
+That makes the AI layer **auditable**: you can diff what you said against
 what the system stored.
 
 *Proof:* `agent/understand.ts`, `eval/fixtures/`, `test/inputObjectClassification.test.ts`.
@@ -94,7 +94,7 @@ then lets the model replace it under a lease — so retries, concurrent clients 
 crashed workers cannot corrupt or duplicate anything. See
 [ADR 0003](adr/0003-progressive-capture-with-enrichment-leases.md).
 
-**Your agent has never run in CI. This one has.** A deterministic provider plus
+**An agent you can run in CI.** A deterministic provider plus
 replayable acceptance fixtures means the whole pipeline is testable offline, with
 no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 
@@ -103,14 +103,11 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 | | Aldus Palace | Todoist / Things | Notion / PKM | Claude / ChatGPT memory | Motion / Reclaim |
 |---|---|---|---|---|---|
 | Who structures your input | the runtime decides | you do | you do | assistant, conversationally | partially |
-| Time model | 4 kinds, no “overdue” | one due date | free text | none | calendar slots |
-| Memory | candidates + evidence + versioning | none | documents you maintain | opaque, not portable | preferences, opaque |
-| Data location | your SQLite file or your Worker | their cloud | their cloud | their cloud | their cloud |
-| Programmable | MCP · HTTP · library | API | API | limited | calendar API |
-| Testable offline | yes, by design | n/a | n/a | no | no |
-
-It is **not** a replacement for a calendar (it reads fixed events, it does not
-negotiate meetings), not a collaborative task manager, and not a document editor.
+| Time model | 4 kinds, held apart | one due date | free text | conversation only | calendar slots |
+| Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
+| Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
+| Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
+| Replayable offline | 15 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 
@@ -129,7 +126,7 @@ These are choices, not gaps:
   not a feature you can switch on; run one instance per person.
 - **Self-hosted.** Your SQLite file, or Cloudflare's edge. There is no hosted
   service and no telemetry.
-- **No external side effects.** The runtime never sends mail, never posts, never
-  pays. It records intent and plans; acting on the world is your call.
+- **No external side effects.** The runtime records intent and plans; it sends
+  no mail, posts nothing and pays nobody. It records intent and plans; acting on the world is your call.
 - **MCP-level clients.** The UI is yours to build. The integration surfaces are
   MCP, HTTP and the library.

@@ -77,6 +77,19 @@ If a fixture documents behaviour that the current rules get wrong, open the PR
 with the fixture and mark it `xfail` in the description — that is a valuable bug
 report.
 
+## The offline provider's reach
+
+`LLM_PROVIDER=dev` recognises a defined set of patterns: commands ("Ship the
+onboarding page next week"), stated rules ("I prefer simple tools"), platform
+decisions ("Stay Mac-only, skip Windows"), temporary states, one-off creative
+work, and a few date forms, in English and Chinese. It resolves relative dates,
+skips near-duplicates and gates memory candidates.
+
+Connect a model (`anthropic`, `deepseek`, `openai-compatible`) for general
+understanding: arbitrary phrasing, multi-paragraph pastes, and inferences the
+rules do not cover. The capture receipt shows which provider produced the
+result, and the deterministic path stays available as the fallback.
+
 ## What is *not* tested offline
 
 Live-model quality. `LLM_PROVIDER=deepseek` (or any OpenAI-compatible endpoint)

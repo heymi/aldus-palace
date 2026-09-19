@@ -48,33 +48,19 @@ inferred it.
 **It follows you.** One file, one API. Claude, Cursor, your own frontend, a script
 you write.
 
-## What it guarantees
+## What makes it different
 
-**A missed date becomes a risk you can move.** Deadlines, available windows and
-suggested times live as three separate things.
-
-**A passing mood stays out of your profile.** Say that a screen annoys you and
-the system keeps nothing.
-
-**Your new decision replaces the old one.** The old record stays on file, with
-the reason for the change.
-
-**Your words stay in the file as you wrote them.** The system keeps your sentence
-beside the version it understood.
-
-**The whole record sits in one file on your machine.** Copy it, move it, hand it
-to another assistant.
-
-**You state intent. The system files it.** No projects, no priorities, no "task
-or note?".
-
-## Compare
-
-| Today | Here |
+| The dimension | Aldus Palace |
 |---|---|
-| A to-do app: you file, tag, date and prioritize; overdue labels in red | You write a sentence; the system files it; a missed date is a risk |
-| An assistant memory: closed box, one app, no export | A file you own, readable, searchable, portable |
-| Both at once: two silos | One record, shared by every client |
+| **What you give it** | A sentence, in your own words. A paragraph works too, and yields several records. |
+| **Who decides the shape** | The runtime. You state intent; it files the thought, the commitment, the decision and the memory. |
+| **How time works** | Four kinds, held apart: a deadline, an availability window, an AI-suggested slot, and unscheduled work. A missed date becomes a risk you can move. |
+| **How memory behaves** | A confident memory takes effect on capture. Each one carries the sentence it came from and a note that says whether you stated it or the system inferred it. Contradictions arrive as a question, and a replacement keeps the old version readable, with a reason. |
+| **How your words are kept** | Your sentence stays in the file as you wrote it, and the system records its own reading beside it, so the two can be compared. |
+| **What today answers** | What to do now, what is at risk, what is unscheduled. A clear day gets suggestions; a full day gets a rest suggestion. |
+| **How you reach it** | MCP, HTTP and a library over one record: Claude, Cursor, your own frontend and a script share one state. |
+| **Where the record lives** | One SQLite file you own, or a Cloudflare Worker. Copy it, back it up, hand it to another assistant. |
+| **How you check it** | A deterministic provider runs the whole pipeline with no network and no API key. 15 test suites and 11 acceptance fixtures replay the same way each run. |
 
 ## Designed scope
 
@@ -256,9 +242,8 @@ docs/                  everything above
 
 ## Status
 
-`0.x` — usable and tested, and the API may change between minor versions.
-Single-user and self-hosted by design. See [SECURITY.md](SECURITY.md) before
-exposing an instance.
+`0.x` — usable and tested; the API may change between minor versions. See
+[SECURITY.md](SECURITY.md) before exposing an instance.
 
 ## Contributing
 
