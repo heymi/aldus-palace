@@ -107,7 +107,7 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 | Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
-| Replayable offline | 19 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 20 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 

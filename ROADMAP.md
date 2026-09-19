@@ -72,8 +72,11 @@ it:
 - [x] **An Action Gate.** A published risk table grades every proposed agent
   action: low and medium run, high waits for one approval, critical needs two,
   and every decision is logged and revocable (`services/actionGate.ts`).
-- [ ] **A trust and autonomy engine.** An accumulated trust score and autonomy
-  levels would widen what the system may do without asking, on top of the gate.
+- [x] **A trust score and autonomy levels.** The Laplace-smoothed approval rate
+  of decided actions, with level 0–4 thresholds; a caller can pass the level to
+  the gate to widen what runs without asking (`services/actionGate.ts`).
+- [ ] **Permission evolution.** Let the level rise and fall with the record on
+  its own, instead of a caller passing it.
 - [ ] **Model orchestration.** One provider interface serves every call today.
   The design routes work by task: a fast model for classification, a reasoning
   model for planning and conflict, embeddings for memory retrieval, and a local

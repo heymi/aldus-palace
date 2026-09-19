@@ -202,13 +202,16 @@ earned.*
   notification), high waits for one approval, critical needs two, and an
   unclassified action waits. `action_proposals` holds the trail; a revocation is
   a status change, and every step writes an `action_log` entry.
+- **A trust score and autonomy levels 0–4.** Trust is the Laplace-smoothed
+  approval rate of the decisions the user made in the last 90 days; automatic
+  runs do not count, so trust grows from decisions. The level follows thresholds
+  with minimum samples, and a caller can pass it to `proposeAction` to widen what
+  runs without asking. `GET /v1/autonomy` and the MCP card expose both.
 
 ### Designed
 
-- **Autonomy levels 0–4** built on the proposal table, from "propose only" to
-  "act and report".
-- **A trust score** accumulated from outcomes, not assumed.
-- **Permission evolution** — authority grows with demonstrated reliability.
+- **Permission evolution** — the level rises and falls with the record on its
+  own, instead of a caller passing it.
 - **Proactive rules**, judged on evidence, pattern and value.
 - **Routing the capture and planning flows through the gate.** Their action
   types are graded low today, so the gate is available without changing them.
