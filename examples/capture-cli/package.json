@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/example-capture-cli",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "private": true,
   "description": "Minimal end-to-end example: implement the storage port, capture one input, print the ActionCard.",
   "license": "Apache-2.0",

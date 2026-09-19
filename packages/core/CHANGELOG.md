@@ -1,5 +1,19 @@
 # @aldus-palace/core
 
+## 0.9.0
+
+### Minor Changes
+
+- 8e1c285: Add the FTS5 memory retriever: `lib/retriever.ts` indexes a memory
+  (`indexMemory`), backfills on first search (`ensureMemoryIndex`) and answers
+  with ranked ids (`retrieveMemoryIds`); `memory_search` and
+  `memories.search_text` ship in the schema, and `lib/search.ts` segments CJK so
+  substring search works. Context retrieval uses it before the keyword fallback.
+  See `docs/RETRIEVER.md`.
+- 118f319: Add `lib/search.ts`: `segmentForSearch` and `toMatchQuery` prepare text and
+  queries for FTS5 so CJK substring search works on both runtimes. The Retriever
+  spike that motivated it is in `docs/RETRIEVER.md`.
+
 ## 0.8.0
 
 ### Minor Changes
