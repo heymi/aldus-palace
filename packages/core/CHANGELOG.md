@@ -1,5 +1,48 @@
 # @aldus-palace/core
 
+## 0.10.0
+
+### Minor Changes
+
+- eedbd5a: A cloud provider now requires its privacy guard at construction.
+
+  `AnthropicProvider` and `OpenAICompatibleProvider` throw
+  `PrivacyGuardRequiredError` without a `guard`, and apply it inside `complete`.
+  The guarantee no longer depends on going through `createLLMProvider`, which
+  still takes the guard the same way. Constructing a provider directly now means
+  passing `guard`.
+
+### Patch Changes
+
+- d3c2d19: Make the Action Gate's decisions and execution linearizable.
+
+  - `runGatedAction` records its inline run, so a later durable execute sees
+    `already_succeeded` instead of running the effect twice.
+  - A decision or a revocation is written only if the row still has the status that
+    was read, so two racing decisions cannot both apply and a confirmation is
+    never lost.
+  - The execution lease is claimed only while the proposal is approved, closing the
+    window where a revoke between the check and the claim could still run it.
+  - Executor bookkeeping is separate from the effect: a failed write no longer
+    marks a completed action failed and invites a second run.
+
+- e5254cd: Read a model's date-only value as the user's local day, and scope the future-date
+  check to the commitment's clause. A `YYYY-MM-DD` deadline is no longer parsed as
+  UTC midnight (which shifted the day for users west of UTC), and a future word in
+  one clause no longer drops a real past date that belongs to another.
+- 3d87708: Fix the memory retrieval fallback. The keyword pass filtered on a score that has
+  a positive floor, so when nothing matched it injected arbitrary memories. It now
+  matches on the keyword hit and falls back to principles and preferences.
+- f9332f7: Keep the memory search index consistent.
+
+  - `indexMemory` writes the search row before `search_text`, so an interrupted
+    write is repaired by the next backfill instead of leaving a memory marked
+    indexed with no row.
+  - A search row is updated in place, or inserted only if absent, so two flows for
+    one memory cannot leave duplicate rows.
+  - The backfill repairs a memory whose search row went missing, distinguishes an
+    empty body from a missing row, and removal drops the row with the memory.
+
 ## 0.9.2
 
 ### Patch Changes
