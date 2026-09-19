@@ -177,9 +177,9 @@ capture and every injection is logged. Five kinds ship.
 
 **Designed next** — a graded model (raw experience → observation → preference →
 principle → identity), decay by kind, the full value score (explicitness +
-frequency + impact + scope + future relevance), the remaining kinds (goal,
-relationship, knowledge, habit, episode), the two unread extraction signals
-(impact and scope), and a memory graph with retrieval ranking.
+frequency + impact + scope + future relevance), more kinds (goal, relationship,
+knowledge, habit, episode), the impact and scope extraction signals, and a memory
+graph with retrieval ranking.
 
 ### The memory pipeline
 
@@ -206,13 +206,17 @@ the real world, without a pretty calendar to maintain.*
 
 **Shipped today** — planning works on Commitments and reads the calendar and a
 learned behaviour model. Four kinds of time stay apart (deadline, availability
-window, suggested slot, unscheduled; there is no `overdue`). Priority scoring
-combines risk, deadline proximity, recent-project continuity, importance and
-learned preferences. `findSlot` generates real candidate windows and scheduling
-writes the slot with a reason. Execution is monitored as feedback episodes and a
-reconcile pass replans. A day gets Now, timeline, risks, unscheduled, and
-adaptive limits (5, or 10) with stall detection and a rest suggestion.
-`today.ts` · `planToday.ts` · `adaptivePlanning.ts`
+window, suggested slot, unscheduled; there is no `overdue`), and constraints are
+honoured concretely: a deadline sets the hard boundary and risk tiers, a window
+bounds eligibility, a project preference is learned. Priority scoring combines
+risk, deadline proximity, recent-project continuity, importance and learned
+preferences. `findSlot` generates real candidate windows and takes the next free
+one, which is how a scheduling conflict is avoided; scheduling writes the slot
+with a reason. Execution is monitored as feedback episodes, and a reconcile pass
+replans, triggered by the plan endpoint or a new commitment arranged for today. A
+day gets Now, timeline, risks, unscheduled, adaptive limits (5, or 10) with stall
+detection and a rest suggestion, and a light triage that prefers concrete bugs
+and small work. `today.ts` · `planToday.ts` · `adaptivePlanning.ts`
 
 **Designed next** — the full pipeline (constraint analysis → priority → time
 windows → schedule optimization → conflict resolution → replanning); a constraint
@@ -220,9 +224,9 @@ model (hard, soft, preference, dependency); a dynamic priority score (impact ×
 urgency × dependency × goal alignment × risk); duration estimation from history;
 schedule optimization with an explicit context-switch cost; a morning core /
 optional / deferred plan; Now as the best current action (priority × available
-time × energy match × context match); replanning triggers; a 20–30% daily buffer;
-and task migration (automatic for flexible, unstarted work, confirmation after
-three deferrals).
+time × energy match × context match); replanning triggers; a daily buffer that
+keeps part of the day free; and task migration (flexible, unstarted work can move
+forward, and repeated deferrals surface for a decision).
 
 ### Trust & Autonomy Engine
 

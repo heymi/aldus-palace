@@ -27,25 +27,44 @@ today marked against what does not — is in
 ## Memory, deepened
 
 The shipped memory layer covers extraction, evaluation, activation, conflict
-detection, versioning and retrieval. These parts of the design are not in the
-code yet:
+detection, versioning and retrieval. The design extends it:
 
-- [ ] **A graded memory model.** Today a memory carries one of five kinds
-  (preference, project context, principle, decision, experience). The design
-  calls for levels — raw experience, observation, preference, principle,
-  identity — where a higher level carries more weight in future decisions.
-- [ ] **Memory decay.** Today no memory weakens with time. The design puts a
-  lifetime on each kind: identity does not decay, principle decays with a long
-  half-life, preference in months, habit in weeks, a current state in days.
-- [ ] **A value score.** Today importance follows the memory kind and confidence
-  follows the extraction rule. The design scores a candidate on explicitness,
-  frequency, impact, project coverage and future relevance, then gates on the
-  total.
+- [ ] **A graded memory model.** The five shipped kinds grow into levels — raw
+  experience, observation, preference, principle, identity — where a higher level
+  carries more weight in future decisions.
+- [ ] **Memory decay.** A lifetime on each kind: identity holds, principle fades
+  with a long half-life, preference over months, habit over weeks, a current
+  state over days.
+- [ ] **A value score.** A candidate scored on explicitness, frequency, impact,
+  project coverage and future relevance, then gated on the total.
 - [ ] **More memory kinds.** Goal, relationship, knowledge, habit and episode
   memories, each with its own lifetime and evidence rules.
-- [ ] **Two more extraction signals.** Extraction reads durability markers and
-  repeated behaviour. Impact on future decisions, and scope across projects, are
-  not read yet.
+- [ ] **More extraction signals.** Impact on future decisions, and scope across
+  projects, alongside durability markers and repeated behaviour.
+
+## Planning, deepened
+
+The shipped planner covers four kinds of time, priority scoring, slot search,
+Today, risk, adaptive limits and a learned behaviour model. The design extends
+it:
+
+- [ ] **A richer constraint model** — hard, soft, preference and dependency
+  relationships, so the plan can respect how work depends on other work.
+- [ ] **A blended priority score** — impact, urgency, dependencies, goal
+  alignment and risk, alongside the current signals.
+- [ ] **Duration estimation from history** — blend the user's estimate with
+  similar completed work and complexity.
+- [ ] **Schedule optimization with context-switch cost** — maximize important
+  work completed, minimize switching, fit the user's rhythm and lower stress.
+- [ ] **An explicit morning plan** — classify the day into core, optional and
+  deferred.
+- [ ] **A scored Now** — priority × available time × energy match × context
+  match.
+- [ ] **Event-driven replanning** — react to a postponed meeting, a new task,
+  finishing early, or a change in state.
+- [ ] **Buffer management** — keep a share of the day free.
+- [ ] **Task migration** — flexible, unstarted work can move forward on its own,
+  and repeated deferrals surface for a decision.
 
 ## Autonomy and models
 
@@ -61,7 +80,7 @@ code yet:
 ## Privacy & local intelligence
 
 The shipped runtime is local-first and single-user, and `SECURITY.md` records the
-current posture. The privacy architecture is designed, not built:
+current posture. The privacy architecture takes shape in these pieces:
 
 - [ ] **A Local Intelligence Layer** — input parsing, sensitive detection, Memory
   indexing and basic planning stay on device.

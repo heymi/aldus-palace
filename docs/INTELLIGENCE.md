@@ -13,7 +13,7 @@ do, arranges real work, and calls a model only where a model helps.
 | Marker | Meaning |
 |---|---|
 | **Shipped today** | runs in the current `0.x` release; the file that implements it is named |
-| **Designed** | recorded and not built yet; tracked in [`ROADMAP.md`](../ROADMAP.md) |
+| **Designed** | the direction the system is being built toward; tracked in [`ROADMAP.md`](../ROADMAP.md) |
 
 Where this document disagrees with the code, `spec/schema.sql` or an
 [ADR](adr), the code and the ADR win — the same rule as the
@@ -45,7 +45,7 @@ what happens next, what the system may do on its own, and which model is used.
 | Engine | Goal | Shipped today | Designed |
 |---|---|---|---|
 | **Memory** | understand a person over years, not store a chat log | extraction, pollution gate, activation rule, evidence, dedupe, conflict, versioning, retrieval | graded levels, decay, value score, more kinds and signals |
-| **Planning** | keep what matters happening while the environment changes | four kinds of time, Today, risk, adaptive limits | constraints, priority, scheduling, replanning, delay model |
+| **Planning** | keep what matters happening while the environment changes | four kinds of time, priority scoring, slot search, Today, risk, adaptive limits, feedback model | richer constraints, blended priority, schedule optimization, event-driven replanning, buffer, migration |
 | **Trust & autonomy** | widen what the system may do on its own, safely | one fixed rule | risk model, autonomy levels, trust score, permission evolution |
 | **Model orchestration** | use the right model for each job | one provider interface, three implementations | routing by task |
 
@@ -96,23 +96,22 @@ what happens next, what the system may do on its own, and which model is used.
 - **The full formation pipeline** — user experience → extraction → candidate →
   evaluation → conflict check → storage → activation → retrieval. Most stages
   ship; the candidate lifecycle is the part that keeps growing.
-- **Four extraction signals.** Two ship (a long-term phrase, repeated
-  behaviour). Two do not: **impact** on future decisions and **scope** across
-  projects.
+- **Four extraction signals** — a long-term phrase, repeated behaviour, impact on
+  future decisions, and reach across projects. The first two ship; impact and
+  scope extend the same extractor.
 - **A value score** — explicitness + frequency + impact + scope + future
-  relevance — gating on the total, where today importance follows the memory kind
-  and confidence follows the extraction rule.
-- **Pollution prevention** stays three rules: a mood is not a trait, one
-  inference is not a principle, every memory carries evidence.
-- **Decay by kind.** Identity does not decay; principle decays slowly;
-  preference over months; habit over weeks; a current state over days. Today no
-  memory weakens with time.
-- **The remaining kinds.** Goal, relationship, knowledge, habit and episode, each
-  with its own lifetime and evidence rules.
+  relevance — gating on the total, with importance following the memory kind and
+  confidence following the extraction rule.
+- **Pollution prevention** — three rules: a mood is not a trait, one inference is
+  not a principle, every memory carries evidence.
+- **Decay by kind** — identity holds, principle fades slowly, preference over
+  months, habit over weeks, a current state over days.
+- **More kinds** — goal, relationship, knowledge, habit and episode, each with
+  its own lifetime and evidence rules.
 - **Decision memory keeps the *why*** — What, Why, When, Status — not only what
   was chosen.
 - **A three-layer store, a memory graph, retrieval ranking, context assembly and
-  a user memory control centre.** Today retrieval is one injection step.
+  a user memory control centre.**
 
 ---
 
@@ -130,25 +129,31 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
   (`events` of kind `fixed_external`) and a learned behaviour model.
 - **Four kinds of time held apart** — deadline, availability window, suggested
   slot, unscheduled. There is no `overdue` state to occupy.
+- **Constraints, concretely** — a deadline is a hard boundary and sets the risk
+  tiers; an availability window bounds when work is eligible; a project
+  preference is learned from behaviour.
 - **Priority scoring** (`scoreCandidate`): risk and a deadline within 24 h or
   72 h form tiers; then recent-project continuity, an actionable title, a short
   duration, importance, title overlap with recent completions, learned project
   weights, and recent self-defined / short-next-step preferences.
-- **Time-window generation** (`findSlot`): walk 15-minute steps from now to the
-  end of the day, skipping AI slots and fixed external events, until a real slot
-  fits.
+- **Time-window generation and conflict avoidance** (`findSlot`): walk 15-minute
+  steps from now to the end of the day, skipping AI slots and fixed external
+  events, and take the next window that fits.
 - **Scheduling** writes `ai_slot_start/end`, a `today_assignments` row carrying a
   human-readable reason, and an `action_log` entry.
 - **Execution monitoring** (`observePlanningOutcome`): record what the user did
   next — started, completed, scheduled today, created a commitment — as a
   feedback episode (project switch, same-project switch, self-defined task,
   stopped working).
-- **Replanning** is a reconcile pass keyed on a plan version; it can add up to
-  three items to an empty or light day.
+- **Replanning** is a reconcile pass keyed on a plan version, triggered by the
+  plan endpoint and when a new commitment is arranged for today; it can add up to
+  three items to an empty or light day, and stall detection pauses auto-fill.
 - **The day view**: Now (exactly one thing), timeline, risks (what replaces
   overdue), unscheduled, and a rest suggestion when the day is full.
 - **Adaptive limits**: automatic additions stop at 5, or 10 after a deliberate
   add; a stalled queue of 1–3 items with no completion for 24 h pauses auto-fill.
+- **Light triage**: an empty day is filled preferring concrete bugs and small
+  executable work, and deprioritizing research or long epics.
 - **A learned behaviour model** over a rolling 15-day window, kept as reversible
   planning state — never memory, and never overriding a deadline you set
   ([ADR 0001](adr/0001-keep-adaptive-planning-state-outside-memory.md)).
@@ -157,30 +162,25 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
 
 ### Designed
 
-- **The full pipeline** — commitments → constraint analysis → priority
-  calculation → time-window generation → schedule optimization → conflict
-  resolution → execution monitoring → replanning. Monitoring and replanning
-  ship; constraint analysis and schedule optimization are partial.
-- **A constraint model** — hard, soft, preference and dependency constraints. A
-  deadline is treated as hard today and project preference is learned, but
-  dependencies are not modelled.
-- **A dynamic priority score** — impact × urgency × dependency × goal alignment ×
-  risk, replacing a manual priority field.
-- **Duration estimation** — today a commitment uses the user's estimate or a
-  45-minute default. The design blends the user's estimate with historical
-  similar tasks and complexity.
-- **Schedule optimization** — maximize important work completed, minimize
-  switching, fit the user's rhythm, lower stress, with an explicit
-  context-switching cost. Project weighting is the first piece of it.
-- **A morning day plan** — classify the day into core, optional and deferred.
-- **Now selection** — the Now slot is not the highest-priority task but the best
-  current action: priority × available time × energy match × context match.
-- **Dynamic replanning triggers** — a postponed meeting, a new task, finishing
-  early, a change in state.
-- **Buffer management** — keep 20–30% of the day free, so eight hours of work is
-  planned as 5.5.
-- **Task migration** — a flexible, unstarted task with a future window can move
-  on its own; three consecutive deferrals ask for confirmation.
+- **A fuller pipeline** — constraint analysis → priority calculation →
+  time-window generation → schedule optimization → conflict resolution →
+  execution monitoring → replanning, with each stage carrying more of the model.
+- **A richer constraint model** — hard, soft, preference and dependency
+  relationships, so the plan can respect how work depends on other work.
+- **A blended priority score** — impact, urgency, dependencies, goal alignment
+  and risk, alongside the signals above.
+- **Duration estimation from history** — blend the user's estimate with similar
+  completed work and complexity.
+- **Schedule optimization with context-switch cost** — maximize important work
+  completed, minimize switching, fit the user's rhythm and lower stress.
+- **An explicit morning plan** — classify the day into core, optional and
+  deferred.
+- **A scored Now** — priority × available time × energy match × context match.
+- **Event-driven replanning** — react to a postponed meeting, a new task,
+  finishing early, or a change in state.
+- **Buffer management** — keep a share of the day free.
+- **Task migration** — flexible, unstarted work can move forward on its own, and
+  repeated deferrals surface for a decision.
 
 ---
 
@@ -235,8 +235,7 @@ is the shape of it, not a feature on top.*
 ### Shipped today
 
 - A **SQLite file you own**, or one Cloudflare Durable Object — no vendor cloud.
-- **Single-user** runtime: one static bearer token, no accounts, no multi-tenant
-  isolation.
+- **Single-user** runtime: one static bearer token guards the API.
 - `raw_inputs` is **immutable**; the AI pass writes only derived fields.
 - Model output is **validated and gated** before it reaches storage.
 - Every mutation writes an **`action_log`** entry.
@@ -244,9 +243,8 @@ is the shape of it, not a feature on top.*
   (`confidence >= 0.8` and `importance >= 0.8`); an inferred principle waits for
   the user.
 
-`SECURITY.md` records the current posture and the threat model, including what is
-explicitly out of scope today: at-rest encryption, multi-tenant isolation, and
-protecting against a compromised host.
+`SECURITY.md` records the current posture and the threat model; the design below
+adds at-rest encryption and the rest of the architecture.
 
 ### Designed
 
