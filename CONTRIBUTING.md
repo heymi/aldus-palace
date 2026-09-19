@@ -28,13 +28,18 @@ Run the reference server with `pnpm dev` (see `apps/server/README.md`).
 
 ## What CI checks
 
-Every pull request runs, with **no secrets**:
+Every pull request runs, with **no secrets** — `pnpm verify` is the same list in
+one command:
 
 1. `pnpm typecheck`
 2. `pnpm test`
 3. `pnpm eval`
-4. `pnpm build`
-5. `pnpm spec:check` — `spec/schema.sql` matches the canonical schema
+4. `pnpm bench`
+5. `pnpm build`
+6. `pnpm spec:check` — `spec/schema.sql` matches the canonical schema
+7. `pnpm openapi:check` — `spec/openapi.json` matches the routes
+8. `pnpm llms:check` — `llms-full.txt` is current
+9. `pnpm check:docs` — the test-suite and fixture counts in the docs
 
 ## Writing style
 

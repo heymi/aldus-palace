@@ -7,11 +7,11 @@
 > pnpm --filter @aldus-palace/core build && pnpm --filter @aldus-palace/example-capture-cli start
 
 
-> @aldus-palace/core@0.5.3 build /Users/zhu/R&D/Aldus-Palace/packages/core
+> @aldus-palace/core@0.9.2 build /Users/zhu/R&D/Aldus-Palace/packages/core
 > tsc -p tsconfig.build.json
 
 
-> @aldus-palace/example-capture-cli@0.1.5 start /Users/zhu/R&D/Aldus-Palace/examples/capture-cli
+> @aldus-palace/example-capture-cli@0.1.9 start /Users/zhu/R&D/Aldus-Palace/examples/capture-cli
 > tsx src/index.ts
 
 

@@ -9,7 +9,7 @@
 ```bash
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
-pnpm verify     # 类型检查 · 套件 · fixture · 构建 · schema 校验
+pnpm verify     # 类型检查 · 套件 · fixture · 基准 · 构建 · spec · openapi · llms · docs
 pnpm demo       # 离线捕获演示
 ```
 
