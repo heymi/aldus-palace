@@ -46,6 +46,7 @@ spec/schema.sql is up to date.
 | 高风险 agent 动作会等待决定 | `packages/core/test/actionGate.test.ts` | 关键级需两次批准；撤销不可逆 |
 | Action Gate 可在 MCP 中使用 | `packages/mcp/test/tools.test.ts` | `actions` profile 暴露 list/decide/revoke |
 | 信任来自决定，而非沉默 | `packages/core/test/trustScore.test.ts` | 无证据时等级 0；六次决定、0.75 时到等级 2 |
+| 自主范围只放宽到用户设定的上限 | `packages/core/test/trustScore.test.ts` | 默认上限 2；升到 3 后仍需记录达到等级 3 才放行高风险，记录下滑会回落 |
 | schema 是唯一真相源 | `pnpm spec:check` | `spec/schema.sql` 与 `db/schema.ts` 一致 |
 | 一份记录，三个入口 | `packages/mcp`、`apps/server`、`packages/core` | 各处使用同一 schema 与迁移 |
 | MCP 工具返回可读卡片 | `pnpm --filter @aldus-palace/mcp test` | 断言卡片文本，payload 在 `structuredContent` |

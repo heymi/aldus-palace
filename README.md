@@ -193,7 +193,7 @@ context        active memories and projects feed the next capture
 |---|---|---|
 | **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, retrieval into the next capture | graded levels, decay by kind, the value score, more kinds and extraction signals, a memory graph |
 | **Planning** | four kinds of time, concrete constraint handling (deadline, window, learned project preference), priority scoring, slot search that avoids conflicts, duration estimation from project history, Today, risk, adaptive limits, a learned behaviour model, light triage | richer constraints, a blended priority score, schedule optimization with context-switch cost, buffer, migration |
-| **Trust & autonomy** | one fixed rule, an Action Gate (low and medium run, high waits, critical needs two), and a trust score with autonomy levels 0–4 | permission evolution, proactive rules |
+| **Trust & autonomy** | an Action Gate (low and medium run, high waits, critical needs two), a trust score with levels 0–4, and permission evolution capped by a user ceiling | proactive rules |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
 The code lives in `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts`, `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts` and `providers/`. The full design, with each engine's shipped and planned parts in depth, is in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).

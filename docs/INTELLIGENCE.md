@@ -205,13 +205,15 @@ earned.*
 - **A trust score and autonomy levels 0–4.** Trust is the Laplace-smoothed
   approval rate of the decisions the user made in the last 90 days; automatic
   runs do not count, so trust grows from decisions. The level follows thresholds
-  with minimum samples, and a caller can pass it to `proposeAction` to widen what
-  runs without asking. `GET /v1/autonomy` and the MCP card expose both.
+  with minimum samples.
+- **Permission evolution with a user ceiling.** The effective level is
+  `min(max(earned, 2), ceiling)`: the published rule is the floor, the user's
+  ceiling (default 2, up to 4) is the consent, and the gate applies the result
+  by default. Trust rises and falls with the record; high-risk autonomy needs the
+  ceiling raised. `GET /v1/autonomy` and the MCP card expose the state.
 
 ### Designed
 
-- **Permission evolution** — the level rises and falls with the record on its
-  own, instead of a caller passing it.
 - **Proactive rules**, judged on evidence, pattern and value.
 - **Routing the capture and planning flows through the gate.** Their action
   types are graded low today, so the gate is available without changing them.

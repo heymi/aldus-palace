@@ -75,8 +75,10 @@ it:
 - [x] **A trust score and autonomy levels.** The Laplace-smoothed approval rate
   of decided actions, with level 0–4 thresholds; a caller can pass the level to
   the gate to widen what runs without asking (`services/actionGate.ts`).
-- [ ] **Permission evolution.** Let the level rise and fall with the record on
-  its own, instead of a caller passing it.
+- [x] **Permission evolution.** The effective level is
+  `min(max(earned, 2), ceiling)`: the published rule is the floor, the user's
+  ceiling (default 2, up to 4) is the consent, and the gate applies the result
+  by default (`services/actionGate.ts`).
 - [ ] **Model orchestration.** One provider interface serves every call today.
   The design routes work by task: a fast model for classification, a reasoning
   model for planning and conflict, embeddings for memory retrieval, and a local

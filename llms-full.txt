@@ -202,7 +202,7 @@ context        active memories and projects feed the next capture
 |---|---|---|
 | **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, retrieval into the next capture | graded levels, decay by kind, the value score, more kinds and extraction signals, a memory graph |
 | **Planning** | four kinds of time, concrete constraint handling (deadline, window, learned project preference), priority scoring, slot search that avoids conflicts, duration estimation from project history, Today, risk, adaptive limits, a learned behaviour model, light triage | richer constraints, a blended priority score, schedule optimization with context-switch cost, buffer, migration |
-| **Trust & autonomy** | one fixed rule, an Action Gate (low and medium run, high waits, critical needs two), and a trust score with autonomy levels 0–4 | permission evolution, proactive rules |
+| **Trust & autonomy** | an Action Gate (low and medium run, high waits, critical needs two), a trust score with levels 0–4, and permission evolution capped by a user ceiling | proactive rules |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
 The code lives in `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts`, `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts` and `providers/`. The full design, with each engine's shipped and planned parts in depth, is in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
@@ -402,6 +402,7 @@ If you cannot run the repository, the real output is committed:
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
 | The Action Gate is reachable from MCP | `packages/mcp/test/tools.test.ts` | the `actions` profile exposes list, decide and revoke |
 | Trust grows from decisions, not silence | `packages/core/test/trustScore.test.ts` | level 0 with no evidence; six decisions at 0.75 reach level 2 |
+| Autonomy widens only as far as the user's ceiling | `packages/core/test/trustScore.test.ts` | default ceiling 2; raising it to 3 runs high risk only after the record reaches level 3, and rejections lower it again |
 | The schema is the single source of truth | `pnpm spec:check` | `spec/schema.sql` matches `db/schema.ts` |
 | One record, three surfaces | `packages/mcp`, `apps/server`, `packages/core` | the same schema and migrations everywhere |
 | MCP tools return a readable card | `pnpm --filter @aldus-palace/mcp test` | card text asserted, payload in `structuredContent` |
@@ -910,13 +911,15 @@ earned.*
 - **A trust score and autonomy levels 0–4.** Trust is the Laplace-smoothed
   approval rate of the decisions the user made in the last 90 days; automatic
   runs do not count, so trust grows from decisions. The level follows thresholds
-  with minimum samples, and a caller can pass it to `proposeAction` to widen what
-  runs without asking. `GET /v1/autonomy` and the MCP card expose both.
+  with minimum samples.
+- **Permission evolution with a user ceiling.** The effective level is
+  `min(max(earned, 2), ceiling)`: the published rule is the floor, the user's
+  ceiling (default 2, up to 4) is the consent, and the gate applies the result
+  by default. Trust rises and falls with the record; high-risk autonomy needs the
+  ceiling raised. `GET /v1/autonomy` and the MCP card expose the state.
 
 ### Designed
 
-- **Permission evolution** — the level rises and falls with the record on its
-  own, instead of a caller passing it.
 - **Proactive rules**, judged on evidence, pattern and value.
 - **Routing the capture and planning flows through the gate.** Their action
   types are graded low today, so the gate is available without changing them.
@@ -1398,7 +1401,9 @@ The shared vocabulary. Planning-specific terms live in
 | **Action log** | an append-only row written on every mutation, with a reason |
 | **Action Gate** | the published risk table that decides whether a proposed agent action runs or waits; a decision is logged and revocable (`services/actionGate.ts`) |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |
-| **Autonomy level** | 0–4, derived from the trust score with minimum samples; a caller can pass it to the gate to widen what runs without asking |
+| **Autonomy level** | 0–4, derived from the trust score with minimum samples |
+| **Autonomy ceiling** | how far earned trust may widen autonomy (default 2, up to 4); raising it is the user's explicit consent |
+| **Effective level** | `min(max(earned, 2), ceiling)` — what the gate applies; the published rule is the floor |
 | **Storage port** | the async `SqlDatabase` interface; the only I/O boundary in `packages/core` |
 | **Projection** | a view rebuilt from the source of truth, never a second truth (Today, work streams) |
 
@@ -1547,8 +1552,10 @@ it:
 - [x] **A trust score and autonomy levels.** The Laplace-smoothed approval rate
   of decided actions, with level 0–4 thresholds; a caller can pass the level to
   the gate to widen what runs without asking (`services/actionGate.ts`).
-- [ ] **Permission evolution.** Let the level rise and fall with the record on
-  its own, instead of a caller passing it.
+- [x] **Permission evolution.** The effective level is
+  `min(max(earned, 2), ceiling)`: the published rule is the floor, the user's
+  ceiling (default 2, up to 4) is the consent, and the gate applies the result
+  by default (`services/actionGate.ts`).
 - [ ] **Model orchestration.** One provider interface serves every call today.
   The design routes work by task: a fast model for classification, a reasoning
   model for planning and conflict, embeddings for memory retrieval, and a local

@@ -47,7 +47,9 @@ The shared vocabulary. Planning-specific terms live in
 | **Action log** | an append-only row written on every mutation, with a reason |
 | **Action Gate** | the published risk table that decides whether a proposed agent action runs or waits; a decision is logged and revocable (`services/actionGate.ts`) |
 | **Trust score** | the Laplace-smoothed approval rate of the decisions the user made in the last 90 days; automatic runs do not count |
-| **Autonomy level** | 0–4, derived from the trust score with minimum samples; a caller can pass it to the gate to widen what runs without asking |
+| **Autonomy level** | 0–4, derived from the trust score with minimum samples |
+| **Autonomy ceiling** | how far earned trust may widen autonomy (default 2, up to 4); raising it is the user's explicit consent |
+| **Effective level** | `min(max(earned, 2), ceiling)` — what the gate applies; the published rule is the floor |
 | **Storage port** | the async `SqlDatabase` interface; the only I/O boundary in `packages/core` |
 | **Projection** | a view rebuilt from the source of truth, never a second truth (Today, work streams) |
 

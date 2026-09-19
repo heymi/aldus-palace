@@ -161,7 +161,7 @@ context        active memories and projects feed the next capture
 |---|---|---|
 | **Memory** | 抽取、污染门、激活门、每行证据、去重、冲突检测、版本化 supersede、回注下一次捕获 | 分级记忆、按类型衰减、价值评分、更多类型与信号、记忆图谱 |
 | **Planning** | 四类时间、具体约束处理（截止/窗口/学习到的项目偏好）、优先级评分、避开冲突的时段搜索、按项目历史估算时长、Today、风险、自适应上限、行为模型、轻量分诊 | 更完整的约束、混合优先级、含切换成本的调度优化、缓冲、迁移 |
-| **Trust & autonomy** | 一条固定规则、Action Gate（低/中直接执行，高风险等批准，关键级要两次），以及信任分与自主等级 0–4 | 权限演进、主动规则 |
+| **Trust & autonomy** | Action Gate（低/中直接执行，高风险等批准，关键级要两次）、信任分与自主等级 0–4，以及受用户上限约束的权限演进 | 主动规则 |
 | **Model orchestration** | 一个 `LLMProvider` 接口与三种实现，配置由调用方解析 | 按任务路由——快速分类、推理、embedding、敏感输入的本地模型 |
 
 代码位于 `lib/memoryExtract.ts`、`lib/memoryActivation.ts`、`services/memoryLifecycle.ts`、`services/memoryEvolution.ts`、`services/today.ts`、`services/planToday.ts`、`services/adaptivePlanning.ts` 与 `providers/`。完整设计（每个引擎的已交付与计划部分）见 [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md)。

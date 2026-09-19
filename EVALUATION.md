@@ -50,6 +50,7 @@ If you cannot run the repository, the real output is committed:
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
 | The Action Gate is reachable from MCP | `packages/mcp/test/tools.test.ts` | the `actions` profile exposes list, decide and revoke |
 | Trust grows from decisions, not silence | `packages/core/test/trustScore.test.ts` | level 0 with no evidence; six decisions at 0.75 reach level 2 |
+| Autonomy widens only as far as the user's ceiling | `packages/core/test/trustScore.test.ts` | default ceiling 2; raising it to 3 runs high risk only after the record reaches level 3, and rejections lower it again |
 | The schema is the single source of truth | `pnpm spec:check` | `spec/schema.sql` matches `db/schema.ts` |
 | One record, three surfaces | `packages/mcp`, `apps/server`, `packages/core` | the same schema and migrations everywhere |
 | MCP tools return a readable card | `pnpm --filter @aldus-palace/mcp test` | card text asserted, payload in `structuredContent` |
