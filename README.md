@@ -22,11 +22,25 @@ Aldus Palace holds one place for what you need to do. You write a sentence. The
 system does the filing.
 
 ```
-input ──► understanding ──► objects ──────────► projections
-          dates, gates      thought             today
-          dedupe            commitment          work streams
-          fallback          decision            memory context
-                            memory
+$ pnpm demo
+
+$ input  Ship the onboarding page next week
+Captured · 1 commitment
+  commitment  Ship the onboarding page next week  ·  window 2026-09-19 → 2026-09-26
+
+$ input  I prefer simple tools
+Captured · remembered 1
+  memory      Prefers simple products and interfaces; avoids complexity  ·  active
+```
+
+That output comes from the deterministic provider, offline; dates resolve on the
+day you run it. `pnpm demo` runs the same pipeline with no API key.
+
+**Try it in one line.** MCP inside Claude, Cursor or any MCP client:
+
+```bash
+npm install -g @aldus-palace/mcp
+claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index.js"
 ```
 
 ## What it does
@@ -48,6 +62,20 @@ inferred it.
 **It follows you.** One file, one API. Claude, Cursor, your own frontend, a script
 you write.
 
+## Sentences it understands
+
+A real run of the offline provider. Relative dates resolve at capture time.
+
+| You write | It files |
+|---|---|
+| Ship the onboarding page next week | commitment · window 2026-09-19 → 2026-09-26 |
+| I prefer simple tools | memory · active, because you stated it |
+| Keep Mac only, no Windows version | thought + decision + memory waiting for confirmation |
+| Fix the notification bug tomorrow, twice | commitment · the repeat points at the first record |
+| 下周把 onboarding 做完 | 要做 · 时间窗 2026-09-19 → 2026-09-26 |
+| 以后产品不要做太复杂，保持克制 | 记忆 · 已生效，因为你亲口说了 |
+| 今晚先不做评审，改排到周五 | 要做 · 截止 2026-09-25 |
+
 ## How this compares
 
 | The dimension | What you use today | Aldus Palace |
@@ -60,7 +88,7 @@ you write.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 15 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 16 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -126,10 +154,9 @@ curl -X POST localhost:8787/v1/inputs \
 
 ## Scale
 
-`packages/core` is 9,169 lines of TypeScript: 20 tables, 45 HTTP routes, 109
-exports, 7 MCP tools, 5 runnable examples. **Requirements:** Node 20 or newer.
-`better-sqlite3` ships prebuilds for common platforms; other platforms need a C
-toolchain.
+`packages/core` is runtime-agnostic and dependency-light: `zod`, `dayjs` and
+`nanoid`. **Requirements:** Node 20 or newer. `better-sqlite3` ships prebuilds
+for common platforms; other platforms need a C toolchain.
 
 ## The system behind it
 
@@ -233,7 +260,7 @@ repeats. The runtime ships a deterministic provider, so the pipeline runs offlin
 | MCP server | runs with no server process, against the same local file | `packages/mcp` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 15 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 16 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -242,7 +269,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 15 suites — deterministic, offline, no API key
+pnpm test     # 16 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start

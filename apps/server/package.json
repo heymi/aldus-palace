@@ -2,7 +2,7 @@
   "name": "@aldus-palace/server",
   "version": "0.1.5",
   "private": true,
-  "description": "Reference HTTP server and Cloudflare Worker for Aldus Palace.",
+  "description": "The HTTP and Cloudflare Worker surface for Aldus Palace — one schema, a local SQLite file or a Durable Object.",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {

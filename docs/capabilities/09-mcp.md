@@ -18,6 +18,10 @@ exposes it as tools any MCP client can call:
 | `list_work_streams` | grouped view of the same commitments |
 | `list_memories` | candidates, active memories, and what you have since replaced |
 | `confirm_memory` | activates a candidate, optionally replacing an older belief |
+| `reject_memory` | archives a memory, including one the system stored on its own |
+
+`capture` and `list_today` return a short human card, with the full payload kept
+in `structuredContent` ([ADR 0004](../adr/0004-mcp-tool-output-cards.md)).
 
 Two prompts ship as slash commands for deterministic writes:
 

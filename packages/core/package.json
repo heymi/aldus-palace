@@ -1,7 +1,7 @@
 {
   "name": "@aldus-palace/core",
   "version": "0.5.3",
-  "description": "Domain model, agent runtime and provider abstractions for Aldus Palace — a personal cognitive OS.",
+  "description": "Write a sentence. It files the commitment, the decision and the rule — locally, with the original words still attached.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {

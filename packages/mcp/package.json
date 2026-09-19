@@ -1,7 +1,7 @@
 {
   "name": "@aldus-palace/mcp",
   "version": "0.6.3",
-  "description": "Model Context Protocol server for Aldus Palace — capture thoughts and read your Today plan from Claude Desktop, Claude Code or any MCP client.",
+  "description": "Capture and Today inside Claude, Cursor or any MCP client — against a SQLite file you own, with no server and no API key.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {

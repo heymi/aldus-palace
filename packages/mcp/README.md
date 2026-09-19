@@ -46,6 +46,16 @@ version readable, and any memory can be archived.
 | `confirm_memory` | activates a candidate, optionally replacing an older belief |
 | `reject_memory` | archives a memory, including one the system stored on its own |
 
+`capture` and `list_today` return a short card, with the full payload kept in
+`structuredContent`:
+
+```
+capture  "Ship the onboarding page next week"
+
+Captured · 1 commitment
+  commitment  Ship the onboarding page next week  ·  window 2026-09-19 → 2026-09-26
+```
+
 Two prompts ship as slash commands:
 
 ```
@@ -60,7 +70,7 @@ accurately and costs fewer tokens.
 
 | Profile | Tools |
 |---|---|
-| `full` (default) | all six |
+| `full` (default) | all seven |
 | `capture` | `capture` |
 | `today` | `list_today`, `list_commitments` |
 | `memory` | `list_memories`, `confirm_memory`, `reject_memory` |

@@ -30,7 +30,7 @@ state and nothing to configure.
 | How time works | one due date, and a red label when it passes | four kinds held apart — deadline, availability window, suggested slot, unscheduled — and a missed date becomes a risk you can move |
 | How memory behaves | the assistant infers and stores inside that app | confident memories take effect on capture, and each one carries the sentence it came from plus a note saying why it is active |
 | Where your words live | summarized into a task or a chat log | kept as you wrote them, with the system's own reading beside them |
-| How you verify it | by using it | a deterministic provider runs the pipeline with no network and no API key; 15 suites and 11 fixtures replay each run |
+| How you verify it | by using it | a deterministic provider runs the pipeline with no network and no API key; 16 suites and 11 fixtures replay each run |
 
 ## Why you'd use it
 
