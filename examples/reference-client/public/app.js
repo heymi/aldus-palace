@@ -137,7 +137,10 @@ async function syncServerLanguage() {
     const me = await api("/v1/me");
     const current = String(me.user?.language ?? "en");
     if (current !== serverLanguage(state.lang)) {
-      await api("/v1/me", { method: "PATCH", body: { language: serverLanguage(state.lang) } });
+      await api("/v1/me", {
+        method: "PATCH",
+        body: JSON.stringify({ language: serverLanguage(state.lang) }),
+      });
     }
   } catch {
     // older server: the UI language still works, stored text keeps its language
@@ -154,7 +157,10 @@ async function setLang(lang) {
   if (state.receipt) renderReceipt(state.receipt.card, state.receipt.noteKey);
   // Server-written text (memory wording, summaries) follows the same choice.
   try {
-    await api("/v1/me", { method: "PATCH", body: { language: serverLanguage(lang) } });
+    await api("/v1/me", {
+      method: "PATCH",
+      body: JSON.stringify({ language: serverLanguage(lang) }),
+    });
   } catch {
     // older server: the UI language still works, stored text keeps its language
   }
