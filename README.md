@@ -327,10 +327,9 @@ pnpm --filter @aldus-palace/example-today-only start
 ```
 
 Each example prints the records it stored and the reasoning behind them, with no
-API key and no network. Prefer a browser? Try the hosted demo — each visitor gets a private context:
-<https://aldus-palace-demo.iheymi.workers.dev>. To run the same client locally,
-start the server and the macOS-shaped reference client — capture a sentence, then
-watch it land in Home, Memory and the decision queue:
+API key and no network. To use the macOS-shaped reference client in a browser,
+start the server and the client — capture a sentence, then watch it land in Home,
+Memory and the decision queue:
 
 ```bash
 pnpm --filter @aldus-palace/server start                  # API on :8787
