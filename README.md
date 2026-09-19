@@ -21,24 +21,32 @@ read it through one app, and you move it nowhere.
 Aldus Palace holds one place for what you need to do. You write a sentence. The
 system does the filing.
 
+```
+input ──► understanding ──► objects ──────────► projections
+          dates, gates      thought             today
+          dedupe            commitment          work streams
+          fallback          decision            memory context
+                            memory
+```
+
 ## What it does
 
-**It reads a sentence and sorts it.** Write "Client visit moved to next
-Wednesday, and pricing still bugs me." You get three records: a commitment with
-the date the system worked out, a thought filed under the right project, and a
-note that the decision stays open.
+**It reads a sentence and sorts it.** Write "Ship the onboarding page next week"
+and you get one commitment, with the date worked out. No project picker, no
+priority field, no due-date calendar. Paste a paragraph and you get several
+objects: thoughts, commitments, decisions, memory candidates.
 
 **It catches repeats.** Repeat yourself and the system points at the first record.
 
-**It remembers the rules you state.** "From now on, keep the product simple"
-becomes a rule the system follows. One tap in the memory list archives it.
+**It remembers the rules you state.** "I prefer simple tools" lands as a rule the
+system follows from the next capture onward. The memory list archives it.
 
 **It shows its work.** Every memory carries the sentence you said, the
 confidence behind it, and a note that says whether you stated it or the system
 inferred it.
 
-**It follows you.** One file. Claude, Cursor, a web page you build, a script you
-write.
+**It follows you.** One file, one API. Claude, Cursor, your own frontend, a script
+you write.
 
 ## What it guarantees
 
@@ -68,13 +76,74 @@ or note?".
 | An assistant memory: closed box, one app, no export | A file you own, readable, searchable, portable |
 | Both at once: two silos | One record, shared by every client |
 
+## Designed scope
+
+- **One user.** One person, one database, one bearer token. Run one instance per
+  person.
+- **One writer per SQLite file.** Two processes on the same file fight over the
+  write lock. Point extra clients at the HTTP API.
+- **No client interface.** The surfaces are MCP, HTTP and the library. You bring
+  the screen.
+- **No sync.** The file does not merge with a second copy.
+- **No external actions.** The runtime records intent and plans. It sends no mail,
+  posts nothing and pays nobody.
+- **Offline mode recognises a narrow set of phrasings.** The deterministic
+  provider handles commands, stated rules and a few date forms, in Chinese and
+  English. Connect a model for general understanding; the receipts show which
+  provider produced them.
+
 ## Build with it
 
-The features above ship as three surfaces: a TypeScript library, an HTTP API, and
-an MCP server for Claude, Cursor and other MCP clients. Open source under
-Apache-2.0. Offline mode runs with no API key.
+Three surfaces, one schema, open source under Apache-2.0. Offline mode runs with
+no API key.
+
+**Library**
+
+```ts
+import { DevLLMProvider, ensureDevUser, initialize, newId, nowIso,
+         processRawInput } from "@aldus-palace/core";
+import { openSqliteDatabase } from "@aldus-palace/core/db/sqlite";
+
+const db = await openSqliteDatabase("./aldus.db");
+await initialize(db);                              // canonical DDL + migrations
+const user = await ensureDevUser(db, { name: "Me", timezone: "UTC", language: "en" });
+
+const id = newId("inp");
+const text = "Ship the onboarding page next week";
+await db.prepare(`INSERT INTO raw_inputs
+  (id, user_id, content, source, processing_status, created_at, updated_at)
+  VALUES (?, ?, ?, 'text', 'pending', ?, ?)`)
+  .run(id, user.id, text, nowIso(), nowIso());
+
+const card = await processRawInput(db, new DevLLMProvider(), user, id, "local");
+console.log(card.summary);        // 已记下 · 1 件要做
+console.log(card.commitments);    // one commitment, with window_start / window_end set
+```
+
+**MCP** — inside Claude, Cursor or any MCP client
+
+```bash
+npm install -g @aldus-palace/mcp
+claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index.js"
+```
+
+**HTTP** — self-hosted, SQLite in a volume
+
+```bash
+cp .env.example .env && docker compose up --build
+curl -X POST localhost:8787/v1/inputs \
+  -H 'Authorization: Bearer dev-local-token' -H 'Content-Type: application/json' \
+  -d '{"content":"Ship the onboarding page next week","mode":"sync"}'
+```
 
 ---
+
+## Scale
+
+`packages/core` is 9,169 lines of TypeScript: 20 tables, 45 HTTP routes, 109
+exports, 7 MCP tools, 5 runnable examples. **Requirements:** Node 20 or newer.
+`better-sqlite3` ships prebuilds for common platforms; other platforms need a C
+toolchain.
 
 ## Where the difficulty lives
 
@@ -116,7 +185,7 @@ replaces it under a lease, so two clients, a retry and a dead worker leave the
 record intact. `services/enrichmentLease.ts`
 
 **The pipeline runs offline.** A deterministic provider implements the same
-interface as the model-backed ones. 14 test suites and the acceptance fixtures run
+interface as the model-backed ones. 15 test suites and 8 acceptance fixtures run
 with no key. `providers/dev.ts`
 
 ## The one point each capability carries
@@ -136,6 +205,12 @@ with no key. `providers/dev.ts`
 ## See it run
 
 ```bash
+git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
+pnpm install
+
+pnpm test     # 15 suites — deterministic, offline, no API key
+pnpm eval     # 8 acceptance fixtures — the behaviour this project promises
+
 pnpm --filter @aldus-palace/example-understanding-only start
 pnpm --filter @aldus-palace/example-memory-gate-only start
 pnpm --filter @aldus-palace/example-today-only start
@@ -181,8 +256,9 @@ docs/                  everything above
 
 ## Status
 
-`0.x`. Single-user and self-hosted by design. See [SECURITY.md](SECURITY.md)
-before exposing an instance.
+`0.x` — usable and tested, and the API may change between minor versions.
+Single-user and self-hosted by design. See [SECURITY.md](SECURITY.md) before
+exposing an instance.
 
 ## Contributing
 

@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="430" viewBox="0 0 880 430" role="img" aria-label="A capture session: four sentences in, decisions out">
-  <rect width="880" height="430" rx="12" fill="#0d1117"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="452" viewBox="0 0 880 452" role="img" aria-label="A capture session: four sentences in, decisions out">
+  <rect width="880" height="452" rx="12" fill="#0d1117"/>
   <rect x="0" y="0" width="880" height="38" rx="12" fill="#161b22"/>
   <rect x="0" y="26" width="880" height="12" fill="#161b22"/>
   <circle cx="24" cy="19" r="6" fill="#ff5f57"/>
@@ -8,24 +8,24 @@
   <text x="440" y="24" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#8b949e" text-anchor="middle">pnpm --filter @aldus-palace/example-understanding-only start</text>
 
   <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14">
-    <text x="28" y="76" fill="#e6edf3">&#9656; &#25226;&#23458;&#25143;&#25308;&#35775;&#25913;&#21040;&#19979;&#21608;&#19977;&#65292;&#23450;&#20215;&#25105;&#19968;&#30452;&#22312;&#29369;&#35947;</text>
-    <text x="28" y="100" fill="#7ee787">  commitment</text>
-    <text x="160" y="100" fill="#8b949e">&#8212; the date resolved on the server</text>
+    <text x="28" y="74" fill="#e6edf3">&#9656; &#25226;&#23458;&#25143;&#25308;&#35775;&#25913;&#21040;&#19979;&#21608;&#19977;&#65292;&#23450;&#20215;&#25105;&#19968;&#30452;&#22312;&#29369;&#35947;</text>
+    <text x="28" y="98" fill="#7ee787">  commitment</text>
+    <text x="186" y="98" fill="#8b949e">&#8212; the date resolved on the server</text>
 
-    <text x="28" y="140" fill="#e6edf3">&#9656; &#26368;&#36817;&#35273;&#24471; AI &#20135;&#21697;&#37117;&#22826;&#21557;&#20102;&#65292;&#24178;&#25200;&#22826;&#22810;</text>
-    <text x="28" y="164" fill="#79c0ff">  thought</text>
-    <text x="160" y="164" fill="#8b949e">&#8212; a mood stays a mood</text>
+    <text x="28" y="136" fill="#e6edf3">&#9656; &#26368;&#36817;&#35273;&#24471; AI &#20135;&#21697;&#37117;&#22826;&#21557;&#20102;&#65292;&#24178;&#25200;&#22826;&#22810;</text>
+    <text x="28" y="160" fill="#79c0ff">  thought</text>
+    <text x="186" y="160" fill="#8b949e">&#8212; a remark about a mood stays a remark</text>
 
-    <text x="28" y="204" fill="#e6edf3">&#9656; &#20197;&#21518;&#20135;&#21697;&#19981;&#35201;&#20570;&#22826;&#22797;&#26434;&#65292;&#20445;&#25345;&#20811;&#21046;</text>
-    <text x="28" y="228" fill="#d2a8ff">  remembered</text>
-    <text x="160" y="228" fill="#8b949e">&#8212; stated by you, reversible from the memory list</text>
+    <text x="28" y="198" fill="#e6edf3">&#9656; &#20197;&#21518;&#20135;&#21697;&#19981;&#35201;&#20570;&#22826;&#22797;&#26434;&#65292;&#20445;&#25345;&#20811;&#21046;</text>
+    <text x="28" y="222" fill="#d2a8ff">  remembered</text>
+    <text x="186" y="222" fill="#8b949e">&#8212; stated by you, archivable from the memory list</text>
 
-    <text x="28" y="268" fill="#e6edf3">&#9656; &#25226;&#23458;&#25143;&#25308;&#35775;&#25913;&#21040;&#19979;&#21608;&#19977;&#65292;&#23450;&#20215;&#25105;&#19968;&#30452;&#22312;&#29369;&#35947;</text>
-    <text x="28" y="292" fill="#ffa657">  &#8627; points at the first record</text>
-    <text x="230" y="292" fill="#8b949e">&#8212; one commitment, not two</text>
+    <text x="28" y="262" fill="#484f58">&#9656; (the first sentence, said a second time)</text>
+    <text x="28" y="286" fill="#ffa657">  &#8627; points at the record from line one, stored once</text>
 
-    <text x="28" y="332" fill="#8b949e">&#8212;&#8212;</text>
-    <text x="28" y="360" fill="#e6edf3">receipt: &#24050;&#35760;&#20303; 1 &#26465; &#183; &#24050;&#35760;&#19979; &#183; 1 &#20214;&#35201;&#20570;</text>
-    <text x="28" y="392" fill="#8b949e">no API key &#183; deterministic &#183; 14 test suites run offline</text>
+    <text x="28" y="326" fill="#6e7681">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</text>
+    <text x="28" y="354" fill="#e6edf3">receipt &#183; &#24050;&#35760;&#19979; &#183; &#24050;&#35760;&#20303; 1 &#26465;</text>
+    <text x="28" y="382" fill="#8b949e">no API key &#183; no network &#183; deterministic rules</text>
+    <text x="28" y="410" fill="#8b949e">packages/core &#183; 20 tables &#183; 45 HTTP routes &#183; 15 test suites</text>
   </g>
 </svg>
