@@ -161,6 +161,11 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
 - **Replanning** is a reconcile pass keyed on a plan version, triggered by the
   plan endpoint and when a new commitment is arranged for today; it can add up to
   three items to an empty or light day, and stall detection pauses auto-fill.
+- **A scored Now** (`lib/nowScore.ts`): urgency, importance, whether the work
+  fits the time left and whether it continues the current context decide the
+  current action, and the reason travels with it.
+- **A morning plan** (`lib/dayPlan.ts`): the day is classified into core,
+  optional and deferred.
 - **The day view**: Now (exactly one thing), timeline, risks (what replaces
   overdue), unscheduled, and a rest suggestion when the day is full.
 - **Adaptive limits**: automatic additions stop at 5, or 10 after a deliberate
@@ -180,15 +185,12 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
   execution monitoring → replanning, with each stage carrying more of the model.
 - **Soft constraints** — preferences that trade off against each other, not only
   rules that hold or fail.
-- **A blended priority score** — impact, urgency, dependencies, goal alignment
-  and risk, alongside the signals above.
+- **A blended priority score** — impact and goal alignment join urgency,
+  dependencies, context and time fit.
 - **Complexity in duration estimation** — read task complexity alongside the
   history, not only the stated estimate and the project median.
-- **Schedule optimization with context-switch cost** — maximize important work
-  completed, minimize switching, fit the user's rhythm and lower stress.
-- **An explicit morning plan** — classify the day into core, optional and
-  deferred.
-- **A scored Now** — priority × available time × energy match × context match.
+- **A rhythm-aware Now** — energy match and a user rhythm join priority,
+  available time and context match.
 - **Event-driven replanning** — react to a postponed meeting, a new task,
   finishing early, or a change in state.
 - **Buffer management by user rhythm** — keep a share of the day free that

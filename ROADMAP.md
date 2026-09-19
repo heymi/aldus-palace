@@ -52,17 +52,19 @@ it:
   preference (learned project weighting) and dependency (blocked-by, with cycle
   rejection) constraints. Soft constraints that trade off against each other are
   not modelled yet.
-- [ ] **A blended priority score** — impact, urgency, dependencies, goal
-  alignment and risk, alongside the current signals.
+- [ ] **A blended priority score** — impact and goal alignment are not read yet;
+  urgency, dependencies (as eligibility), context and time fit are.
 - [x] **Duration estimation from history** — a stated estimate keeps the larger
   weight and is calibrated against the median of completed work in the same
   project (`lib/durationEstimate.ts`). Complexity is not read yet.
-- [ ] **Schedule optimization with context-switch cost** — maximize important
-  work completed, minimize switching, fit the user's rhythm and lower stress.
-- [ ] **An explicit morning plan** — classify the day into core, optional and
-  deferred.
-- [ ] **A scored Now** — priority × available time × energy match × context
-  match.
+- [x] **Context-switch cost.** Continuing the project the user is already in
+  scores higher and switching scores lower (`lib/nowScore.ts`); learned project
+  weighting adds to it.
+- [x] **An explicit morning plan.** The day is classified into core, optional
+  and deferred in the Today payload (`lib/dayPlan.ts`).
+- [x] **A scored Now.** Urgency, importance, whether the work fits the time left
+  and the context match decide the current action; the reason travels with it.
+- [ ] **A rhythm-aware Now** — energy match and a user rhythm are not read yet.
 - [ ] **Event-driven replanning** — react to a postponed meeting, a new task,
   finishing early, or a change in state.
 - [ ] **Buffer management** — keep a share of the day free.

@@ -304,6 +304,15 @@ const spec = {
           unscheduled: { type: "array", items: { $ref: "#/components/schemas/Commitment" } },
           unscheduled_total: { type: "integer" },
           summary: { type: "string" },
+          plan: {
+            type: "object",
+            description: "The morning classification of the day's work.",
+            properties: {
+              core: { type: "array", items: { type: "string" } },
+              optional: { type: "array", items: { type: "string" } },
+              deferred: { type: "array", items: { type: "string" } },
+            },
+          },
           planning: { type: "object", additionalProperties: true },
         },
         required: ["date_key", "summary"],

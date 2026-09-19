@@ -1,5 +1,8 @@
 import type { SqlDatabase } from "../db/port.js";
+import { classifyDay, type DayPlanItem } from "../lib/dayPlan.js";
 import { DEFAULT_LOCALE, pick, type Locale } from "../lib/locale.js";
+import { scoreNow } from "../lib/nowScore.js";
+import { planCapacityMinutes } from "../lib/planCapacity.js";
 import { getLocalParts, localDayWindow } from "../lib/time.js";
 
 export type TodayPayload = {
@@ -13,6 +16,8 @@ export type TodayPayload = {
   unscheduled_total: number;
   unscheduled_from_thought_total: number;
   summary: string;
+  /** The morning classification of the day's work. */
+  plan?: { core: string[]; optional: string[]; deferred: string[] };
   /** AI/rules filled empty day from untimed work */
   auto_planned?: Array<{ id: string; title: string; reason: string }>;
   planning: {
@@ -65,11 +70,16 @@ function pickNow(
   nowMs: number,
   dayStart: string,
   dayEnd: string,
-  locale: Locale
+  locale: Locale,
+  context: { contextProjectId: string | null; availableMinutes: number }
 ): Record<string, unknown> | null {
   const started = open.find((c) => c.started_at && c.status !== "completed");
   if (started) {
-    return { ...started, kind_label: pick(locale, "In progress", "进行中") };
+    return {
+      ...started,
+      kind_label: pick(locale, "In progress", "进行中"),
+      now_reason: ["进行中"],
+    };
   }
 
   const covering = timeline.find((c) => {
@@ -84,6 +94,7 @@ function pickNow(
     return {
       ...covering,
       kind_label: covering.kind_label || pick(locale, "Suggested slot", "AI 建议时段"),
+      now_reason: ["当前时段"],
     };
   }
 
@@ -97,18 +108,45 @@ function pickNow(
     );
   });
   if (dueToday) {
-    return { ...dueToday, kind_label: pick(locale, "Due today", "今日截止") };
+    return {
+      ...dueToday,
+      kind_label: pick(locale, "Due today", "今日截止"),
+      now_reason: ["今日截止"],
+    };
   }
 
   const risk = open.find((c) => isRisk(c, nowMs));
   if (risk) {
-    return { ...risk, kind_label: pick(locale, "At risk", "有风险") };
+    return {
+      ...risk,
+      kind_label: pick(locale, "At risk", "有风险"),
+      now_reason: ["有风险"],
+    };
   }
 
+  // Now is the best current action, not the first on the timeline.
   if (timeline.length) {
+    const scored = timeline
+      .map((item) => ({
+        item,
+        ...scoreNow({
+          importance: item.importance as number | null,
+          deadline: (item.deadline as string | null) ?? null,
+          status: (item.status as string | null) ?? null,
+          projectId: (item.project_id as string | null) ?? null,
+          durationMinutes: item.duration_minutes as number | null,
+          availableMinutes: context.availableMinutes,
+          contextProjectId: context.contextProjectId,
+          at: new Date(nowMs),
+        }),
+      }))
+      .sort((a, b) => b.score - a.score);
+    const best = scored[0];
     return {
-      ...timeline[0],
-      kind_label: timeline[0].kind_label || pick(locale, "Planned today", "今日安排"),
+      ...best.item,
+      kind_label:
+        best.item.kind_label || pick(locale, "Planned today", "今日安排"),
+      now_reason: best.reasons,
     };
   }
 
@@ -289,7 +327,29 @@ export async function buildToday(
     (row) => !removedIds.has(String(row.id))
   );
 
-  let now = pickNow(displayOpenAfter, timeline, nowMs, day.start, day.end, locale);
+  const startedItem = all.find(
+    (row) =>
+      row.started_at && row.status !== "completed" && row.status !== "cancelled"
+  );
+  const completedToday = all
+    .filter(
+      (row) =>
+        row.status === "completed" &&
+        row.completed_at &&
+        Date.parse(String(row.completed_at)) >= Date.parse(day.start)
+    )
+    .sort(
+      (a, b) =>
+        Date.parse(String(b.completed_at)) - Date.parse(String(a.completed_at))
+    )[0];
+  const contextProjectId = ((startedItem?.project_id ?? completedToday?.project_id) ??
+    null) as string | null;
+  const availableMinutes = Math.max(0, (Date.parse(day.end) - nowMs) / 60000);
+
+  let now = pickNow(displayOpenAfter, timeline, nowMs, day.start, day.end, locale, {
+    contextProjectId,
+    availableMinutes,
+  });
   // If still no focus but we auto-planned, promote first suggestion to Now
   if (!now && timeline.length) {
     now = {
@@ -361,6 +421,12 @@ export async function buildToday(
         ? "high_capacity"
         : "balanced";
 
+  const daytime = localDayWindow(timezone, local.dateKey, "daytime");
+  const plan = classifyDay(timeline as unknown as DayPlanItem[], {
+    at,
+    capacityMinutes: planCapacityMinutes(daytime.start, daytime.end),
+  });
+
   return {
     date_key: local.dateKey,
     timezone,
@@ -371,6 +437,7 @@ export async function buildToday(
     unscheduled_total: rest.length,
     unscheduled_from_thought_total: fromThought,
     summary: summaryParts.join(" · "),
+    plan,
     auto_planned: autoPlanned,
     planning: {
       mode,

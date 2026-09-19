@@ -28,6 +28,8 @@ The shared vocabulary. Planning-specific terms live in
 | **Deferral** | one automatic move of a slipped, flexible, unstarted commitment; counted on the row |
 | **Migration** | clearing a slipped slot so the planner can place the work again; after three deferrals the item asks for a decision |
 | **Dependency** | a commitment that waits on another; the planner skips it while a blocker is open, and cycles are refused |
+| **Now score** | urgency, importance, time fit and context match decide the current action; the reason travels with it |
+| **Core / optional / deferred** | the morning classification: must happen, fits the remaining capacity, or waits |
 | **Status** | `captured → planned → scheduled → completed`, plus `risk` and `cancelled` |
 
 ## Memory lifecycle

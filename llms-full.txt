@@ -102,7 +102,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 22 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 23 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -201,7 +201,7 @@ context        active memories and projects feed the next capture
 | Engine | Shipped today | Designed next |
 |---|---|---|
 | **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, retrieval into the next capture | graded levels, decay by kind, the value score, more kinds and extraction signals, a memory graph |
-| **Planning** | four kinds of time, constraint handling (deadline, window, preference, blocked-by dependencies), priority scoring, slot search, duration estimation from project history, a daily buffer, migration for slipped flexible work, Today, risk, adaptive limits, a learned behaviour model | soft-constraint trade-offs, a blended priority score, schedule optimization with context-switch cost, a morning core/optional/deferred plan, a scored Now |
+| **Planning** | four kinds of time, constraint handling (deadline, window, preference, blocked-by dependencies), priority scoring, slot search, duration estimation from project history, a daily buffer, migration for slipped flexible work, a scored Now with context match, a morning core/optional/deferred plan, Today, risk, adaptive limits, a learned behaviour model | soft-constraint trade-offs, a blended priority score, a rhythm-aware Now, event-driven replanning |
 | **Trust & autonomy** | an Action Gate (low and medium run, high waits, critical needs two), a trust score with levels 0–4, and permission evolution capped by a user ceiling | proactive rules |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
@@ -266,14 +266,14 @@ personality from one remark. Replace the old record and the history disappears.
 | Understanding | the model proposes; the server decides (mode, duplicates, dates, fallback) | `agent/understand.ts` |
 | Progressive capture | a lease and a generation id make "local first, model second" idempotent | `services/enrichmentLease.ts` |
 | Memory | a confident memory takes effect, explains itself, and versions instead of deleting | `lib/memoryActivation.ts`, `services/memoryEvolution.ts` |
-| Today & planning | a day with no plan gets suggestions; a full day gets a rest suggestion; a quarter of the day stays free, slipped flexible work moves forward, and a blocked commitment is never scheduled | `services/today.ts`, `services/workMigration.ts`, `services/dependencies.ts` |
+| Today & planning | a day with no plan gets suggestions; a full day gets a rest suggestion; a quarter of the day stays free, slipped flexible work moves forward, a blocked commitment is never scheduled, and Now is scored rather than first-in-line | `services/today.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `lib/nowScore.ts` |
 | Work streams | grouping is a rebuildable projection; the records stay as they are | `services/workStreams.ts` |
 | HTTP API | one schema, two runtimes: a local SQLite file and a Cloudflare Durable Object | `apps/server` |
 | MCP server | runs with no server process, against the same local file | `packages/mcp` |
 | Action Gate | an unclassified agent action waits; a critical one needs two approvals; every decision is logged and revocable, and trust is the approval rate of those decisions | `services/actionGate.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 22 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 23 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -282,7 +282,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 22 suites — deterministic, offline, no API key
+pnpm test     # 23 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -369,7 +369,7 @@ pnpm demo       # the offline capture demo
 A passing `pnpm verify` ends with fragments like:
 
 ```
-packages/core test: All 18 suites passed.
+packages/core test: All 19 suites passed.
 packages/mcp test: mcp tool tests passed.
 apps/server test: All 3 suites passed.
 All fixtures passed.
@@ -388,7 +388,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 22 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 23 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -402,6 +402,8 @@ If you cannot run the repository, the real output is committed:
 | The planner keeps a quarter of the day free | `packages/core/test/adaptivePlanning.test.ts` | nine hours plan as 6.75; a full day is not over-filled |
 | Slipped flexible work moves forward, deadlines do not | `packages/core/test/workMigration.test.ts` | slot cleared and deferral counted; a deadline stays a risk; three deferrals ask for a decision |
 | A blocked commitment is never scheduled | `packages/core/test/dependencies.test.ts` | the planner skips it; completing the blocker releases it; cycles are refused |
+| Now is the best current action, not the first in line | `packages/core/test/planningIntelligence.test.ts` | the context match wins, and the reason travels with it |
+| The day is classified into core, optional and deferred | `packages/core/test/planningIntelligence.test.ts` | a risk item is core, work that fits is optional, the rest is deferred |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
 | The Action Gate is reachable from MCP | `packages/mcp/test/tools.test.ts` | the `actions` profile exposes list, decide and revoke |
 | Trust grows from decisions, not silence | `packages/core/test/trustScore.test.ts` | level 0 with no evidence; six decisions at 0.75 reach level 2 |
@@ -870,6 +872,11 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
 - **Replanning** is a reconcile pass keyed on a plan version, triggered by the
   plan endpoint and when a new commitment is arranged for today; it can add up to
   three items to an empty or light day, and stall detection pauses auto-fill.
+- **A scored Now** (`lib/nowScore.ts`): urgency, importance, whether the work
+  fits the time left and whether it continues the current context decide the
+  current action, and the reason travels with it.
+- **A morning plan** (`lib/dayPlan.ts`): the day is classified into core,
+  optional and deferred.
 - **The day view**: Now (exactly one thing), timeline, risks (what replaces
   overdue), unscheduled, and a rest suggestion when the day is full.
 - **Adaptive limits**: automatic additions stop at 5, or 10 after a deliberate
@@ -889,15 +896,12 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
   execution monitoring → replanning, with each stage carrying more of the model.
 - **Soft constraints** — preferences that trade off against each other, not only
   rules that hold or fail.
-- **A blended priority score** — impact, urgency, dependencies, goal alignment
-  and risk, alongside the signals above.
+- **A blended priority score** — impact and goal alignment join urgency,
+  dependencies, context and time fit.
 - **Complexity in duration estimation** — read task complexity alongside the
   history, not only the stated estimate and the project median.
-- **Schedule optimization with context-switch cost** — maximize important work
-  completed, minimize switching, fit the user's rhythm and lower stress.
-- **An explicit morning plan** — classify the day into core, optional and
-  deferred.
-- **A scored Now** — priority × available time × energy match × context match.
+- **A rhythm-aware Now** — energy match and a user rhythm join priority,
+  available time and context match.
 - **Event-driven replanning** — react to a postponed meeting, a new task,
   finishing early, or a change in state.
 - **Buffer management by user rhythm** — keep a share of the day free that
@@ -1097,6 +1101,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `adaptivePlanning` | Today planning, adaptive caps, feedback episodes, the daily buffer |
 | `workMigration` | slipped flexible work, deferral counting, the confirmation threshold |
 | `dependencies` | blocked-by edges, cycle rejection, planner eligibility, the audit trail |
+| `planningIntelligence` | the Now score, the core/optional/deferred plan, context match |
 | `enrichmentLease` | concurrent enrichment and supersede semantics |
 | `commitmentOriginalInput` | optimized content vs original input |
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |
@@ -1295,7 +1300,7 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 | Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
-| Replayable offline | 22 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 23 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 
@@ -1334,7 +1339,7 @@ it, the doc that explains it and the suite that pins it.
 | Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
 | Progressive capture | `packages/core/src/services/enrichmentLease.ts` | [04](capabilities/04-progressive-capture.md) | `packages/core/test/enrichmentLease.test.ts` |
 | Memory | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` | [05](capabilities/05-memory.md) | `memoryActivation.test.ts`, `memoryEvolution.test.ts` |
-| Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts` |
+| Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `lib/nowScore.ts`, `lib/dayPlan.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts`, `planningIntelligence.test.ts` |
 | Work streams | `services/workStreams.ts`, `services/commitmentClassification.ts` | [07](capabilities/07-work-streams.md) | `apps/server/test/commitmentClassification.test.ts` |
 | HTTP API | `apps/server/src/` | [08](capabilities/08-http-api.md) | `apps/server/test/` |
 | MCP server | `packages/mcp/src/` | [09](capabilities/09-mcp.md) | `packages/mcp/test/tools.test.ts` |
@@ -1398,6 +1403,8 @@ The shared vocabulary. Planning-specific terms live in
 | **Deferral** | one automatic move of a slipped, flexible, unstarted commitment; counted on the row |
 | **Migration** | clearing a slipped slot so the planner can place the work again; after three deferrals the item asks for a decision |
 | **Dependency** | a commitment that waits on another; the planner skips it while a blocker is open, and cycles are refused |
+| **Now score** | urgency, importance, time fit and context match decide the current action; the reason travels with it |
+| **Core / optional / deferred** | the morning classification: must happen, fits the remaining capacity, or waits |
 | **Status** | `captured → planned → scheduled → completed`, plus `risk` and `cancelled` |
 
 ## Memory lifecycle
@@ -1549,17 +1556,19 @@ it:
   preference (learned project weighting) and dependency (blocked-by, with cycle
   rejection) constraints. Soft constraints that trade off against each other are
   not modelled yet.
-- [ ] **A blended priority score** — impact, urgency, dependencies, goal
-  alignment and risk, alongside the current signals.
+- [ ] **A blended priority score** — impact and goal alignment are not read yet;
+  urgency, dependencies (as eligibility), context and time fit are.
 - [x] **Duration estimation from history** — a stated estimate keeps the larger
   weight and is calibrated against the median of completed work in the same
   project (`lib/durationEstimate.ts`). Complexity is not read yet.
-- [ ] **Schedule optimization with context-switch cost** — maximize important
-  work completed, minimize switching, fit the user's rhythm and lower stress.
-- [ ] **An explicit morning plan** — classify the day into core, optional and
-  deferred.
-- [ ] **A scored Now** — priority × available time × energy match × context
-  match.
+- [x] **Context-switch cost.** Continuing the project the user is already in
+  scores higher and switching scores lower (`lib/nowScore.ts`); learned project
+  weighting adds to it.
+- [x] **An explicit morning plan.** The day is classified into core, optional
+  and deferred in the Today payload (`lib/dayPlan.ts`).
+- [x] **A scored Now.** Urgency, importance, whether the work fits the time left
+  and the context match decide the current action; the reason travels with it.
+- [ ] **A rhythm-aware Now** — energy match and a user rhythm are not read yet.
 - [ ] **Event-driven replanning** — react to a postponed meeting, a new task,
   finishing early, or a change in state.
 - [ ] **Buffer management** — keep a share of the day free.

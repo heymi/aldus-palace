@@ -163,6 +163,13 @@ export function registerTools(
           unscheduled_total: z.number(),
           unscheduled_from_thought_total: z.number(),
           summary: z.string(),
+          plan: z
+            .object({
+              core: z.array(z.string()),
+              optional: z.array(z.string()),
+              deferred: z.array(z.string()),
+            })
+            .optional(),
           auto_planned: z.array(z.record(z.string(), z.unknown())).optional(),
           planning: z.object({
             mode: z.string(),

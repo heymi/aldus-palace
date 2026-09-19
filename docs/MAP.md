@@ -10,7 +10,7 @@ it, the doc that explains it and the suite that pins it.
 | Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
 | Progressive capture | `packages/core/src/services/enrichmentLease.ts` | [04](capabilities/04-progressive-capture.md) | `packages/core/test/enrichmentLease.test.ts` |
 | Memory | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` | [05](capabilities/05-memory.md) | `memoryActivation.test.ts`, `memoryEvolution.test.ts` |
-| Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts` |
+| Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `lib/nowScore.ts`, `lib/dayPlan.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts`, `planningIntelligence.test.ts` |
 | Work streams | `services/workStreams.ts`, `services/commitmentClassification.ts` | [07](capabilities/07-work-streams.md) | `apps/server/test/commitmentClassification.test.ts` |
 | HTTP API | `apps/server/src/` | [08](capabilities/08-http-api.md) | `apps/server/test/` |
 | MCP server | `packages/mcp/src/` | [09](capabilities/09-mcp.md) | `packages/mcp/test/tools.test.ts` |

@@ -17,6 +17,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `adaptivePlanning` | Today planning, adaptive caps, feedback episodes, the daily buffer |
 | `workMigration` | slipped flexible work, deferral counting, the confirmation threshold |
 | `dependencies` | blocked-by edges, cycle rejection, planner eligibility, the audit trail |
+| `planningIntelligence` | the Now score, the core/optional/deferred plan, context match |
 | `enrichmentLease` | concurrent enrichment and supersede semantics |
 | `commitmentOriginalInput` | optimized content vs original input |
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |

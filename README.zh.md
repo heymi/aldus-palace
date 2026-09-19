@@ -78,7 +78,7 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 | **每日视图回答什么** | 列出全部 | 现在做什么、什么有风险、什么未排期；排满的一天会建议休息 |
 | **有几份数据** | 每个应用一份 | 一份记录，MCP、HTTP 与库都能访问：Claude、Cursor、你的前端、脚本 |
 | **记录存在哪** | 厂商云 | 你拥有的 SQLite 文件，或一个 Cloudflare Worker；可复制、可备份、可转交 |
-| **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；22 个套件与 11 个 fixture 每次重放 |
+| **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；23 个套件与 11 个 fixture 每次重放 |
 
 ## 当前边界
 
@@ -160,7 +160,7 @@ context        active memories and projects feed the next capture
 | 引擎 | 今天已交付 | 设计中 |
 |---|---|---|
 | **Memory** | 抽取、污染门、激活门、每行证据、去重、冲突检测、版本化 supersede、回注下一次捕获 | 分级记忆、按类型衰减、价值评分、更多类型与信号、记忆图谱 |
-| **Planning** | 四类时间、约束处理（截止、窗口、偏好、blocked-by 依赖）、优先级评分、时段搜索、按项目历史估算时长、每日缓冲、未开始灵活工作的自动顺延、Today、风险、自适应上限、行为模型 | 软约束权衡、混合优先级、含切换成本的调度优化、早晨的 core/optional/deferred 计划、带评分的 Now |
+| **Planning** | 四类时间、约束处理（截止、窗口、偏好、blocked-by 依赖）、优先级评分、时段搜索、按项目历史估算时长、每日缓冲、未开始灵活工作的自动顺延、带上下文匹配的评分 Now、早晨的 core/optional/deferred 计划、Today、风险、自适应上限、行为模型 | 软约束权衡、混合优先级、感知节奏的 Now、事件驱动重排 |
 | **Trust & autonomy** | Action Gate（低/中直接执行，高风险等批准，关键级要两次）、信任分与自主等级 0–4，以及受用户上限约束的权限演进 | 主动规则 |
 | **Model orchestration** | 一个 `LLMProvider` 接口与三种实现，配置由调用方解析 | 按任务路由——快速分类、推理、embedding、敏感输入的本地模型 |
 
@@ -222,7 +222,7 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm verify   # 22 个套件 + 11 个 fixture + 构建 + 校验，全部离线
+pnpm verify   # 23 个套件 + 11 个 fixture + 构建 + 校验，全部离线
 pnpm demo     # 上面的捕获演示
 
 pnpm --filter @aldus-palace/example-understanding-only start
