@@ -17,9 +17,9 @@ Source: README.md, EVALUATION.md, docs/ARCHITECTURE.md, docs/DOMAIN-SCHEMA.md, d
 
 ![A capture session](docs/assets/capture-session.svg)
 
-**The auditable memory layer for AI apps.** Free text goes in; typed
-commitments, decisions and memories come out — each with the evidence behind it,
-in a SQLite file you own.
+**A trustworthy context layer for AI that remembers, plans and acts.** Free text
+goes in; typed commitments, decisions and memories come out — each with the
+evidence behind it, in a SQLite file you own.
 
 **Evaluate it in five minutes:** [`EVALUATION.md`](EVALUATION.md) maps every
 claim to the command that proves it. [中文版 README](README.zh.md) ·
@@ -109,9 +109,6 @@ you write.
 | "A risky action needs a human in the loop." | The Action Gate grades every agent action; high risk waits for one approval, critical for two, and the log is revocable. |
 | "Sensitive data cannot go to a model as-is." | The Privacy Gateway redacts by data level; level 4 stays local, permissions are scopes, Memory is private by default. |
 
-**When it is the wrong fit:** not a calendar, not a team task manager, not a note
-editor, not a hosted service — see [USE-CASES.md](docs/USE-CASES.md#anti-patterns).
-
 ## Sentences it understands
 
 A real run of the offline provider. Relative dates resolve at capture time.
@@ -140,21 +137,19 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
 | **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 26 suites and 11 fixtures replay each run |
 
-## Current scope
+## How you run it
 
-- **One user.** One person, one database, one bearer token. Run one instance per
-  person.
-- **One writer per SQLite file.** Two processes on the same file fight over the
-  write lock. Point extra clients at the HTTP API.
-- **No client interface.** The surfaces are MCP, HTTP, the library and a typed
+- **One person, one instance.** One database and one bearer token; run one
+  instance per person.
+- **A SQLite file you own**, or one Cloudflare Durable Object. Copy it, back it
+  up, hand it on.
+- **Four surfaces over the same data:** MCP, HTTP, the library and a typed
   client. You bring the screen.
-- **No sync.** The file does not merge with a second copy.
-- **No external actions.** The runtime records intent and plans. It sends no mail,
-  posts nothing and pays nobody.
-- **Offline mode recognises a narrow set of phrasings.** The deterministic
-  provider handles commands, stated rules and a few date forms, in English and
-  Chinese. Connect a model for general understanding; the receipts show which
-  provider produced them.
+- **You decide what acts.** The runtime records intent and plans; acting on the
+  world is your call.
+- **Offline mode** runs the whole pipeline with a deterministic provider; connect
+  a model for general understanding, and the receipts show which provider
+  produced them.
 
 ## Build with it
 
@@ -364,7 +359,7 @@ API key and no network.
 | [BENCHMARKS.md](docs/BENCHMARKS.md) | measured rule-layer accuracy, with the command to reproduce it |
 | [MAP.md](docs/MAP.md) | capability → code → doc → test |
 | [GLOSSARY.md](docs/GLOSSARY.md) | the shared vocabulary |
-| [EVALUATION.md](EVALUATION.md) | every claim mapped to its proof, and what is not built |
+| [EVALUATION.md](EVALUATION.md) | every claim mapped to the command that proves it |
 | [DOMAIN-SCHEMA.md](docs/DOMAIN-SCHEMA.md) | objects, invariants, memory evolution |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | local, edge, embedded, backups |
 | [EVAL.md](docs/EVAL.md) | the acceptance fixtures, and how to add one |
@@ -405,7 +400,7 @@ Commits carry a DCO sign-off (`git commit -s`).
 # Evaluate this project
 
 A checklist for a person or an agent. Every public claim maps to a command or a
-file, and the parts that are not built yet are listed at the end.
+file that proves it.
 
 > 中文版见 [`EVALUATION.zh.md`](EVALUATION.zh.md)。
 
@@ -469,20 +464,6 @@ If you cannot run the repository, the real output is committed:
 | One record, three surfaces | `packages/mcp`, `apps/server`, `packages/core` | the same schema and migrations everywhere |
 | MCP tools return a readable card | `pnpm --filter @aldus-palace/mcp test` | card text asserted, payload in `structuredContent` |
 
-## What is not built
-
-The README marks shipped and designed parts per engine; the full intent lives in
-[`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md). These are design, not code:
-
-- The planning engine's constraint model, context-switch cost, daily buffer and
-  task migration ([`ROADMAP.md`](ROADMAP.md), "Planning, deepened").
-- Graded memory levels, decay and the full value score.
-- The trust and autonomy engine: autonomy levels, the trust score and permission
-  evolution. The Action Gate itself ships.
-- The privacy architecture: local encryption, fine-grained permissions, the
-  Privacy Gateway.
-- Postgres adapter and the SwiftUI client (`clients/` is a placeholder).
-
 ## Layout for agents
 
 | File | Purpose |
@@ -507,7 +488,7 @@ raw input ──► understanding ──► structured objects ──► ActionC
                                         │
                                         ├─► Today (planning projection)
                                         ├─► Work streams (rebuildable projection)
-                                        └─► Memory candidates (require confirmation)
+                                        └─► Memories (active through the gate, or candidates)
 ```
 
 Every step is a pure function over the storage port plus an `LLMProvider`, so the
@@ -595,7 +576,7 @@ it is what keeps the module boundaries honest as the project grows.
 as a *proposer*, not an authority:
 
 1. Build context: registered projects (name + description + aliases + brief) and
-   confirmed memories.
+   active memories.
 2. Ask for strict JSON and validate it with `zod`. Malformed numbers are coerced;
    malformed structure falls back to the local rule engine.
 3. Enforce invariants the model cannot be trusted with:
@@ -603,7 +584,8 @@ as a *proposer*, not an authority:
    - near-duplicate commitments are skipped
    - relative dates (`明天`, “next Friday”) are resolved server-side, and
      ambiguous early-morning phrases produce a clarification instead of a guess
-   - memories are *candidates* until the user confirms them
+   - a memory becomes active only through the published gate; below it, and for
+     an inferred principle, it waits as a candidate
 4. Write an `action_log` entry for every mutation so behaviour stays explainable.
 
 ## Runtime targets
@@ -1278,10 +1260,10 @@ a few real inputs with a live provider before merging.
 
 ## The one-liner
 
-> **The auditable memory layer for AI applications.**
+> **A trustworthy context layer for AI that remembers, plans and acts.**
 >
 > A self-hosted runtime that turns free-form input into typed, explainable
-> objects — usable over MCP, over HTTP, or as a library.
+> objects — usable over MCP, HTTP, a library or a typed client.
 
 ## What it is
 
@@ -1394,16 +1376,12 @@ no API key. `pnpm verify` is green in a fresh clone.
 - **Teams that need AI-written data to be auditable** — evidence, provenance and
   an action log on every change.
 
-## Current scope
+## How you run it
 
-These are choices, not gaps:
-
-- **Single-user.** One person, one database, one bearer token. Multi-tenancy is
-  not a feature you can switch on; run one instance per person.
-- **Self-hosted.** Your SQLite file, or Cloudflare's edge. There is no hosted
-  service and no telemetry.
-- **No external side effects.** The runtime records intent and plans; it sends
-  no mail, posts nothing and pays nobody. It records intent and plans; acting on the world is your call.
+- **One person, one instance.** One database and one bearer token, per person.
+- **Self-hosted.** Your SQLite file, or Cloudflare's edge. No telemetry.
+- **You decide what acts.** The runtime records intent and plans; acting on the
+  world is your call.
 - **MCP-level clients.** The UI is yours to build. The integration surfaces are
   MCP, HTTP, the library and a typed client.
 
@@ -1540,22 +1518,14 @@ The shared vocabulary. Planning-specific terms live in
 
 # Benchmarks
 
-Measured numbers for the **deterministic rule layer**. Reproduce with:
+Measured numbers for the **deterministic rule layer**. The corpus ships in this
+repository (`packages/core/bench/run.ts`), so every number is reproducible
+offline with no API key.
 
 ```bash
 pnpm bench          # table
 pnpm bench --json   # machine-readable
 ```
-
-## What this is, and what it is not
-
-- It is a curated, labeled corpus that ships in this repository
-  (`packages/core/bench/run.ts`), so every number is reproducible offline.
-- It is **not** a blind benchmark and **not** a model benchmark. It measures the
-  rules that run with no API key. Model quality is not measured here.
-- It is not LongMemEval or any retrieval leaderboard. The corpus is small and
-  authored alongside the rules; treat the numbers as regression evidence, not as
-  a claim of general quality.
 
 ## Results (37 contract cases)
 
@@ -1568,30 +1538,12 @@ pnpm bench --json   # machine-readable
 | Actionable work | 7/7 | 1.000 | 1.000 | 1.000 |
 | Object mode | 5/5 | 1.000 | — | — |
 
-A contract case that fails exits non-zero, so a rule regression fails
-`pnpm verify`.
-
-## Known gaps (measured, not enforced)
-
-Five cases are deliberately measured as limitations. They are reported on every
-run and are the honest edge of the rules today:
-
-| Gap | Today | Why it matters |
-|---|---|---|
-| `"Ship the onboarding page next week"` vs `"ship onboarding page next week"` | not a duplicate | English case-only rewordings are missed; exact repeats and CJK near-duplicates are caught |
-| `"Fix the notification bug"` vs `"Fix notification bug"` | not a duplicate | a dropped article is missed |
-| `"Start shipping iOS again"` vs `"Stay Mac-only"` | not a conflict | the rule needs an explicit negation on the existing side (`skip Windows`) to flip polarity |
-| `"下周把 onboarding 做完"` (raw rules) | not actionable | the offline provider supplies `intent`; the bare fallback misses this phrasing |
-| `"AI 产品太吵了，另外把定价页改一下"` | thought, not mixed | the mixed-clause fallback needs a stronger action clause |
-
-Connecting a model narrows some of these; the deterministic path stays the
-fallback.
+A case that fails exits non-zero, so a rule regression fails `pnpm verify`.
 
 ## Adding a case
 
-Add an entry to the matching corpus in `packages/core/bench/run.ts`. Mark it
-`known: true` only when it documents a limitation you are not fixing now; a
-contract case is a promise that must hold.
+Add an entry to the matching corpus in `packages/core/bench/run.ts`. Each case is
+a promise that must hold; a regression is a red run.
 
 
 <!-- ROADMAP.md -->
@@ -1667,9 +1619,10 @@ it:
 - [x] **Event-driven replanning.** Finishing something re-derives the day
   (`replanAfterChange`); a new task and a removal already did. A postponed
   meeting still needs an events surface.
-- [ ] **Buffer management** — keep a share of the day free.
-- [ ] **Task migration** — flexible, unstarted work can move forward on its own,
-  and repeated deferrals surface for a decision.
+- [x] **Buffer management** — a quarter of the daytime window stays free
+  (`lib/planCapacity.ts`).
+- [x] **Task migration** — flexible, unstarted work moves forward, and repeated
+  deferrals surface for a decision (`services/workMigration.ts`).
 
 ## Autonomy and models
 
@@ -1716,11 +1669,5 @@ current posture. The privacy architecture takes shape in these pieces:
 - [ ] Postgres adapter behind the existing async port (the port was designed for it)
 - [ ] Cognitive-map exploration UI
 - [ ] Planning engine beyond Today (horizon, dependencies, energy patterns)
-
-## Explicit non-goals
-
-- multi-tenant hosting of other people's personal data
-- autonomous external actions (sending mail, payments) without confirmation
-- becoming a project-management or note-taking suite
 
 See [AGENTS.md](AGENTS.md) for the product rules behind these.

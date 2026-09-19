@@ -8,7 +8,7 @@
 
 ![一次捕获会话](docs/assets/capture-session.svg)
 
-**面向 AI 应用的可审计记忆层。** 自由文本进来，带类型的承诺、决策与记忆出去——每一条都带着它的证据，存在你拥有的 SQLite 文件里。
+**让 AI 记得住、排得清、也敢动手的可信上下文层。** 自由文本进来，带类型的承诺、决策与记忆出去——每一条都带着它的证据，存在你拥有的 SQLite 文件里。
 
 > 英文版见 [`README.md`](README.md)；逐条验证指南见 [`EVALUATION.zh.md`](EVALUATION.zh.md)。
 
@@ -85,8 +85,6 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 | 「高风险操作得有人把关。」 | Action Gate 给每个 agent 动作分级：高风险等一次批准、关键级两次，日志可撤销。 |
 | 「敏感数据不能原文发给模型。」 | Privacy Gateway 按数据级别脱敏；Level 4 不出本机，权限按 scope 授予，Memory 默认私有。 |
 
-**什么时候不适合：** 不是日历、不是团队任务管理器、不是笔记编辑器、不是托管服务——更长清单见 [USE-CASES.md](docs/USE-CASES.md#anti-patterns)。
-
 ## 它听得懂的句子
 
 下面是离线 provider 的真实运行结果。相对日期在捕获时解析。
@@ -115,14 +113,13 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 | **记录存在哪** | 厂商云 | 你拥有的 SQLite 文件，或一个 Cloudflare Worker；可复制、可备份、可转交 |
 | **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；26 个套件与 11 个 fixture 每次重放 |
 
-## 当前边界
+## 怎么运行
 
-- **单用户。** 一个人、一个数据库、一个 bearer token。每人跑一个实例。
-- **单个 SQLite 写入者。** 两个进程写同一个文件会争抢写锁；额外客户端请指向 HTTP API。
-- **没有客户端界面。** 入口是 MCP、HTTP、库与类型化客户端，界面由你来做。
-- **没有同步。** 文件不会与第二份副本合并。
-- **没有对外动作。** 运行时只记录意图与计划：不发邮件、不发帖、不付款。
-- **离线模式只认有限句式。** 确定性 provider 处理命令句、陈述规则和少量日期形式，支持中英文。通用理解请接模型；回执会标明是哪个 provider 产出的。
+- **一个人，一个实例。** 一个数据库、一个 bearer token；每人跑一个实例。
+- **一个你拥有的 SQLite 文件**，或一个 Cloudflare Durable Object。可复制、可备份、可转交。
+- **同一份数据，四个入口：** MCP、HTTP、库与类型化客户端。界面由你来做。
+- **由你决定它做什么。** 运行时只记录意图与计划；是否对现实世界采取行动，由你决定。
+- **离线模式** 用确定性 provider 跑完整条管线；通用理解请接模型，回执会标明是哪个 provider 产出的。
 
 ## 用它构建
 

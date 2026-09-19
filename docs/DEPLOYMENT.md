@@ -97,6 +97,13 @@ process writes.
 
 ---
 
+## Moving the file
+
+The database is one file. To use it on another machine, copy the file; two copies
+do not merge. A backup is the same operation.
+
+---
+
 ## Choosing a model
 
 `LLM_PROVIDER` selects the understanding backend:

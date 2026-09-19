@@ -2,10 +2,10 @@
 
 ## The one-liner
 
-> **The auditable memory layer for AI applications.**
+> **A trustworthy context layer for AI that remembers, plans and acts.**
 >
 > A self-hosted runtime that turns free-form input into typed, explainable
-> objects — usable over MCP, over HTTP, or as a library.
+> objects — usable over MCP, HTTP, a library or a typed client.
 
 ## What it is
 
@@ -118,15 +118,11 @@ no API key. `pnpm verify` is green in a fresh clone.
 - **Teams that need AI-written data to be auditable** — evidence, provenance and
   an action log on every change.
 
-## Current scope
+## How you run it
 
-These are choices, not gaps:
-
-- **Single-user.** One person, one database, one bearer token. Multi-tenancy is
-  not a feature you can switch on; run one instance per person.
-- **Self-hosted.** Your SQLite file, or Cloudflare's edge. There is no hosted
-  service and no telemetry.
-- **No external side effects.** The runtime records intent and plans; it sends
-  no mail, posts nothing and pays nobody. It records intent and plans; acting on the world is your call.
+- **One person, one instance.** One database and one bearer token, per person.
+- **Self-hosted.** Your SQLite file, or Cloudflare's edge. No telemetry.
+- **You decide what acts.** The runtime records intent and plans; acting on the
+  world is your call.
 - **MCP-level clients.** The UI is yours to build. The integration surfaces are
   MCP, HTTP, the library and a typed client.

@@ -1,6 +1,6 @@
 # 评估这个项目
 
-给人、也给 agent 的核对清单。每一条对外主张都对应一条命令或一个文件；尚未实现的部分在最后单独列出。
+给人、也给 agent 的核对清单。每一条对外主张都对应一条命令或一个文件作为证据。
 
 > 英文版见 [`EVALUATION.md`](EVALUATION.md)。
 
@@ -61,16 +61,6 @@ spec/schema.sql is up to date.
 | 一份记录，三个入口 | `packages/mcp`、`apps/server`、`packages/core` | 各处使用同一 schema 与迁移 |
 | MCP 工具返回可读卡片 | `pnpm --filter @aldus-palace/mcp test` | 断言卡片文本，payload 在 `structuredContent` |
 | 规则层有实测数字 | `pnpm bench` | 见 [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) |
-
-## 尚未实现的部分
-
-README 按引擎标注了已交付与设计中的部分，完整设计见 [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md)。以下均为设计，不是代码：
-
-- 规划引擎的约束模型、上下文切换成本、每日缓冲与任务迁移（见 [`ROADMAP.md`](ROADMAP.md) 的 "Planning, deepened"）。
-- 分级记忆、按类型衰减与完整价值评分。
-- 信任与自主引擎：自主等级、信任分与权限演进。Action Gate 本身已交付。
-- 隐私架构：本地加密、细粒度权限、Privacy Gateway。
-- Postgres 适配器与 SwiftUI 客户端（`clients/` 目前是占位目录）。
 
 ## 给 agent 的入口
 

@@ -120,14 +120,4 @@ projection — and you keep your own UI, auth and database.
 
 → [INTEGRATION.md](INTEGRATION.md) · [Capability 1](capabilities/01-schema-and-domain.md)
 
----
 
-## Anti-patterns
-
-Being clear about what this is *not* saves everyone time:
-
-- **Not a calendar.** It models deadlines and availability windows, and it reads
-  fixed events. It does not negotiate meetings or invite people.
-- **Not a team task manager.** Single user, no assignments, no shared boards.
-- **Not a note editor.** Thoughts are stored objects, not documents you type into.
-- **Not a hosted service.** You run it; there is no account to create.

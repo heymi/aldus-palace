@@ -69,9 +69,10 @@ it:
 - [x] **Event-driven replanning.** Finishing something re-derives the day
   (`replanAfterChange`); a new task and a removal already did. A postponed
   meeting still needs an events surface.
-- [ ] **Buffer management** — keep a share of the day free.
-- [ ] **Task migration** — flexible, unstarted work can move forward on its own,
-  and repeated deferrals surface for a decision.
+- [x] **Buffer management** — a quarter of the daytime window stays free
+  (`lib/planCapacity.ts`).
+- [x] **Task migration** — flexible, unstarted work moves forward, and repeated
+  deferrals surface for a decision (`services/workMigration.ts`).
 
 ## Autonomy and models
 
@@ -118,11 +119,5 @@ current posture. The privacy architecture takes shape in these pieces:
 - [ ] Postgres adapter behind the existing async port (the port was designed for it)
 - [ ] Cognitive-map exploration UI
 - [ ] Planning engine beyond Today (horizon, dependencies, energy patterns)
-
-## Explicit non-goals
-
-- multi-tenant hosting of other people's personal data
-- autonomous external actions (sending mail, payments) without confirmation
-- becoming a project-management or note-taking suite
 
 See [AGENTS.md](AGENTS.md) for the product rules behind these.

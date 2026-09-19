@@ -1,7 +1,7 @@
 {
   "name": "@aldus-palace/core",
   "version": "0.5.3",
-  "description": "The auditable memory layer for AI apps — free text into typed commitments, decisions and memories, each with its evidence, in a SQLite file you own.",
+  "description": "A trustworthy context layer for AI that remembers, plans and acts — free text into typed commitments, decisions and memories, each with its evidence, in a SQLite file you own.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {

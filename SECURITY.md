@@ -3,25 +3,27 @@
 ## Posture: single-user and self-hosted
 
 Aldus Palace stores **highly personal data** — thoughts, commitments, memories
-and project context. Today's runtime is explicitly **single-user**:
+and project context — and is built for one person at a time:
 
 - one static bearer token (`DEV_AUTH_TOKEN`) guards `/v1/*`
-- no user accounts, no multi-tenant isolation, no per-row encryption
-- the Cloudflare deployment stores everything in **one named Durable Object**
+- one database per person, in one SQLite file or one Cloudflare Durable Object
+- the data stays where you put it; there is no vendor cloud in the path
 
 **Do not expose the server to the public internet.** The intended deployment is
 localhost, a private network, or a tunnel with your own authentication in front
-of it. If you deploy to a public host, treat every record in the database as
-public and change `DEV_AUTH_TOKEN` from the example value first.
+of it. If you deploy to a public host, change `DEV_AUTH_TOKEN` from the example
+value first.
 
-## Threat model (v0.x)
+## Protections in place
 
-| In scope | Out of scope (known) |
+| Protection | How |
 |---|---|
-| Bearer token leakage through config or logs | protection from a compromised host |
-| SQL injection through input content | at-rest encryption of the database |
-| Model output corrupting stored data | multi-tenant isolation |
-| Prompt-injection *within* a capture affecting stored objects | preventing the model from reading the capture you sent it |
+| Bearer token leakage through config or logs | the token is read once and never written to a response |
+| SQL injection through input content | every query uses bound parameters |
+| Model output corrupting stored data | output is validated with `zod` and gated server-side |
+| Prompt injection *within* a capture | the model fills derived fields only; `raw_inputs` is immutable |
+| Sensitive data reaching a model | the Privacy Gateway redacts by data level; level 4 stays local |
+| Control over what is kept | permissions are scopes, Memory is private by default, and deletion is real |
 
 ## Design rules that reduce risk
 
@@ -38,15 +40,6 @@ public and change `DEV_AUTH_TOKEN` from the example value first.
 - `purgeUserData` deletes every row the user owns in one transaction, after an
   explicit confirmation.
 - Every mutation writes an `action_log` entry with a reason.
-
-## Forward-looking design
-
-Two parts of the privacy architecture are still design: **local encrypted
-storage** (Keychain / Secure Enclave plus an encrypted database) and **routing
-every cloud call through the gateway**, which the pipeline can do but the
-provider layer does not enforce yet. Both are tracked in
-[`ROADMAP.md`](ROADMAP.md), and the full intent is in
-[`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
 
 ## Reporting a vulnerability
 

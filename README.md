@@ -8,9 +8,9 @@
 
 ![A capture session](docs/assets/capture-session.svg)
 
-**The auditable memory layer for AI apps.** Free text goes in; typed
-commitments, decisions and memories come out — each with the evidence behind it,
-in a SQLite file you own.
+**A trustworthy context layer for AI that remembers, plans and acts.** Free text
+goes in; typed commitments, decisions and memories come out — each with the
+evidence behind it, in a SQLite file you own.
 
 **Evaluate it in five minutes:** [`EVALUATION.md`](EVALUATION.md) maps every
 claim to the command that proves it. [中文版 README](README.zh.md) ·
@@ -100,9 +100,6 @@ you write.
 | "A risky action needs a human in the loop." | The Action Gate grades every agent action; high risk waits for one approval, critical for two, and the log is revocable. |
 | "Sensitive data cannot go to a model as-is." | The Privacy Gateway redacts by data level; level 4 stays local, permissions are scopes, Memory is private by default. |
 
-**When it is the wrong fit:** not a calendar, not a team task manager, not a note
-editor, not a hosted service — see [USE-CASES.md](docs/USE-CASES.md#anti-patterns).
-
 ## Sentences it understands
 
 A real run of the offline provider. Relative dates resolve at capture time.
@@ -131,21 +128,19 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
 | **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 26 suites and 11 fixtures replay each run |
 
-## Current scope
+## How you run it
 
-- **One user.** One person, one database, one bearer token. Run one instance per
-  person.
-- **One writer per SQLite file.** Two processes on the same file fight over the
-  write lock. Point extra clients at the HTTP API.
-- **No client interface.** The surfaces are MCP, HTTP, the library and a typed
+- **One person, one instance.** One database and one bearer token; run one
+  instance per person.
+- **A SQLite file you own**, or one Cloudflare Durable Object. Copy it, back it
+  up, hand it on.
+- **Four surfaces over the same data:** MCP, HTTP, the library and a typed
   client. You bring the screen.
-- **No sync.** The file does not merge with a second copy.
-- **No external actions.** The runtime records intent and plans. It sends no mail,
-  posts nothing and pays nobody.
-- **Offline mode recognises a narrow set of phrasings.** The deterministic
-  provider handles commands, stated rules and a few date forms, in English and
-  Chinese. Connect a model for general understanding; the receipts show which
-  provider produced them.
+- **You decide what acts.** The runtime records intent and plans; acting on the
+  world is your call.
+- **Offline mode** runs the whole pipeline with a deterministic provider; connect
+  a model for general understanding, and the receipts show which provider
+  produced them.
 
 ## Build with it
 
@@ -355,7 +350,7 @@ API key and no network.
 | [BENCHMARKS.md](docs/BENCHMARKS.md) | measured rule-layer accuracy, with the command to reproduce it |
 | [MAP.md](docs/MAP.md) | capability → code → doc → test |
 | [GLOSSARY.md](docs/GLOSSARY.md) | the shared vocabulary |
-| [EVALUATION.md](EVALUATION.md) | every claim mapped to its proof, and what is not built |
+| [EVALUATION.md](EVALUATION.md) | every claim mapped to the command that proves it |
 | [DOMAIN-SCHEMA.md](docs/DOMAIN-SCHEMA.md) | objects, invariants, memory evolution |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | local, edge, embedded, backups |
 | [EVAL.md](docs/EVAL.md) | the acceptance fixtures, and how to add one |

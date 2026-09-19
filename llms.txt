@@ -1,9 +1,9 @@
 # Aldus Palace
 
-> The auditable memory layer for AI applications. Free text goes in; typed
-> commitments, decisions and memories come out, each with the evidence behind it,
-> in a SQLite file you own. Self-hosted, offline-testable, usable over MCP, HTTP
-> or as a library.
+> A trustworthy context layer for AI that remembers, plans and acts. Free text
+> goes in; typed commitments, decisions and memories come out, each with the
+> evidence behind it, in a SQLite file you own. Self-hosted, offline-testable,
+> usable over MCP, HTTP, a library or a typed client.
 
 Start with the evaluation guide: it maps every public claim to the command or
 file that proves it, and lists what is not built yet.

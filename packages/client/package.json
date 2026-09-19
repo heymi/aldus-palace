@@ -1,7 +1,7 @@
 {
   "name": "@aldus-palace/client",
   "version": "0.1.0",
-  "description": "Typed HTTP client for the auditable memory layer — one method per route, no runtime dependencies.",
+  "description": "Typed HTTP client for the trustworthy context layer — one method per route, no runtime dependencies.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {

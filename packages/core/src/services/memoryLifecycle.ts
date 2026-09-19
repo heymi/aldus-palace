@@ -1,6 +1,8 @@
 import { DEFAULT_LOCALE, type Locale } from "../lib/locale.js";
 /**
- * Memory lifecycle: candidates become active only through explicit confirmation.
+ * Memory lifecycle: a memory becomes active through the published gate; below
+ * it, and for an inferred principle, it waits as a candidate. Confirm, reject
+ * and archive act on that state.
  *
  * Kept here (not in an HTTP handler) so every surface — the reference server,
  * the MCP server, embedders — applies exactly the same rules.

@@ -7,7 +7,7 @@ raw input ──► understanding ──► structured objects ──► ActionC
                                         │
                                         ├─► Today (planning projection)
                                         ├─► Work streams (rebuildable projection)
-                                        └─► Memory candidates (require confirmation)
+                                        └─► Memories (active through the gate, or candidates)
 ```
 
 Every step is a pure function over the storage port plus an `LLMProvider`, so the
@@ -95,7 +95,7 @@ it is what keeps the module boundaries honest as the project grows.
 as a *proposer*, not an authority:
 
 1. Build context: registered projects (name + description + aliases + brief) and
-   confirmed memories.
+   active memories.
 2. Ask for strict JSON and validate it with `zod`. Malformed numbers are coerced;
    malformed structure falls back to the local rule engine.
 3. Enforce invariants the model cannot be trusted with:
@@ -103,7 +103,8 @@ as a *proposer*, not an authority:
    - near-duplicate commitments are skipped
    - relative dates (`明天`, “next Friday”) are resolved server-side, and
      ambiguous early-morning phrases produce a clarification instead of a guess
-   - memories are *candidates* until the user confirms them
+   - a memory becomes active only through the published gate; below it, and for
+     an inferred principle, it waits as a candidate
 4. Write an `action_log` entry for every mutation so behaviour stays explainable.
 
 ## Runtime targets

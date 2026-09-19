@@ -6,8 +6,13 @@
 > aldus-palace@ test /Users/zhu/R&D/Aldus-Palace
 > pnpm -r test
 
-Scope: 8 of 9 workspace projects
+Scope: 9 of 10 workspace projects
+packages/client test$ tsx test/client.test.ts
 packages/core test$ tsx test/run-tests.ts
+packages/client test: client tests passed.
+packages/client test: Done
+packages/core test: action gate tests passed.
+packages/core test: PASS actionGate.test.ts
 packages/core test: actionable work tests passed.
 packages/core test: PASS actionableWork.test.ts
 packages/core test: adaptive planning tests passed.
@@ -16,6 +21,8 @@ packages/core test: clarificationReply tests passed.
 packages/core test: PASS clarificationReply.test.ts
 packages/core test: commitment original input test passed.
 packages/core test: PASS commitmentOriginalInput.test.ts
+packages/core test: dependency tests passed.
+packages/core test: PASS dependencies.test.ts
 packages/core test: duration estimate tests passed.
 packages/core test: PASS durationEstimate.test.ts
 packages/core test: enrichment lease test passed.
@@ -28,6 +35,12 @@ packages/core test: memory activation tests passed.
 packages/core test: PASS memoryActivation.test.ts
 packages/core test: memory evolution tests passed.
 packages/core test: PASS memoryEvolution.test.ts
+packages/core test: memory value tests passed.
+packages/core test: PASS memoryValue.test.ts
+packages/core test: planning intelligence tests passed.
+packages/core test: PASS planningIntelligence.test.ts
+packages/core test: privacy tests passed.
+packages/core test: PASS privacy.test.ts
 packages/core test: projectMatch tests passed.
 packages/core test: PASS projectMatch.test.ts
 packages/core test: [llm] provider=dev (local rules)
@@ -49,21 +62,28 @@ packages/core test: 对 Nimbus 的启发：把可被搜索引擎抓取的公开�
 packages/core test: 待验证：哪些内容能被索引并带来安装/试用意图。
 packages/core test: 主题标签：可索引内容 / 搜索获客
 packages/core test: PASS thoughtTitle.test.ts
-packages/core test: All 14 suites passed.
+packages/core test: trust score tests passed.
+packages/core test: PASS trustScore.test.ts
+packages/core test: work migration tests passed.
+packages/core test: PASS workMigration.test.ts
+packages/core test: All 21 suites passed.
 packages/core test: Done
 apps/server test$ tsx test/run-tests.ts
 packages/mcp test$ tsx test/tools.test.ts
 packages/mcp test: [llm] provider=dev (local rules)
+apps/server test: action gate API test passed.
+packages/mcp test: [llm] provider=dev (local rules)
+apps/server test: PASS actionGate.test.ts
 packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: [llm] provider=dev (local rules)
-apps/server test: commitment classification API test passed.
-apps/server test: PASS commitmentClassification.test.ts
 packages/mcp test: mcp tool tests passed.
 packages/mcp test: Done
+apps/server test: commitment classification API test passed.
+apps/server test: PASS commitmentClassification.test.ts
 apps/server test: llm config tests passed
 apps/server test: PASS llm-config.test.ts
-apps/server test: All 2 suites passed.
+apps/server test: All 3 suites passed.
 apps/server test: Done

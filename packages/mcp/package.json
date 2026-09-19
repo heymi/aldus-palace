@@ -1,7 +1,7 @@
 {
   "name": "@aldus-palace/mcp",
   "version": "0.6.3",
-  "description": "Auditable memory for Claude, Cursor and any MCP client — capture, Today and memory tools over a SQLite file you own.",
+  "description": "Trustworthy context for Claude, Cursor and any MCP client — capture, Today, memory and action tools over a SQLite file you own.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {

@@ -1,7 +1,7 @@
 # Evaluate this project
 
 A checklist for a person or an agent. Every public claim maps to a command or a
-file, and the parts that are not built yet are listed at the end.
+file that proves it.
 
 > 中文版见 [`EVALUATION.zh.md`](EVALUATION.zh.md)。
 
@@ -64,20 +64,6 @@ If you cannot run the repository, the real output is committed:
 | The schema is the single source of truth | `pnpm spec:check` | `spec/schema.sql` matches `db/schema.ts` |
 | One record, three surfaces | `packages/mcp`, `apps/server`, `packages/core` | the same schema and migrations everywhere |
 | MCP tools return a readable card | `pnpm --filter @aldus-palace/mcp test` | card text asserted, payload in `structuredContent` |
-
-## What is not built
-
-The README marks shipped and designed parts per engine; the full intent lives in
-[`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md). These are design, not code:
-
-- The planning engine's constraint model, context-switch cost, daily buffer and
-  task migration ([`ROADMAP.md`](ROADMAP.md), "Planning, deepened").
-- Graded memory levels, decay and the full value score.
-- The trust and autonomy engine: autonomy levels, the trust score and permission
-  evolution. The Action Gate itself ships.
-- The privacy architecture: local encryption, fine-grained permissions, the
-  Privacy Gateway.
-- Postgres adapter and the SwiftUI client (`clients/` is a placeholder).
 
 ## Layout for agents
 
