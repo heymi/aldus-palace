@@ -23,6 +23,7 @@ const sources = [
   "docs/MAP.md",
   "docs/GLOSSARY.md",
   "docs/BENCHMARKS.md",
+  "docs/BENCHMARKS-LLM.md",
   "ROADMAP.md",
 ];
 

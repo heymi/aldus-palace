@@ -7,7 +7,7 @@ it, the doc that explains it and the suite that pins it.
 |---|---|---|---|
 | Schema & domain | `packages/core/src/db/schema.ts` | [01](capabilities/01-schema-and-domain.md) | `pnpm spec:check` |
 | Providers | `packages/core/src/providers/` | [02](capabilities/02-providers.md) | `packages/core/test/providers.test.ts` |
-| Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
+| Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `modelDateNormalization.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
 | Progressive capture | `packages/core/src/services/enrichmentLease.ts` | [04](capabilities/04-progressive-capture.md) | `packages/core/test/enrichmentLease.test.ts` |
 | Memory | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `lib/memoryValue.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` | [05](capabilities/05-memory.md) | `memoryActivation.test.ts`, `memoryEvolution.test.ts`, `memoryValue.test.ts` |
 | Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `services/replan.ts`, `lib/nowScore.ts`, `lib/dayPlan.ts` | [06](capabilities/06-today-and-planning.md) | `adaptivePlanning.test.ts`, `workMigration.test.ts`, `dependencies.test.ts`, `planningIntelligence.test.ts` |

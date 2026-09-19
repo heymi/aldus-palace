@@ -26,7 +26,8 @@
     "evidence": "node scripts/capture-evidence.mjs",
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
-    "cf:types": "pnpm --filter @aldus-palace/server cf:types"
+    "cf:types": "pnpm --filter @aldus-palace/server cf:types",
+    "bench:llm": "pnpm --filter @aldus-palace/core bench:llm"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

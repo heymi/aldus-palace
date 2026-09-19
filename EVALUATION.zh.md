@@ -16,7 +16,7 @@ pnpm demo       # 离线捕获演示
 `pnpm verify` 通过时，结尾会看到类似片段：
 
 ```
-packages/core test: All 21 suites passed.
+packages/core test: All 22 suites passed.
 packages/mcp test: mcp tool tests passed.
 apps/server test: All 3 suites passed.
 All fixtures passed.
@@ -32,7 +32,7 @@ spec/schema.sql is up to date.
 | 主张 | 验证方式 | 预期 |
 |---|---|---|
 | 自由文本变成带类型的对象 | `pnpm demo` | `Captured · 1 commitment`，窗口已解析 |
-| 流水线可离线运行 | `pnpm verify` | 26 个套件与 11 个 fixture 无需 key 通过 |
+| 流水线可离线运行 | `pnpm verify` | 27 个套件与 11 个 fixture 无需 key 通过 |
 | `overdue` 没有可占据的状态 | `rg overdue packages/core/src/db/schema.ts` | 无匹配；状态为 `captured/planned/scheduled/completed/risk/cancelled` |
 | 记忆按唯一公开规则激活 | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | 情绪句不会变成记忆 | `pnpm eval` | fixture `S04` 通过 |
@@ -53,6 +53,7 @@ spec/schema.sql is up to date.
 | 云端调用可在离开前脱敏 | `packages/core/test/privacy.test.ts` | 名称、金额、邮箱变占位符；Level 4 不出本机 |
 | 没有 guard 就无法创建云端 provider | `packages/core/test/providers.test.ts` | `createLLMProvider` 拒绝不带 guard 的云端 kind |
 | 批准后的动作只执行一次，删除走 gate | `packages/core/test/actionGate.test.ts`、`apps/server/test/actionGate.test.ts` | executor 只跑一次；purge 先提出、批准后执行删除 |
+| 真实模型返回的日期由服务端解析 | `packages/core/test/modelDateNormalization.test.ts` | 自由文本变成 ISO；未来语气配过去日期会被丢弃 |
 | 未经授权时 Memory 保持私有 | `packages/core/test/privacy.test.ts` | 默认权限不含 memory；可收回 |
 | 删除是真实的 | `packages/core/test/privacy.test.ts` | 需要 `confirm`，删除后用户所有表为空 |
 | 高风险 agent 动作会等待决定 | `packages/core/test/actionGate.test.ts` | 关键级需两次批准；撤销不可逆 |
