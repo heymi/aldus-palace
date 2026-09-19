@@ -60,9 +60,9 @@ waiting.
 
 The page starts in the browser's language (Chinese for `zh-*`, English
 otherwise) and switches from the EN / 中文 control in the header; the choice is
-kept in `localStorage`. Switching also calls `PATCH /v1/me`, so the text the
-runtime writes — capture cards, action summaries, rule-based memory wording —
-follows the same language. The deterministic provider follows the input script
+kept in `localStorage`. On load and on every switch the client aligns the server
+with `PATCH /v1/me`, so the text the runtime writes — capture cards, action
+summaries, rule-based memory wording — follows the same language. The deterministic provider follows the input script
 on its own, so a Chinese sentence reads back in Chinese even before a switch.
 
 ## Deploy the online demo
