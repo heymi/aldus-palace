@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/server",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "private": true,
   "description": "The HTTP surface of the context layer — one schema, a local SQLite file or a Cloudflare Durable Object.",
   "license": "Apache-2.0",
