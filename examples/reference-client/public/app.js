@@ -767,6 +767,11 @@ function renderReceipt(card, noteKey) {
       </div>`
   );
 
+  // The clarification prompt is also a warning on the card; the question block
+  // already carries it, so do not print it twice.
+  const prompts = new Set((card.clarifications ?? []).map((c) => c.prompt));
+  const notes = (card.warnings ?? []).filter((warning) => !prompts.has(warning));
+
   const links = [
     commitments.length ? `<a class="receipt-link" href="#home">${esc(t("receipt.seeHome"))}</a>` : "",
     memories.length ? `<a class="receipt-link" href="#memory">${esc(t("receipt.seeMemory"))}</a>` : "",
@@ -781,7 +786,7 @@ function renderReceipt(card, noteKey) {
     ${group(t("receipt.thoughts"), thoughts)}
     ${group(t("receipt.decisions"), decisions)}
     ${clarifications.length ? `<div class="receipt-group"><span class="receipt-group-label">${esc(t("receipt.question"))}</span>${clarifications.join("")}</div>` : ""}
-    ${(card.warnings ?? []).length ? `<p class="warn">${card.warnings.map(esc).join("<br />")}</p>` : ""}
+    ${notes.length ? `<p class="warn">${notes.map(esc).join("<br />")}</p>` : ""}
     ${links ? `<p style="margin:8px 0 0">${links}</p>` : ""}`;
 }
 
@@ -884,8 +889,17 @@ document.addEventListener("click", async (event) => {
         body: JSON.stringify({ option_id: clarify.dataset.clarifyOption }),
       });
       if (state.lastReceipt?.card) {
+        const resolvedPrompts = new Set(
+          (state.lastReceipt.card.clarifications ?? []).map((c) => c.prompt)
+        );
         state.lastReceipt = {
-          card: { ...state.lastReceipt.card, clarifications: [] },
+          card: {
+            ...state.lastReceipt.card,
+            clarifications: [],
+            warnings: (state.lastReceipt.card.warnings ?? []).filter(
+              (warning) => !resolvedPrompts.has(warning)
+            ),
+          },
           noteKey: "clarify.recorded",
         };
       }
