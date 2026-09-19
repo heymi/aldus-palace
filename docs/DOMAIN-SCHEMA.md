@@ -38,6 +38,7 @@ slipped flexible work (see [ADR 0008](adr/0008-daily-buffer-and-work-migration.m
 | `today_assignments` | commitments + planning decisions |
 | `commitment_classifications` | commitments + projects + active memories |
 | `planning_day_states`, `planning_profiles`, `planning_feedback_episodes` | planner behaviour over time |
+| `memory_search` (FTS5) | `memories.search_text`, written by the runtime |
 
 Deleting a projection must never change what the user committed to — see
 [ADR 0002](adr/0002-keep-work-classification-as-rebuildable-projection.md).

@@ -30,6 +30,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `memoryEvolution` | rule-based conflict detection, supersede, version chains |
 | `actionableWork` | English imperatives, Chinese build verbs, non-work cases |
 | `actionGate` | the published risk table, decisions, two-step critical approval, revocation, audit |
+| `actionGate` (apps/server) | the gate over HTTP: propose, decide, execute, purge, races |
 | `trustScore` | the Laplace-smoothed score, level thresholds, what each level runs, the decision window |
 | `durationEstimate` | stated/history blending, the median, bounds, invalid input |
 | `format` | the locale-aware capture card and Today text projection |
@@ -66,17 +67,19 @@ an input plus the properties the result must have:
 ```
 
 Supported expectations: `thoughts_min`/`thoughts_max`,
-`commitments_min`/`commitments_max`, `memory_candidates_min`,
-`memory_active_max`, `thought_types_allowed`, `memory_types_allowed`,
-`must_include_thought`, and `forbidden` markers
-(`thought_type:*`, `commitment:*`, `recurrence`, …).
+`commitments_min`/`commitments_max`, `memory_candidates_min`/`memory_candidates_max`,
+`memory_active_min`/`memory_active_max`, `memory_pending_min`/`memory_pending_max`,
+`thought_types_allowed`, `memory_types_allowed`, `must_include_thought`, and
+`forbidden` markers (`thought_type:*`, `commitment:*`, `recurrence`, …). Every
+fixture key is enforced; an unknown key would not fail on its own, so keep to
+this list.
 
 They run against the **deterministic** provider, so results are stable and the
 suite is safe to require on every pull request.
 
 ```bash
 pnpm eval
-# PASS S04 … PASS S25
+# PASS S04 … PASS S31
 # All fixtures passed.
 ```
 
@@ -84,7 +87,7 @@ pnpm eval
 
 Contributing a fixture is the best first contribution — it is data, not code:
 
-1. Pick the next `S<n>` id (`S26`, `S27`, …).
+1. Pick the next `S<n>` id (`S32`, …).
 2. Copy the shape above; write the input in any language.
 3. State only properties that must hold, never the exact model output.
 4. Run `pnpm eval` and open a PR explaining the user behaviour you are pinning.

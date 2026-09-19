@@ -11,7 +11,7 @@ Nine capabilities, three ways in. Use one, or all of them.
 | 5 | [Memory](capabilities/05-memory.md) | a memory store that explains itself, with levels, decay and revisions | `memory` | `/v1/memories*` | `core` |
 | 6 | [Today & planning](capabilities/06-today-and-planning.md) | scheduling heuristics, risk detection, adaptive limits, dependencies, buffer and migration | `today` | `/v1/today` `/v1/plan/today` `/v1/plan/migrate` | `core` |
 | 7 | [Work streams](capabilities/07-work-streams.md) | grouping that is rebuildable and never touches the source of truth | `workstreams` | `GET /v1/work-streams` | `core` |
-| 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 61 routes | `apps/server` |
+| 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 62 routes | `apps/server` |
 | 9 | [MCP server](capabilities/09-mcp.md) | the Model Context Protocol surface and tool selection | — | — | `packages/mcp` |
 
 ## Modules are decoupled in code

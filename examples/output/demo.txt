@@ -7,40 +7,44 @@
 > pnpm --filter @aldus-palace/core build && pnpm --filter @aldus-palace/example-capture-cli start
 
 
-> @aldus-palace/core@0.9.2 build /Users/zhu/R&D/Aldus-Palace/packages/core
+> @aldus-palace/core@0.13.0 build /Users/zhu/R&D/Aldus-Palace/packages/core
 > tsc -p tsconfig.build.json
 
 
-> @aldus-palace/example-capture-cli@0.1.9 start /Users/zhu/R&D/Aldus-Palace/examples/capture-cli
+> @aldus-palace/example-capture-cli@0.1.13 start /Users/zhu/R&D/Aldus-Palace/examples/capture-cli
 > tsx src/index.ts
 
 
 $ input  Ship the onboarding page next week
 Captured · 1 commitment
-  commitment  Ship the onboarding page next week  ·  window 2026-09-19 → 2026-09-26
+  commitment  Ship the onboarding page next week  ·  window 2026-09-20 → 2026-09-27
 
 $ input  I prefer simple tools
 Captured · remembered 1
   memory      Prefers simple products and interfaces; avoids complexity  ·  active
 
 $ input  Fix the notification bug tomorrow
-Captured · 1 commitment
-  commitment  Fix the notification bug tomorrow  ·  window 2026-09-19 → 2026-09-20
+Captured · 1 commitment · 1 question
+  commitment  Fix the notification bug tomorrow
+  question  It's early morning (01:43). What did you mean by "tomorrow"?
+  ! It's early morning (01:43). What did you mean by "tomorrow"?
   ! Used 1 active memories as context
 
 $ input  Fix the notification bug tomorrow
 Captured · 1 commitment
-  commitment  Fix the notification bug tomorrow  ·  window 2026-09-19 → 2026-09-20
+  commitment  Fix the notification bug tomorrow
   ! Already tracked, so this repeat was skipped: Fix the notification bug tomorrow
   ! Used 1 active memories as context
 
 $ input  下周把 onboarding 做完
 已记下 · 1 件要做
-  要做  下周把 onboarding 做完  ·  时间窗 2026-09-19 → 2026-09-26
+  要做  下周把 onboarding 做完  ·  时间窗 2026-09-20 → 2026-09-27
 
 $ input  以后产品不要做太复杂，保持克制
-已记下 · 已记住 1 条
-  记忆      Prefers simple products and interfaces; avoids complexity  ·  已生效
+已记下 · 已记住 1 条 · 待确认 1
+  记忆      喜欢简洁、简单的产品与界面，避免复杂  ·  已生效
+  待确认  这条属于哪种？
+  ! 这条属于哪种？
 
 $ input  今晚先不做评审，改排到周五
 已记下 · 1 件要做

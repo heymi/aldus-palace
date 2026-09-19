@@ -118,7 +118,9 @@ server enforces invariants (object mode, dedupe, relative dates, memory gating).
 | Risk | Examples | Behaviour |
 |---|---|---|
 | Low | organise thoughts, create objects, adjust a flexible plan | the system may act, and logs it |
-| High | external communication, payments, permanent memory, deleting data | requires explicit user confirmation |
+| Medium | a change that is easy to undo | runs, and is recorded as a notification |
+| High | external communication, payments, permanent memory | one explicit approval |
+| Critical | permanent deletion | two approvals |
 
 Every important action must be explainable, reversible where possible, and logged.
 

@@ -23,7 +23,7 @@ The runtime enforces what a prompt cannot:
 | **Object mode exclusivity** | one capture is a thought, a commitment, or genuinely both — never the same thing twice |
 | **Near-duplicate skip** | re-capturing an intention surfaces the existing commitment instead of a copy |
 | **Server-side relative dates** | “next Wednesday” is resolved from the user's timezone, not trusted to the model |
-| **Clarifications** | ambiguous early-morning phrases produce a question, not a guess |
+| **Clarifications** | ambiguous early-morning phrases, and a capture the rules cannot classify (a defect, work, or a note), produce a question, not a guess; the answer is learned for similar sentences (ADR 0012) |
 | **Memory gating** | candidates only, with the reason they were kept or dropped in `warnings[]` |
 | **Graceful fallback** | a failed or malformed model response leaves the deterministic result in place |
 
@@ -47,7 +47,7 @@ while others were filtered.
 | Level | How |
 |---|---|
 | **MCP** | profile `capture` → the `capture` tool |
-| **HTTP** | `POST /v1/inputs` (`mode`: `progressive` \| `sync` \| `local`) |
+| **HTTP** | `POST /v1/inputs` (`mode`: `progressive` \| `sync` \| `local`) · `POST /v1/inputs/:id/reclassify` (`bug` \| `task` \| `note`) |
 | **Library** | `processRawInput(db, llm, user, rawInputId, mode)` |
 
 ## Proof

@@ -47,11 +47,12 @@ packages/core/src
 ├── db/migrate.ts        applySchema / migrate / initialize (forward-only)
 ├── providers/           LLMProvider implementations + config resolution
 ├── lib/                 pure helpers (time, titles, matching, memory filters,
-│                        now score, day plan, memory value, capacity, redaction)
+│                        now score, day plan, memory value, capacity, redaction,
+│                        object ambiguity, classification signals)
 ├── services/            domain services (planning, classification, today, work
 │                        streams, memory lifecycle & evolution, enrichment leases,
 │                        dependencies, work migration, replanning, action gate,
-│                        permissions, privacy gateway, data lifecycle)
+│                        permissions, privacy gateway, data lifecycle, reclassify)
 ├── repos/               thin data access (users, action log)
 └── agent/understand.ts  the Understanding Agent: input → objects → ActionCard
 ```
@@ -103,6 +104,8 @@ as a *proposer*, not an authority:
    - near-duplicate commitments are skipped
    - relative dates (`明天`, “next Friday”) are resolved server-side, and
      ambiguous early-morning phrases produce a clarification instead of a guess
+   - a grey-zone capture (a work signal too weak to act on) asks
+     defect / work / note, and the correction is remembered (ADR 0012)
    - a memory becomes active only through the published gate; below it, and for
      an inferred principle, it waits as a candidate
 4. Write an `action_log` entry for every mutation so behaviour stays explainable.

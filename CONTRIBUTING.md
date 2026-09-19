@@ -20,7 +20,7 @@ pnpm install
 pnpm typecheck       # all packages
 pnpm test            # deterministic suites (offline, no API key)
 pnpm eval            # acceptance fixtures (offline)
-pnpm build           # build @aldus-palace/core to dist/
+pnpm build           # build every package to dist/
 pnpm gen:spec        # regenerate spec/schema.sql after schema edits
 ```
 

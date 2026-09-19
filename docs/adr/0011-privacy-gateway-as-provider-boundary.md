@@ -23,13 +23,15 @@ that can be skipped is a convention, not architecture.
   the MCP backend).
 - **A cloud provider is only built with a guard.** `createLLMProvider(config,
   guard)` refuses a non-`dev` kind without one, and each cloud provider class
-  requires a `guard` at construction and applies it in `complete`. `dev` runs on
-  the device and needs no guard.
+  requires a `guard` at construction and applies it in `complete` (a missing
+  guard throws `PrivacyGuardRequiredError`). `dev` runs on the device and needs
+  no guard.
 - **Only user-role messages are redacted.** The system prompt is instructions and
   is left untouched, so a project name that overlaps a schema word cannot change
   the prompt.
 - **One audit row per call.** The guard writes a single
-  `privacy_gateway_redacted` entry per `complete()`, not one per message.
+  `privacy_gateway_redacted` entry per `complete()`, not one per message —
+  including a pass-through at level 0 and a blocked level 4.
 - **Level 4 refuses.** The guard throws `PrivacyBlockedError` before any content
   is prepared; callers fall back to the deterministic rules.
 - **The level is configuration.** `PRIVACY_LEVEL` (0–4, default 2) is resolved by

@@ -21,7 +21,7 @@ today marked against what does not — is in
 - [x] Local SQLite adapter published as `@aldus-palace/core/db/sqlite`
 - [x] [Technical write-up](docs/PROGRESSIVE-CAPTURE.md) on the enrichment lease
 - [x] `claude mcp add` / Claude Desktop integration documented and smoke-tested
-- [ ] Published to npm with a release pipeline
+- [x] Published to npm with a release pipeline
 - [ ] More acceptance fixtures contributed by users
 
 ## Memory, deepened
@@ -130,8 +130,9 @@ current posture. The privacy architecture takes shape in these pieces:
 
 ## Clients
 
-- [x] **A reference client** — one browser page over the HTTP API: capture, Now,
-  memory with evidence, and the action-approval queue
+- [x] **A reference client** — a macOS-shaped browser app over the HTTP API
+  (Home, Thoughts, Projects, Memory, Decisions, Activity, Input) with a
+  quick-capture sheet; ships in the repo and is not hosted
   (`examples/reference-client`).
 - [ ] A SwiftUI reference client (`clients/` is a placeholder today)
 

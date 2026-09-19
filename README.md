@@ -82,7 +82,7 @@ you write.
 
 | Capability | What it lets you ship |
 |---|---|
-| **Text → typed objects** | A user writes a sentence and the product already has the task, the decision and the preference — dates resolved, duplicates skipped, model failures handled. No form, no classification rules of your own. |
+| **Text → typed objects** | A user writes a sentence and the product already has the task, the decision and the preference — dates resolved, duplicates skipped, model failures handled. When the rules are unsure, it asks instead of guessing. No form, no classification rules of your own. |
 | **A memory layer** | An assistant that remembers a person over time, where every memory explains itself, can be corrected and can be undone — no "personality from one remark". |
 | **A planning engine** | A "what now" answer instead of a wall of red items: work ordered by dependency, a daily buffer, and slipped work that moves itself. |
 | **Local first + background enrichment** | Instant feedback, then the model catches up; retries, concurrency and crashes never lose or duplicate data. |
@@ -97,7 +97,7 @@ you write.
 | "My assistant invented a preference and I cannot delete it." | The gate waits for your confirmation, every memory shows its evidence, and any of them can be archived. |
 | "Twelve red items and I freeze." | One scored "now", missed dates as risks instead of failures, and a quarter of the day left free. |
 | "We must show how an AI-written record came to be." | Every change writes an action log with a reason; memories keep their evidence and versions. |
-| "A risky action needs a human in the loop." | The Action Gate grades every agent action; high risk waits for one approval, critical for two, and the log is revocable. |
+| "A risky action needs a human in the loop." | The Action Gate grades every proposed agent action; high risk waits for one approval, critical (permanent deletion) for two, and the log is revocable. |
 | "Sensitive data cannot go to a model as-is." | The Privacy Gateway redacts by data level; level 4 stays local, permissions are scopes, Memory is private by default. |
 
 ## Sentences it understands
@@ -113,6 +113,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | 下周把 onboarding 做完 | 要做 · 时间窗 2026-09-19 → 2026-09-26 |
 | 以后产品不要做太复杂，保持克制 | 记忆 · 已生效，因为你亲口说了 |
 | 今晚先不做评审，改排到周五 | 要做 · 截止 2026-09-25 |
+| The search box does not work | question · defect / work / note; the answer becomes the fix |
 
 ## How this compares
 
@@ -298,7 +299,7 @@ personality from one remark. Replace the old record and the history disappears.
 |---|---|---|
 | Schema & domain | `overdue` has no state to occupy; a deadline, a window and a slot are three fields | `db/schema.ts` |
 | Providers | a deterministic provider shares the interface with the paid ones, so agent logic runs in CI | `providers/dev.ts` |
-| Understanding | the model proposes; the server decides (mode, duplicates, dates, fallback) | `agent/understand.ts` |
+| Understanding | the model proposes; the server decides (mode, duplicates, dates, fallback), and a grey-zone sentence asks instead of guessing | `agent/understand.ts`, `lib/objectAmbiguity.ts` |
 | Progressive capture | a lease and a generation id make "local first, model second" idempotent | `services/enrichmentLease.ts` |
 | Memory | a confident memory takes effect, explains itself, and versions instead of deleting | `lib/memoryActivation.ts`, `services/memoryEvolution.ts` |
 | Today & planning | a day with no plan gets suggestions; a full day gets a rest suggestion; a quarter of the day stays free, slipped flexible work moves forward, a blocked commitment is never scheduled, and Now is scored rather than first-in-line | `services/today.ts`, `services/workMigration.ts`, `services/dependencies.ts`, `lib/nowScore.ts` |

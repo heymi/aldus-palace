@@ -17,6 +17,6 @@ Translations are not maintained.
 | Priority | Source |
 |---|---|
 | 1 | `packages/core/src/db/schema.ts` + `spec/schema.sql` |
-| 2 | `docs/ARCHITECTURE.md`, `docs/DOMAIN-SCHEMA.md`, `docs/CAPABILITIES.md` |
+| 2 | `docs/ARCHITECTURE.md`, `docs/DOMAIN-SCHEMA.md` (the capability map is `docs/CAPABILITIES.md`) |
 | 3 | `eval/fixtures/*.json` — behaviour the product promises |
 | 4 | `docs/adr/*` — decisions already made |

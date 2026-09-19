@@ -107,6 +107,6 @@ const invalid = await app.request(`/v1/inputs/${noteBody.id}/reclassify`, {
   headers,
   body: JSON.stringify({ mode: "maybe" }),
 });
-assert(invalid.status >= 400, "an unknown mode is refused");
+assert(invalid.status === 400, `an unknown mode is refused with 400, got ${invalid.status}`);
 
 finish("reclassify API test passed.");

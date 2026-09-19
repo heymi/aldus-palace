@@ -36,10 +36,13 @@ No API key is required: `LLM_PROVIDER=dev` runs the deterministic rule engine
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/health` | public |
-| GET | `/v1/me` | user |
+| GET/PATCH | `/v1/me` | user; `PATCH { language }` sets what the runtime writes in |
 | POST | `/v1/inputs` | `{ content, source?, process?, mode? }`; `mode` is `progressive` \| `sync` \| `local` |
 | POST | `/v1/inputs/:id/enrich` | AI pass that replaces local derivatives |
 | POST | `/v1/inputs/:id/process` | retry processing |
+| POST | `/v1/inputs/:id/reclassify` | `{ mode: bug \| task \| note }`; corrects the record and learns the words |
+| POST | `/v1/clarifications/:id/resolve` | answer a pending question |
+| POST | `/v1/me/purge` | propose a critical deletion; two approvals run it |
 | GET | `/v1/inputs/:id` | raw input + linked objects |
 | GET | `/v1/thoughts`, `/v1/commitments`, `/v1/memories`, `/v1/concepts` | lists |
 | GET | `/v1/work-streams` | grouped, rebuildable projection over commitments |

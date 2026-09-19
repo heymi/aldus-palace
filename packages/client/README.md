@@ -26,8 +26,9 @@ const preview = await aldus.redact("Discuss Orvia funding with Zhang", 2, ["Zhan
 
 ## What it covers
 
-Account and permissions (`me`, `permissions`, `grantScope`, `revokeScope`,
-`redact`, `purge`), capture (`capture`, `input`, `enrich`), planning (`today`,
+Account and permissions (`me`, `updateMe`, `permissions`, `grantScope`,
+`revokeScope`, `redact`, `purge`), capture (`capture`, `input`, `enrich`,
+`processInput`, `reclassifyInput`, `resolveClarification`), planning (`today`,
 `planToday`, `migrate`, `commitments`, `completeCommitment`, `arrangeToday`,
 `removeFromToday`, `dependencies`, `workStreams`), memory (`memories`,
 `confirmMemory`, `rejectMemory`, `memoryVersions`), the Action Gate (`actions`,

@@ -46,7 +46,7 @@ what happens next, what the system may do on its own, and which model is used.
 |---|---|---|---|
 | **Memory** | understand a person over years, not store a chat log | extraction, pollution gate, activation rule, evidence, dedupe, conflict, versioning, FTS5 retrieval, graded levels, decay, value score | more kinds and signals |
 | **Planning** | keep what matters happening while the environment changes | four kinds of time, priority scoring, slot search, Today, risk, adaptive limits, feedback model, constraints, duration estimate, scored Now, morning plan, buffer, migration | blended priority, rhythm-aware Now, schedule optimization |
-| **Trust & autonomy** | widen what the system may do on its own, safely | the risk table, autonomy levels, trust score, permission evolution, durable execution | a level per call |
+| **Trust & autonomy** | widen what the system may do on its own, safely | the risk table, autonomy levels, trust score, permission evolution, durable execution | proactive rules |
 | **Model orchestration** | use the right model for each job | one provider interface, three implementations, the privacy guard at the boundary | routing by task |
 
 ---
