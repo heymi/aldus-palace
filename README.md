@@ -131,6 +131,50 @@ exports, 7 MCP tools, 5 runnable examples. **Requirements:** Node 20 or newer.
 `better-sqlite3` ships prebuilds for common platforms; other platforms need a C
 toolchain.
 
+## The system behind it
+
+The runtime runs as four engines. A model can contribute to understanding and to
+conflict detection, and each engine has a path that runs without one.
+
+```
+user / environment
+      |
+input          raw text, stored as written
+      |
+understanding  intent, typed objects, resolved dates, gates
+      |
+memory         candidates, evidence, confirmation, conflicts, versions
+      |
+planning       four kinds of time, today, risk, adaptive limits
+      |
+context        active memories and projects feed the next capture
+```
+
+| Engine | Its job | Where it lives |
+|---|---|---|
+| **Understanding** | reads a sentence, decides the object mode, resolves dates, skips duplicates, falls back when a model fails | `agent/understand.ts` |
+| **Memory** | proposes candidates, filters noise, detects contradictions, versions beliefs, retrieves context | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` |
+| **Planning** | holds four kinds of time apart, assembles Today, flags risk, adapts the daily limit | `services/today.ts`, `planToday.ts`, `adaptivePlanning.ts` |
+| **Model** | one provider interface, three implementations, configuration resolved by the caller | `providers/` |
+
+### The memory pipeline
+
+```
+capture -> extraction -> candidate -> evaluation -> conflict check -> storage -> activation -> retrieval
+```
+
+- **Extraction** reads two signals: durability markers ("from now on", "as a rule") and repeated behaviour. Rules run with no model; a model adds general understanding.
+- **Evaluation** drops what should not be remembered: a temporary state, a one-off creative fragment, a low-confidence guess.
+- **Activation** follows one published rule: `confidence >= 0.8` and `importance >= 0.8`. Everything below that waits as a candidate.
+- **Conflict check** compares a candidate against active memories on the same dimension and reports the contradiction instead of storing both.
+- **Retrieval** injects active memories into the next capture, so understanding improves with use. Each injection lands in the action log.
+
+### Three rules that keep memory honest
+
+1. **A mood does not become a profile entry.** "I'm tired today" is dropped before storage.
+2. **One inference does not make a principle.** A principle the system inferred waits for confirmation, whatever its score.
+3. **Every memory carries evidence.** The sentence it came from, a confidence value, and a note that says whether you stated it or the system inferred it.
+
 ## Where the difficulty lives
 
 **Models return text. Code needs records.** A model writes `"0.8"` where you

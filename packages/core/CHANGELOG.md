@@ -1,5 +1,15 @@
 # @aldus-palace/core
 
+## 0.5.3
+
+### Patch Changes
+
+- README: add "The system behind it" — the four engines, the memory pipeline and
+  the three rules that keep memory honest. Every line describes shipped behaviour;
+  the parts of the design that are not built yet (graded memory levels, decay, the
+  value score, trust and autonomy, model orchestration) moved to ROADMAP.md with a
+  note on what exists today.
+
 ## 0.5.2
 
 ### Patch Changes
