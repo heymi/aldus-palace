@@ -1,5 +1,11 @@
 # @aldus-palace/client
 
+## 0.2.2
+
+### Patch Changes
+
+- 41ec277: Add `reclassifyInput(id, mode)` for `POST /v1/inputs/:id/reclassify`.
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/example-understanding-only",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "private": true,
   "description": "The Understanding Agent on its own: free text -> structured objects, with all the gates.",
   "license": "Apache-2.0",
