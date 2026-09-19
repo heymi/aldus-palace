@@ -149,4 +149,44 @@ assert(
   `a past date in a past clause is kept, got ${String(pastClause!.deadline)}`
 );
 
+// A window phrase fills a deadline with the window end, not its start.
+const nextWeek = await store("Ship the onboarding page next week", {
+  object_mode: "commitment",
+  commitments: [{ title: "Ship the onboarding page", deadline: "next week" }],
+});
+assert(
+  getLocalParts("UTC", new Date(String(nextWeek!.deadline))).dateKey ===
+    addDaysToDateKey(today, 7),
+  `a "next week" deadline is the end of the window, got ${String(nextWeek!.deadline)}`
+);
+
+// "next month" resolves, and the weekday table is not Friday-only.
+const [ty, tm] = today.split("-").map(Number);
+const nextMonthPrefix =
+  tm === 12 ? `${ty + 1}-01` : `${ty}-${String(tm + 1).padStart(2, "0")}`;
+const nextMonth = await store(
+  "交报告",
+  {
+    object_mode: "commitment",
+    commitments: [{ title: "交报告", deadline: "下个月" }],
+  },
+  "Asia/Shanghai",
+  "交报告"
+);
+assert(
+  getLocalParts("Asia/Shanghai", new Date(String(nextMonth!.deadline))).dateKey.startsWith(
+    nextMonthPrefix
+  ),
+  `"下个月" resolves into next month, got ${String(nextMonth!.deadline)}`
+);
+
+const monday = await store("Follow up with legal on Monday", {
+  object_mode: "commitment",
+  commitments: [{ title: "Follow up with legal", deadline: "Monday" }],
+});
+assert(
+  new Date(String(monday!.deadline)).getUTCDay() === 1,
+  `Monday resolves to a Monday, got ${String(monday!.deadline)}`
+);
+
 finish("model date normalization tests passed.");
