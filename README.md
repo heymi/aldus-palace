@@ -62,7 +62,7 @@ you write.
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
 | **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 15 suites and 11 fixtures replay each run |
 
-## Designed scope
+## Current scope
 
 - **One user.** One person, one database, one bearer token. Run one instance per
   person.
@@ -156,30 +156,14 @@ planning       four kinds of time, today, risk, adaptive limits
 context        active memories and projects feed the next capture
 ```
 
-| Engine | Its job | Where it lives |
+| Engine | Shipped today | Designed next |
 |---|---|---|
-| **Memory** | proposes candidates, filters noise, detects contradictions, versions beliefs, retrieves context | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` |
-| **Planning** | holds four kinds of time apart, assembles Today, flags risk, adapts the daily limit | `services/today.ts`, `planToday.ts`, `adaptivePlanning.ts` |
-| **Trust & autonomy** | decides what the system may do without asking, and widens that as trust is earned | designed — [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md) |
-| **Model orchestration** | one provider interface, three implementations, configuration resolved by the caller | `providers/` |
+| **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, retrieval into the next capture | graded levels, decay by kind, the value score, more kinds and extraction signals, a memory graph |
+| **Planning** | four kinds of time, concrete constraint handling (deadline, window, learned project preference), priority scoring, slot search that avoids conflicts, Today, risk, adaptive limits, a learned behaviour model, light triage | richer constraints, a blended priority score, duration estimation, schedule optimization with context-switch cost, buffer, migration |
+| **Trust & autonomy** | one fixed rule — a capture lands on its own, a stated principle takes effect, the rest waits | an action risk model, autonomy levels 0–4, a trust score, permission evolution |
+| **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
-### Memory Intelligence Engine
-
-*Understand a person over years, not store a chat log.*
-
-**Shipped today** — extraction reads durability markers ("from now on", "as a
-rule") and repeated behaviour; evaluation drops a temporary state, a one-off
-creative fragment and a low-confidence guess; activation follows one published
-rule (`confidence >= 0.8` and `importance >= 0.8`); every row carries the
-evidence it came from; duplicates collapse; contradictions surface; a replaced
-belief is `superseded`, never deleted; active memories are injected into the next
-capture and every injection is logged. Five kinds ship.
-
-**Designed next** — a graded model (raw experience → observation → preference →
-principle → identity), decay by kind, the full value score (explicitness +
-frequency + impact + scope + future relevance), more kinds (goal, relationship,
-knowledge, habit, episode), the impact and scope extraction signals, and a memory
-graph with retrieval ranking.
+The code lives in `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts`, `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts` and `providers/`. The full design, with each engine's shipped and planned parts in depth, is in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
 
 ### The memory pipeline
 
@@ -198,57 +182,6 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 1. **A mood does not become a profile entry.** "I'm tired today" is dropped before storage.
 2. **One inference does not make a principle.** A principle the system inferred waits for confirmation, whatever its score.
 3. **Every memory carries evidence.** The sentence it came from, a confidence value, and a note that says whether you stated it or the system inferred it.
-
-### Planning Intelligence Engine
-
-*Turn understanding into things happening — when and in what order work occurs in
-the real world, without a pretty calendar to maintain.*
-
-**Shipped today** — planning works on Commitments and reads the calendar and a
-learned behaviour model. Four kinds of time stay apart (deadline, availability
-window, suggested slot, unscheduled; there is no `overdue`), and constraints are
-honoured concretely: a deadline sets the hard boundary and risk tiers, a window
-bounds eligibility, a project preference is learned. Priority scoring combines
-risk, deadline proximity, recent-project continuity, importance and learned
-preferences. `findSlot` generates real candidate windows and takes the next free
-one, which is how a scheduling conflict is avoided; scheduling writes the slot
-with a reason. Execution is monitored as feedback episodes, and a reconcile pass
-replans, triggered by the plan endpoint or a new commitment arranged for today. A
-day gets Now, timeline, risks, unscheduled, adaptive limits (5, or 10) with stall
-detection and a rest suggestion, and a light triage that prefers concrete bugs
-and small work. `today.ts` · `planToday.ts` · `adaptivePlanning.ts`
-
-**Designed next** — the full pipeline (constraint analysis → priority → time
-windows → schedule optimization → conflict resolution → replanning); a constraint
-model (hard, soft, preference, dependency); a dynamic priority score (impact ×
-urgency × dependency × goal alignment × risk); duration estimation from history;
-schedule optimization with an explicit context-switch cost; a morning core /
-optional / deferred plan; Now as the best current action (priority × available
-time × energy match × context match); replanning triggers; a daily buffer that
-keeps part of the day free; and task migration (flexible, unstarted work can move
-forward, and repeated deferrals surface for a decision).
-
-### Trust & Autonomy Engine
-
-*Widen what the system may do on its own, safely.*
-
-**Shipped today** — one fixed rule: a capture lands on its own, a principle the
-user states takes effect, and everything else waits for the user.
-
-**Designed next** — an action risk model, autonomy levels 0–4, a trust score
-accumulated from outcomes, and permission evolution.
-
-### Model Orchestration Engine
-
-*Use the right model for each job, instead of one model for every call.*
-
-**Shipped today** — one `LLMProvider` interface and three implementations (dev,
-OpenAI-compatible, Anthropic); configuration is resolved by the caller.
-`providers/`
-
-**Designed next** — routing by task: a fast model for classification, a reasoning
-model for planning and conflict, embeddings for memory retrieval, and a local
-model for sensitive input.
 
 ### Privacy is the architecture
 
@@ -287,43 +220,21 @@ repeats. The runtime ships a deterministic provider, so the pipeline runs offlin
 
 ## What the code enforces
 
-**`overdue` has no state to occupy.** A deadline, an availability window and an
-AI-suggested slot live in three fields. A missed date becomes a risk you can move.
-`packages/core/src/db/schema.ts`
+| Capability | The point | Where |
+|---|---|---|
+| Schema & domain | `overdue` has no state to occupy; a deadline, a window and a slot are three fields | `db/schema.ts` |
+| Providers | a deterministic provider shares the interface with the paid ones, so agent logic runs in CI | `providers/dev.ts` |
+| Understanding | the model proposes; the server decides (mode, duplicates, dates, fallback) | `agent/understand.ts` |
+| Progressive capture | a lease and a generation id make "local first, model second" idempotent | `services/enrichmentLease.ts` |
+| Memory | a confident memory takes effect, explains itself, and versions instead of deleting | `lib/memoryActivation.ts`, `services/memoryEvolution.ts` |
+| Today & planning | a day with no plan gets suggestions; a full day gets a rest suggestion | `services/today.ts` |
+| Work streams | grouping is a rebuildable projection; the records stay as they are | `services/workStreams.ts` |
+| HTTP API | one schema, two runtimes: a local SQLite file and a Cloudflare Durable Object | `apps/server` |
+| MCP server | runs with no server process, against the same local file | `packages/mcp` |
 
-**Memory explains itself.** A rule you state takes effect on capture. An
-inference waits for confirmation. Every row carries the evidence and a note that
-says which. `lib/memoryActivation.ts`
-
-**Beliefs carry versions.** State the opposite of a confirmed belief and the
-system flags the conflict. The replacement marks the old belief `superseded`,
-with a reason, and keeps it readable. `services/memoryEvolution.ts`
-
-**Your sentence stays untouched.** Models fill derived fields. Every write passes
-server gates: one object mode per capture, near-duplicates skipped, relative dates
-resolved on the server. `agent/understand.ts`
-
-**Background work survives retries.** Local rules produce a result. The model
-replaces it under a lease, so two clients, a retry and a dead worker leave the
-record intact. `services/enrichmentLease.ts`
-
-**The pipeline runs offline.** A deterministic provider implements the same
-interface as the model-backed ones. 15 test suites and 8 acceptance fixtures run
-with no key. `providers/dev.ts`
-
-## The one point each capability carries
-
-| Capability | The point |
-|---|---|
-| Schema & domain | A product stance lives in the constraints: `overdue` has no state to occupy |
-| Providers | A deterministic provider shares the interface with the paid ones, so agent logic runs in CI |
-| Understanding | The model proposes; the server decides (mode, duplicates, dates, fallback) |
-| Progressive capture | A lease and a generation id make "local first, model second" idempotent |
-| Memory | A confident memory takes effect on capture, explains itself, and archives on request |
-| Today & planning | A day with no plan gets suggestions; a full day gets a rest suggestion |
-| Work streams | Grouping is a projection. A rebuild leaves the records as they are |
-| HTTP API | One schema, two runtimes: a local SQLite file and a Cloudflare Durable Object |
-| MCP server | Runs with no server process, against the same local file |
+The pipeline runs offline: a deterministic provider implements the same interface
+as the model-backed ones, so 15 test suites and 11 acceptance fixtures replay
+with no key.
 
 ## See it run
 
@@ -332,7 +243,7 @@ git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
 pnpm test     # 15 suites — deterministic, offline, no API key
-pnpm eval     # 8 acceptance fixtures — the behaviour this project promises
+pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
 pnpm --filter @aldus-palace/example-memory-gate-only start
