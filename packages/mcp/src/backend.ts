@@ -12,6 +12,7 @@ import {
   buildToday,
   createLLMProvider,
   ensureDevUser,
+  getAutonomyState,
   listCommitments,
   rejectMemory as rejectMemoryRow,
   listActionProposals,
@@ -65,6 +66,8 @@ export interface Backend {
   rejectMemory(memoryId: string): Promise<unknown>;
   /** The Action Gate queue. */
   listActions(status?: ActionStatus | "all"): Promise<unknown>;
+  /** The trust score and autonomy level derived from decided actions. */
+  autonomy(): Promise<unknown>;
   decideAction(
     proposalId: string,
     decision: "approve" | "reject",
@@ -200,6 +203,10 @@ export class LocalBackend implements Backend {
     return await listActionProposals(this.db, this.user.id, status ?? "all");
   }
 
+  async autonomy(): Promise<unknown> {
+    return await getAutonomyState(this.db, this.user.id);
+  }
+
   async decideAction(
     proposalId: string,
     decision: "approve" | "reject",
@@ -325,6 +332,10 @@ export class HttpBackend implements Backend {
   async listActions(status?: ActionStatus | "all"): Promise<unknown> {
     const query = status && status !== "all" ? `?status=${status}` : "";
     return this.request(`/v1/actions${query}`);
+  }
+
+  async autonomy(): Promise<unknown> {
+    return this.request("/v1/autonomy");
   }
 
   async decideAction(

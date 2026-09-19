@@ -295,8 +295,17 @@ assert(
   textOf(actions).startsWith("Actions ·"),
   `the action card leads with the queue: ${textOf(actions)}`
 );
-const actionItems = structuredOf(actions) as { items: unknown[] };
+const actionItems = structuredOf(actions) as {
+  items: unknown[];
+  autonomy: { level: number; score: number; samples: number };
+};
 assert(actionItems.items.length === 0, "no action waits by default");
+assert(actionItems.autonomy.level === 0, "no decisions means autonomy level 0");
+assert(actionItems.autonomy.samples === 0, "no decisions are counted yet");
+assert(
+  textOf(actions).includes("Trust 0.50 · level 0"),
+  `the card carries the trust footer: ${textOf(actions)}`
+);
 
 const decideMissing = await client.callTool({
   name: "decide_action",

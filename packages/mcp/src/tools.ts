@@ -6,6 +6,7 @@ import {
   formatTodayText,
   type ActionCard,
   type ActionProposalView,
+  type AutonomyView,
   type TodayViewLike,
 } from "@aldus-palace/core";
 import type { Backend } from "./backend.js";
@@ -374,13 +375,18 @@ export function registerTools(
         },
         outputSchema: {
           items: z.array(z.record(z.string(), z.unknown())),
+          autonomy: z.record(z.string(), z.unknown()),
         },
       },
       async ({ status }) => {
         try {
-          const items = (await backend.listActions(status)) as ActionProposalView[];
-          return card(formatActionProposals(items, backend.locale), {
+          const [items, autonomy] = await Promise.all([
+            backend.listActions(status) as Promise<ActionProposalView[]>,
+            backend.autonomy() as Promise<AutonomyView>,
+          ]);
+          return card(formatActionProposals(items, backend.locale, autonomy), {
             items: items as unknown[],
+            autonomy: autonomy as unknown as Record<string, unknown>,
           });
         } catch (error) {
           return failure(error);
