@@ -141,8 +141,9 @@ export async function prepareCloudPayload(
  * Build the guard a cloud provider calls before it sends anything.
  *
  * Only user-role messages carry the user's words and context, so the system
- * prompt is left untouched. One audit row is written per provider call, not per
- * message. Level 4 throws before any content is prepared.
+ * prompt is left untouched (ADR 0011). One audit row is written per provider
+ * call, not per message, for every outcome including a blocked level 4; the
+ * call throws before any content leaves.
  */
 export function createMessageGuard(
   db: SqlDatabase,
@@ -151,9 +152,33 @@ export function createMessageGuard(
 ): MessageGuard {
   const level = options.level ?? DEFAULT_PRIVACY_LEVEL;
 
+  // One row per call, whatever the outcome: clean, redacted or blocked. A call
+  // that never happened leaves no row, because the guard is never entered.
+  const writeGuardLog = async (reason: string, kinds: string[]) => {
+    await writeActionLog(db, {
+      user_id: userId,
+      actor: "agent",
+      action_type: "privacy_gateway_redacted",
+      summary: actionSummary(
+        "privacy_gateway_redacted",
+        { level, kinds: kinds.join(",") },
+        options.locale ?? "en"
+      ),
+      reason,
+      entity_type: "privacy_gateway",
+      payload: { level, redactions: kinds },
+    });
+  };
+
   return async (messages: ChatMessage[]) => {
-    if (level >= 4) throw new PrivacyBlockedError("level_4_stays_local");
-    if (level === 0) return messages;
+    if (level >= 4) {
+      await writeGuardLog("blocked_level_4", []);
+      throw new PrivacyBlockedError("level_4_stays_local");
+    }
+    if (level === 0) {
+      await writeGuardLog("clean", []);
+      return messages;
+    }
 
     const organizations = await loadOrganizations(db, userId);
     const contacts = options.contacts ?? [];
@@ -174,20 +199,7 @@ export function createMessageGuard(
     }
 
     const kinds = [...redactions];
-    await writeActionLog(db, {
-      user_id: userId,
-      actor: "agent",
-      action_type: "privacy_gateway_redacted",
-      summary: actionSummary(
-        "privacy_gateway_redacted",
-        { level, kinds: kinds.join(",") },
-        options.locale ?? "en"
-      ),
-      reason: kinds.length ? "redacted" : "clean",
-      entity_type: "privacy_gateway",
-      payload: { level, redactions: kinds },
-    });
-
+    await writeGuardLog(kinds.length ? "redacted" : "clean", kinds);
     return safe;
   };
 }
