@@ -82,8 +82,9 @@ both runtimes, and vector search is not portable.
 - [x] **An FTS5 retriever** — `lib/retriever.ts` keeps `memory_search` in step
   with a segmented `memories.search_text`, backfills on first search, and is
   wired into context retrieval.
-- [ ] **Ranking and measurement** — blend `bm25` with the value score, and add
-  `Recall@K` to the benchmarks.
+- [x] **Ranking and measurement** — bm25 ranks, the value score re-ranks, and
+  `pnpm bench:retrieval` reports Recall@K and MRR on a labeled corpus
+  (`docs/BENCHMARKS.md`).
 - [ ] **Optional embeddings** — a second `Retriever` behind the port, opt-in,
   with no change to the default behaviour.
 

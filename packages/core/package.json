@@ -71,7 +71,8 @@
     "test": "tsx test/run-tests.ts",
     "eval": "tsx test/run-fixtures.ts",
     "bench": "tsx bench/run.ts",
-    "bench:llm": "tsx bench/llm/run.ts"
+    "bench:llm": "tsx bench/llm/run.ts",
+    "bench:retrieval": "tsx bench/retrieval/run.ts"
   },
   "dependencies": {
     "dayjs": "^1.11.20",

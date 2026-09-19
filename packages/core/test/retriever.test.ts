@@ -27,9 +27,17 @@ assert(
   `CJK is split into characters, got ${segmentForSearch("保持克制")}`
 );
 assert(segmentForSearch("simple  tools") === "simple tools", "spacing is collapsed");
-assert(toMatchQuery("克制") === '"克 制"', "a CJK query is a character phrase");
-assert(toMatchQuery("simple tools") === "simple* AND tools*", "a Latin query is prefix terms");
-assert(toMatchQuery('say "hi"') === "say* AND hi*", "quotes are stripped");
+assert(toMatchQuery("克制") === '"克 制"', "a CJK query word is a character phrase");
+assert(
+  toMatchQuery("克制 复杂") === '"克 制" OR "复 杂"',
+  "each CJK word is its own phrase"
+);
+assert(toMatchQuery("simple tools") === "simple* OR tools*", "Latin words are prefix terms");
+assert(
+  toMatchQuery("Mac-only") === "mac* OR only*",
+  "a hyphen breaks into terms, so FTS5 does not read a column"
+);
+assert(toMatchQuery('say "hi"') === "say* OR hi*", "quotes are stripped");
 
 // --- the retriever over the real schema -------------------------------------
 
@@ -105,6 +113,18 @@ const ranked = await retrieveMemoryIds(db, "u1", "simple");
 assert(
   ranked.indexOf("m-twice") < ranked.indexOf("m-once"),
   `bm25 ranks the stronger match first, got ${JSON.stringify(ranked)}`
+);
+
+// A hyphenated query must not become FTS5 column syntax.
+await addMemory("m-mac", "Keep the product Mac-only and skip Windows");
+await ensureMemoryIndex(db, "u1");
+assert(
+  (await retrieveMemoryIds(db, "u1", "Mac-only")).includes("m-mac"),
+  "a hyphenated query matches"
+);
+assert(
+  (await retrieveMemoryIds(db, "u1", "Windows")).includes("m-mac"),
+  "a second term matches"
 );
 
 finish("retriever tests passed.");

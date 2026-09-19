@@ -59,8 +59,9 @@ query ──► Retriever port
    (`ensureMemoryIndex`), and answers with ranked ids (`retrieveMemoryIds`), and
    `retrieveActiveMemoriesForContext` uses it before the keyword fallback.
    `lib/search.ts` segments CJK. Locked by `packages/core/test/retriever.test.ts`.
-2. **Ranking and measurement.** Blend `bm25` with `memoryRetrievalScore`, and add
-   `Recall@K` to the rule benchmark and the LLM benchmark.
+2. **Ranking and measurement — shipped.** `bm25` ranks, `memoryRetrievalScore`
+   re-ranks, and `pnpm bench:retrieval` reports Recall@K and MRR (1.000 on the
+   labeled corpus; `docs/BENCHMARKS.md`).
 3. **Optional embeddings.** A second `Retriever` behind the port, opt-in, with no
    change to the default behaviour.
 

@@ -460,6 +460,7 @@ If you cannot run the repository, the real output is committed:
 | An approved action runs once, and deletion runs through the gate | `packages/core/test/actionGate.test.ts`, `apps/server/test/actionGate.test.ts` | the executor runs once; purge proposes and approval deletes |
 | A live model's dates are resolved on the server | `packages/core/test/modelDateNormalization.test.ts` | free text becomes ISO; a past date for a future phrase is dropped |
 | Memory retrieval is full-text, and CJK works | `packages/core/test/retriever.test.ts` | FTS5 with bm25; a Chinese substring is found |
+| Retrieval quality is measured | `pnpm bench:retrieval` | Recall@1/3/5 and MRR on a labeled corpus |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
 | Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
@@ -1601,8 +1602,9 @@ query ──► Retriever port
    (`ensureMemoryIndex`), and answers with ranked ids (`retrieveMemoryIds`), and
    `retrieveActiveMemoriesForContext` uses it before the keyword fallback.
    `lib/search.ts` segments CJK. Locked by `packages/core/test/retriever.test.ts`.
-2. **Ranking and measurement.** Blend `bm25` with `memoryRetrievalScore`, and add
-   `Recall@K` to the rule benchmark and the LLM benchmark.
+2. **Ranking and measurement — shipped.** `bm25` ranks, `memoryRetrievalScore`
+   re-ranks, and `pnpm bench:retrieval` reports Recall@K and MRR (1.000 on the
+   labeled corpus; `docs/BENCHMARKS.md`).
 3. **Optional embeddings.** A second `Retriever` behind the port, opt-in, with no
    change to the default behaviour.
 
@@ -1639,6 +1641,21 @@ A case that fails exits non-zero, so a rule regression fails `pnpm verify`.
 
 Add an entry to the matching corpus in `packages/core/bench/run.ts`. Each case is
 a promise that must hold; a regression is a red run.
+
+## Retrieval
+
+`pnpm bench:retrieval` runs a labeled corpus of twelve memories and ten queries
+(English and Chinese) through the FTS5 retriever:
+
+| Metric | Result |
+|---|---|
+| Recall@1 | 1.000 |
+| Recall@3 | 1.000 |
+| Recall@5 | 1.000 |
+| MRR | 1.000 |
+
+The corpus is small and authored alongside the retriever, so treat it as
+regression evidence, not a leaderboard result.
 
 ## Live model
 
@@ -1776,8 +1793,9 @@ both runtimes, and vector search is not portable.
 - [x] **An FTS5 retriever** — `lib/retriever.ts` keeps `memory_search` in step
   with a segmented `memories.search_text`, backfills on first search, and is
   wired into context retrieval.
-- [ ] **Ranking and measurement** — blend `bm25` with the value score, and add
-  `Recall@K` to the benchmarks.
+- [x] **Ranking and measurement** — bm25 ranks, the value score re-ranks, and
+  `pnpm bench:retrieval` reports Recall@K and MRR on a labeled corpus
+  (`docs/BENCHMARKS.md`).
 - [ ] **Optional embeddings** — a second `Retriever` behind the port, opt-in,
   with no change to the default behaviour.
 
