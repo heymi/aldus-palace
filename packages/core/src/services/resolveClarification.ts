@@ -3,6 +3,8 @@ import type { SqlDatabase } from "../db/port.js";
 import { nowIso } from "../db/port.js";
 import { writeActionLog } from "../repos/actionLogs.js";
 import { actionSummary } from "../lib/actionMessages.js";
+import { applyObjectChoice } from "./reclassify.js";
+import type { ObjectChoice } from "../lib/classificationSignals.js";
 
 export async function resolveClarificationByOption(
   db: SqlDatabase,
@@ -28,18 +30,45 @@ export async function resolveClarificationByOption(
   const options = JSON.parse(row.options_json as string) as Array<{
     id: string;
     label: string;
-    window_start: string;
-    window_end: string;
+    window_start?: string;
+    window_end?: string;
   }>;
   const chosen = options.find((o) => o.id === optionId);
   if (!chosen) {
     throw Object.assign(new Error("invalid_option"), { status: 400 });
   }
 
+  // An object-mode answer changes what the input became, and teaches the
+  // classifier; it is not a window.
+  if (row.kind === "object_mode") {
+    const rawInputId = row.raw_input_id as string | null;
+    if (!rawInputId) {
+      throw Object.assign(new Error("not_found_or_resolved"), { status: 404 });
+    }
+    const result = await applyObjectChoice(
+      db,
+      userId,
+      rawInputId,
+      chosen.id as ObjectChoice,
+      { locale, actor: "user" }
+    );
+    await db
+      .prepare(
+        `UPDATE clarifications SET status = 'resolved', chosen_option = ?, resolved_at = ? WHERE id = ?`
+      )
+      .run(optionId, nowIso(), clarificationId);
+    return {
+      ok: true,
+      clarification_id: clarificationId,
+      chosen: { id: chosen.id, label: chosen.label },
+      commitment: result.commitment,
+    };
+  }
+
   const t = nowIso();
   const commitmentId = row.commitment_id as string | null;
 
-  if (commitmentId) {
+  if (commitmentId && chosen.window_start !== undefined) {
     await db.prepare(
       `UPDATE commitments
        SET window_start = ?, window_end = ?, status = 'planned', updated_at = ?

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import {
   actionSummary,
+  applyObjectChoice,
   claimEnrichment,
   getLatestPendingClarification,
   getLocalParts,
@@ -423,6 +424,31 @@ export function createInputsRoutes(deps: AppDeps): Hono<{
       const message = err instanceof Error ? err.message : String(err);
       await recordEnrichmentFailure(db, id, generationId, message);
       return c.json({ id, processing_status: "failed", error: message }, 502);
+    }
+  });
+
+  /**
+   * Correct what an input became. The choice is written to the action log and
+   * remembered as a per-user classification signal.
+   */
+  inputsRoutes.post("/:id/reclassify", async (c) => {
+    const user = await requireUser(c, db);
+    const id = c.req.param("id");
+    const body = z
+      .object({ mode: z.enum(["bug", "task", "note"]) })
+      .parse(await c.req.json().catch(() => ({})));
+    try {
+      const result = await applyObjectChoice(db, user.id, id, body.mode, {
+        locale: localeOf(user.language),
+        actor: "user",
+      });
+      return c.json(result);
+    } catch (error) {
+      const status = (error as { status?: number }).status ?? 400;
+      return c.json(
+        { error: error instanceof Error ? error.message : String(error) },
+        status === 404 ? 404 : 400
+      );
     }
   });
 

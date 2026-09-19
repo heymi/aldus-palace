@@ -1429,7 +1429,8 @@ export function createListRoutes(deps: AppDeps): Hono<{
         db,
         user.id,
         id,
-        body.option_id
+        body.option_id,
+        localeOf(user.language)
       );
       return c.json(result);
     } catch (err) {

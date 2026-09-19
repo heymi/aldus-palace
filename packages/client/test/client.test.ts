@@ -133,6 +133,11 @@ assert(calls[21].url === "http://localhost:8787/v1/me", "me update path");
 assert(calls[21].method === "PATCH", "me update is a PATCH");
 assert((calls[21].body as { language: string }).language === "zh-CN", "the language travels");
 
+await client.reclassifyInput("inp_1", "bug");
+assert(calls[22].url === "http://localhost:8787/v1/inputs/inp_1/reclassify", "reclassify path");
+assert(calls[22].method === "POST", "reclassify is a POST");
+assert((calls[22].body as { mode: string }).mode === "bug", "the mode travels");
+
 // --- errors -----------------------------------------------------------------
 
 const failing = fakeFetch({ status: 404, body: { error: "not_found" } });

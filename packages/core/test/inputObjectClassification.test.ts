@@ -1,4 +1,12 @@
 import { processRawInput } from "../src/agent/understand.js";
+import { shouldAskObjectMode } from "../src/lib/objectAmbiguity.js";
+import {
+  classificationTerms,
+  matchClassificationSignal,
+  rememberClassification,
+} from "../src/lib/classificationSignals.js";
+import { applyObjectChoice } from "../src/services/reclassify.js";
+import { resolveClarificationByOption } from "../src/services/resolveClarification.js";
 import type { LLMProvider } from "../src/providers/types.js";
 import type { SqlDatabase } from "../src/db/port.js";
 import type { User } from "../src/domain/types.js";
@@ -192,6 +200,121 @@ const legacyTask = await process("input-legacy-task", "周五前改完官网首�
 assert(
   legacyTask.thoughts.length === 0 && legacyTask.commitments.length === 1,
   "responses without object_mode must still collapse duplicate task thoughts"
+);
+
+// --- the grey zone asks instead of guessing ---------------------------------
+
+assert(
+  shouldAskObjectMode("分类记忆不生效，没在设置里显示"),
+  "a defect report with a weak work signal is a grey zone"
+);
+assert(
+  !shouldAskObjectMode("最近觉得 AI 产品都太吵了，干扰太多"),
+  "a mood is never a grey-zone question"
+);
+assert(
+  !shouldAskObjectMode("记一下"),
+  "too short to ask"
+);
+
+// End to end: the ambiguous input becomes a pending question, not a thought.
+const greyDb = await makeDb();
+async function captureInto(
+  db: SqlDatabase,
+  id: string,
+  content: string
+) {
+  await db
+    .prepare(
+      `INSERT INTO raw_inputs
+       (id, user_id, content, source, processing_status, created_at, updated_at)
+       VALUES (?, ?, ?, 'text', 'pending', ?, ?)`
+    )
+    .run(id, user.id, content, now, now);
+  return processRawInput(
+    db,
+    new FixedProvider({
+      object_mode: "thought",
+      intent: { has_actionable_work: false, work_titles: [] },
+      thoughts: [{ type: "observation", title: "分类记忆不生效", content }],
+      commitments: [],
+      decisions: [],
+      memory_candidates: [],
+      warnings: [],
+    }),
+    user,
+    id,
+    "full"
+  );
+}
+
+const ambiguous = await captureInto(greyDb, "input-grey", "分类记忆不生效，没在设置里显示");
+assert(ambiguous.commitments.length === 0, "the ambiguous input is still a thought");
+assert(ambiguous.clarifications.length === 1, "it asks one question instead of guessing");
+assert(
+  ambiguous.clarifications[0].kind === "object_mode",
+  `the question is about the object mode, got ${ambiguous.clarifications[0].kind}`
+);
+assert(
+  ambiguous.clarifications[0].options.map((o) => o.id).join(",") === "bug,task,note",
+  "the options are defect, work, note"
+);
+
+const resolved = await resolveClarificationByOption(
+  greyDb,
+  user.id,
+  ambiguous.clarifications[0].id,
+  "bug",
+  "zh-CN"
+);
+assert(resolved.commitment !== null, "answering defect creates the work");
+assert(
+  String(resolved.commitment?.title).startsWith("修复："),
+  `the defect title is labelled, got ${String(resolved.commitment?.title)}`
+);
+const converted = (await greyDb
+  .prepare(`SELECT status FROM thoughts WHERE id = ?`)
+  .get(ambiguous.thoughts[0].id)) as { status: string };
+assert(converted.status === "converted", "the carrying thought is converted");
+
+// The correction is remembered: a similar sentence is classified without asking.
+const similar = await captureInto(greyDb, "input-grey-2", "设置里显示不对，样式也乱了");
+assert(
+  similar.clarifications.length === 0,
+  "the learned signal skips the question"
+);
+assert(
+  similar.commitments.length === 1,
+  `the similar input becomes work from the learned signal, got ${similar.commitments.length}`
+);
+
+// --- reclassify by hand -----------------------------------------------------
+
+const noteInput = await captureInto(greyDb, "input-note", "今天有点乱，信息太多");
+assert(noteInput.clarifications.length === 0, "a mood is stored without a question");
+const promoted = await applyObjectChoice(greyDb, user.id, "input-note", "task", {
+  locale: "zh-CN",
+});
+assert(
+  promoted.commitment !== null && promoted.commitment.status === "captured",
+  "a note can be promoted to work"
+);
+const demoted = await applyObjectChoice(greyDb, user.id, "input-note", "note", {
+  locale: "zh-CN",
+});
+assert(demoted.cancelled_commitments === 1, "correcting back to a note cancels the work");
+
+// Signals are term-based, and one shared word is not enough.
+const terms = classificationTerms("设置里显示不对");
+assert(terms.includes("设置里"), `CJK trigrams are terms, got ${terms.join(",")}`);
+await rememberClassification(greyDb, user.id, "搜索框太小了", "bug");
+assert(
+  (await matchClassificationSignal(greyDb, user.id, "搜索框太小了")) === "bug",
+  "the same words match their signal"
+);
+assert(
+  (await matchClassificationSignal(greyDb, user.id, "记忆很重要")) === null,
+  "a single shared word does not match"
 );
 
 finish("input object classification tests passed.");

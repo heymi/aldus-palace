@@ -251,6 +251,27 @@ const memorySearch: Migration = {
   },
 };
 
+const classificationSignals: Migration = {
+  version: "2026-09-19-classification-signals",
+  async up(db) {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS classification_signals (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id),
+        term TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        hits INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        CHECK (mode IN ('bug', 'task', 'note')),
+        UNIQUE (user_id, term, mode)
+      );
+      CREATE INDEX IF NOT EXISTS idx_classification_signals_user_term
+        ON classification_signals(user_id, term);
+    `);
+  },
+};
+
 export const MIGRATIONS: Migration[] = [
   workClassificationV1,
   progressiveCaptureColumns,
@@ -262,6 +283,7 @@ export const MIGRATIONS: Migration[] = [
   permissionGrants,
   actionExecution,
   memorySearch,
+  classificationSignals,
 ];
 
 /**

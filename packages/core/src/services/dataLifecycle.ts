@@ -32,6 +32,7 @@ export const PURGE_TABLES: Array<{ table: string; where: string }> = [
   { table: "action_logs", where: "user_id = ?" },
   { table: "action_proposals", where: "user_id = ?" },
   { table: "autonomy_settings", where: "user_id = ?" },
+  { table: "classification_signals", where: "user_id = ?" },
   { table: "permission_grants", where: "user_id = ?" },
   { table: "memories", where: "user_id = ?" },
   { table: "concepts", where: "user_id = ?" },

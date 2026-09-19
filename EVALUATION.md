@@ -36,7 +36,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 29 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 30 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -61,6 +61,8 @@ If you cannot run the repository, the real output is committed:
 | Memory retrieval is full-text, and CJK works | `packages/core/test/retriever.test.ts` | FTS5 with bm25; a Chinese substring is found |
 | Retrieval quality is measured | `pnpm bench:retrieval` | Recall@1/3/5 and MRR on a labeled corpus |
 | The system writes in your language | `packages/core/test/language.test.ts` | the deterministic provider follows the input; memory wording follows the user's language |
+| An ambiguous capture asks instead of guessing | `packages/core/test/inputObjectClassification.test.ts`, `apps/server/test/reclassify.test.ts` | a grey-zone input asks defect / work / note; the answer creates the object |
+| A correction is remembered | `packages/core/test/inputObjectClassification.test.ts` | a similar sentence is classified without asking again |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
 | Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |

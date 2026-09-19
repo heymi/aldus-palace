@@ -238,6 +238,24 @@ CREATE VIRTUAL TABLE IF NOT EXISTS memory_search USING fts5(
   tokenize = 'unicode61'
 );
 
+-- What the user taught the classifier: terms from an input they corrected, and
+-- the object mode they chose. Deterministic, per user, applied before any
+-- clarification so the same correction is not asked twice.
+CREATE TABLE IF NOT EXISTS classification_signals (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  term TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  hits INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  CHECK (mode IN ('bug', 'task', 'note')),
+  UNIQUE (user_id, term, mode)
+);
+
+CREATE INDEX IF NOT EXISTS idx_classification_signals_user_term
+  ON classification_signals(user_id, term);
+
 CREATE INDEX IF NOT EXISTS idx_concepts_user_name ON concepts(user_id, normalized_name);
 CREATE INDEX IF NOT EXISTS idx_memory_concepts_concept ON memory_concepts(concept_id);
 

@@ -100,6 +100,13 @@ import {
 } from "../lib/thoughtTitle.js";
 import { missingCommitmentTitles } from "../lib/actionableWork.js";
 import { decideInputObjectMode } from "../lib/inputObjectMode.js";
+import { matchClassificationSignal } from "../lib/classificationSignals.js";
+import {
+  objectModeOptions,
+  objectModeQuestion,
+  shouldAskObjectMode,
+} from "../lib/objectAmbiguity.js";
+import { commitmentTitleFor } from "../services/reclassify.js";
 import {
   matchProjectFromContent,
   suggestNewProjectName,
@@ -429,6 +436,20 @@ export async function clearInputDerivatives(
   await db.prepare(`DELETE FROM memories WHERE source_input_id = ?`).run(rawInputId);
   await db.prepare(`DELETE FROM decisions WHERE source_input_id = ?`).run(rawInputId);
   await db.prepare(`DELETE FROM clarifications WHERE raw_input_id = ?`).run(rawInputId);
+}
+
+/** Pending object-mode question for this input? Enrichment re-runs must not duplicate it. */
+async function hasPendingObjectClarification(
+  db: SqlDatabase,
+  rawInputId: string
+): Promise<boolean> {
+  const row = await db
+    .prepare(
+      `SELECT 1 FROM clarifications
+       WHERE raw_input_id = ? AND kind = 'object_mode' AND status = 'pending'`
+    )
+    .get(rawInputId);
+  return Boolean(row);
 }
 
 export async function processRawInput(
@@ -1072,6 +1093,110 @@ export async function processRawInput(
       options: clar.options.map((o) => ({ id: o.id, label: o.label })),
     });
     warnings.push(clar.prompt);
+  }
+
+  // Grey zone: some work signal, below the bar to act, nothing extracted. Do not
+  // guess a thought — ask once, or apply what the user already taught us.
+  if (
+    objectMode.mode === "thought" &&
+    commitmentsOut.length === 0 &&
+    shouldAskObjectMode(content) &&
+    !(await hasPendingObjectClarification(db, rawInputId))
+  ) {
+    const learned = await matchClassificationSignal(db, user.id, content);
+    if (learned) {
+      await writeActionLog(db, {
+        user_id: user.id,
+        actor: "agent",
+        action_type: "input_reclassified",
+        summary: actionSummary("input_reclassified", { choice: learned }, locale),
+        reason: "classification_signal",
+        entity_type: "raw_input",
+        entity_id: rawInputId,
+        payload: { choice: learned, via: "signal" },
+      });
+    }
+    if (learned === "bug" || learned === "task") {
+      const id = newId("cmt");
+      const title = commitmentTitleFor(content, learned, locale);
+      insertCommitment.run(
+        id,
+        user.id,
+        title,
+        null,
+        content.trim(),
+        null,
+        "captured",
+        null,
+        null,
+        null,
+        60,
+        null,
+        null,
+        rawInputId,
+        t0,
+        t0
+      );
+      commitmentsOut.push({
+        id,
+        title,
+        goal: null,
+        optimized_content: content.trim(),
+        status: "captured",
+        deadline: null,
+        window_start: null,
+        window_end: null,
+        project_id: null,
+        source_input_id: rawInputId,
+      });
+      if (primaryThoughtId) {
+        await db
+          .prepare(
+            `UPDATE thoughts SET status = 'converted', updated_at = ?
+             WHERE id = ? AND user_id = ? AND status != 'archived'`
+          )
+          .run(t0, primaryThoughtId, user.id);
+      }
+      await writeActionLog(db, {
+        user_id: user.id,
+        actor: "agent",
+        action_type: "commitment_created",
+        summary: actionSummary("commitment_created", { title }, locale),
+        entity_type: "commitment",
+        entity_id: id,
+        payload: { title, via: "classification_signal", choice: learned },
+      });
+    } else if (learned !== "note") {
+      const options = objectModeOptions(locale);
+      const prompt = objectModeQuestion(locale);
+      const clarId = newId("clr");
+      await db
+        .prepare(
+          `INSERT INTO clarifications
+           (id, user_id, raw_input_id, commitment_id, kind, token, prompt, options_json, status, created_at)
+           VALUES (?, ?, ?, NULL, 'object_mode', NULL, ?, ?, 'pending', ?)`
+        )
+        .run(clarId, user.id, rawInputId, prompt, JSON.stringify(options), t0);
+      clarificationsOut.push({
+        id: clarId,
+        kind: "object_mode",
+        token: null,
+        prompt,
+        commitment_id: null,
+        options,
+      });
+      warnings.push(prompt);
+      await writeActionLog(db, {
+        user_id: user.id,
+        actor: "agent",
+        action_type: "clarification_requested",
+        summary: actionSummary("clarification_requested", { kind: "object_mode" }, locale),
+        reason: prompt,
+        entity_type: "raw_input",
+        entity_id: rawInputId,
+        payload: { kind: "object_mode" },
+      });
+    }
   }
 
   const insertDecision = await db.prepare(
