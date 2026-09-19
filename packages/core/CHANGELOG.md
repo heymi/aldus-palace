@@ -1,5 +1,18 @@
 # @aldus-palace/core
 
+## 0.12.0
+
+### Minor Changes
+
+- 62a5eac: The runtime writes in the user's language.
+
+  - The deterministic provider follows the input's script when no locale was
+    configured, so a Chinese sentence produces Chinese wording and an English one
+    produces English (an explicit `locale` still wins). `DevLLMProvider.locale` is
+    now optional.
+  - Rule-based memories follow `user.language`, and `setUserLanguage` updates it,
+    so a client can switch the language of what the system writes.
+
 ## 0.11.0
 
 ### Minor Changes
