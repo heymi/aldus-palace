@@ -4,9 +4,7 @@
 
 ## Checklist
 
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm test` passes (deterministic, offline)
-- [ ] `pnpm eval` passes (or explains why fixtures changed)
+- [ ] `pnpm verify` passes (typecheck · test · eval · bench · build · checks)
 - [ ] Added/updated a deterministic test for logic changes
 - [ ] Added a fixture if user-visible understanding behaviour changed
 - [ ] If it changes the schema: a **new** migration was added (never edited)

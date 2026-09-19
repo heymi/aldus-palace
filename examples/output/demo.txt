@@ -1,0 +1,48 @@
+# GENERATED FILE — do not edit.
+# Regenerate: pnpm evidence
+# Command: pnpm demo
+
+
+> aldus-palace@ demo /Users/zhu/R&D/Aldus-Palace
+> pnpm --filter @aldus-palace/core build && pnpm --filter @aldus-palace/example-capture-cli start
+
+
+> @aldus-palace/core@0.5.3 build /Users/zhu/R&D/Aldus-Palace/packages/core
+> tsc -p tsconfig.build.json
+
+
+> @aldus-palace/example-capture-cli@0.1.5 start /Users/zhu/R&D/Aldus-Palace/examples/capture-cli
+> tsx src/index.ts
+
+
+$ input  Ship the onboarding page next week
+Captured · 1 commitment
+  commitment  Ship the onboarding page next week  ·  window 2026-09-19 → 2026-09-26
+
+$ input  I prefer simple tools
+Captured · remembered 1
+  memory      Prefers simple products and interfaces; avoids complexity  ·  active
+
+$ input  Fix the notification bug tomorrow
+Captured · 1 commitment
+  commitment  Fix the notification bug tomorrow  ·  window 2026-09-19 → 2026-09-20
+  ! Used 1 active memories as context
+
+$ input  Fix the notification bug tomorrow
+Captured · 1 commitment
+  commitment  Fix the notification bug tomorrow  ·  window 2026-09-19 → 2026-09-20
+  ! Already tracked, so this repeat was skipped: Fix the notification bug tomorrow
+  ! Used 1 active memories as context
+
+$ input  下周把 onboarding 做完
+已记下 · 1 件要做
+  要做  下周把 onboarding 做完  ·  时间窗 2026-09-19 → 2026-09-26
+
+$ input  以后产品不要做太复杂，保持克制
+已记下 · 已记住 1 条
+  记忆      Prefers simple products and interfaces; avoids complexity  ·  已生效
+
+$ input  今晚先不做评审，改排到周五
+已记下 · 1 件要做
+  要做  推进：今晚先不做评审，改排到周五  ·  截止 2026-09-25
+  ! 已参考 1 条生效记忆（认知上下文）

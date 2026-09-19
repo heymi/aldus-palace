@@ -1,0 +1,117 @@
+#!/usr/bin/env node
+/**
+ * Two documentation guards:
+ *
+ * 1. Every relative link in the docs resolves to a file.
+ * 2. Every suite/fixture count in the docs matches the repository.
+ *
+ * Usage: node scripts/check-docs.mjs
+ */
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const failures = [];
+
+function walk(dir) {
+  const absolute = path.join(root, dir);
+  if (!existsSync(absolute)) return [];
+  const entries = readdirSync(absolute);
+  const files = [];
+  for (const entry of entries) {
+    const relative = path.join(dir, entry);
+    const full = path.join(root, relative);
+    if (statSync(full).isDirectory()) {
+      if (entry === "node_modules" || entry === "design-archive") continue;
+      files.push(...walk(relative));
+    } else if (entry.endsWith(".md")) {
+      files.push(relative);
+    }
+  }
+  return files;
+}
+
+const markdown = [
+  "README.md",
+  "README.zh.md",
+  "EVALUATION.md",
+  "EVALUATION.zh.md",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "CONTRIBUTING.md",
+  "SECURITY.md",
+  "ROADMAP.md",
+  "GOVERNANCE.md",
+  "CODE_OF_CONDUCT.md",
+  ...walk("docs"),
+  ...walk("packages"),
+  ...walk("apps"),
+  ...walk("examples"),
+];
+
+const linkPattern = /\]\(([^)\s]+)\)/g;
+for (const file of [...new Set(markdown)]) {
+  const absolute = path.join(root, file);
+  if (!existsSync(absolute)) continue;
+  const text = readFileSync(absolute, "utf8");
+  for (const match of text.matchAll(linkPattern)) {
+    const raw = match[1];
+    if (/^(https?:|mailto:|#)/.test(raw)) continue;
+    const target = raw.split("#")[0];
+    if (!target) continue;
+    const resolved = target.startsWith("/")
+      ? path.join(root, target.slice(1))
+      : path.resolve(path.dirname(absolute), target);
+    if (!existsSync(resolved)) {
+      failures.push(`${file}: broken link → ${raw}`);
+    }
+  }
+}
+
+const suiteFiles = [
+  ...readdirSync(path.join(root, "packages/core/test")).filter((f) => f.endsWith(".test.ts")),
+  ...readdirSync(path.join(root, "packages/mcp/test")).filter((f) => f.endsWith(".test.ts")),
+  ...readdirSync(path.join(root, "apps/server/test")).filter((f) => f.endsWith(".test.ts")),
+];
+const suites = suiteFiles.length;
+const fixtures = readdirSync(path.join(root, "eval/fixtures")).filter((f) => f.endsWith(".json")).length;
+
+const counted = [
+  "EVALUATION.md",
+  "EVALUATION.zh.md",
+  "README.md",
+  "README.zh.md",
+  "packages/core/README.md",
+  "docs/POSITIONING.md",
+  "docs/assets/capture-session.svg",
+];
+for (const file of counted) {
+  const absolute = path.join(root, file);
+  if (!existsSync(absolute)) continue;
+  const text = readFileSync(absolute, "utf8");
+  for (const line of text.split("\n")) {
+    // Per-package output fragments ("packages/core test: All 14 suites passed.")
+    // describe one package, not the repository total.
+    if (/test:|All \d+ suites/.test(line)) continue;
+    for (const match of line.matchAll(/(\d+)\s+(?:test\s+)?suites|(\d+)\s*个\s*套件/g)) {
+      const value = Number(match[1] ?? match[2]);
+      if (value !== suites) {
+        failures.push(`${file}: says ${value} suites, repository has ${suites}`);
+      }
+    }
+    for (const match of line.matchAll(/(\d+)\s+(?:acceptance\s+)?fixtures|(\d+)\s*个\s*fixture/g)) {
+      const value = Number(match[1] ?? match[2]);
+      if (value !== fixtures) {
+        failures.push(`${file}: says ${value} fixtures, repository has ${fixtures}`);
+      }
+    }
+  }
+}
+
+if (failures.length) {
+  console.error("Documentation check failed:");
+  for (const failure of failures) console.error(`  ${failure}`);
+  process.exit(1);
+}
+console.log(`Documentation check passed (${suites} suites, ${fixtures} fixtures).`);

@@ -1,0 +1,28 @@
+# GENERATED FILE — do not edit.
+# Regenerate: pnpm evidence
+# Command: pnpm bench
+
+
+> aldus-palace@ bench /Users/zhu/R&D/Aldus-Palace
+> pnpm --filter @aldus-palace/core bench
+
+
+> @aldus-palace/core@0.5.3 bench /Users/zhu/R&D/Aldus-Palace/packages/core
+> tsx bench/run.ts
+
+Rule-layer benchmark (deterministic, offline)
+
+suite                  pass/total   accuracy   precision   recall
+relative dates          8/8           1.000           —        —
+duplicate commitments   6/6           1.000       1.000    1.000
+memory conflicts        5/5           1.000       1.000    1.000
+memory activation       6/6           1.000       1.000    1.000
+actionable work         7/7           1.000       1.000    1.000
+object mode             5/5           1.000           —        —
+
+Known gaps (measured, not enforced):
+  dedupe "Ship the onboarding page next week" vs "ship onboarding page next week" → false (expected true)
+  dedupe "Fix the notification bug" vs "Fix notification bug" → false (expected true)
+  conflict "Start shipping iOS again" vs "Stay Mac-only" → false (expected true)
+  work "下周把 onboarding 做完" → false (expected true)
+  object mode "AI 产品太吵了，另外把定价页改一下" → thought (expected mixed)

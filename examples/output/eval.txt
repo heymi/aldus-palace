@@ -1,0 +1,25 @@
+# GENERATED FILE — do not edit.
+# Regenerate: pnpm evidence
+# Command: pnpm eval
+
+
+> aldus-palace@ eval /Users/zhu/R&D/Aldus-Palace
+> pnpm --filter @aldus-palace/core eval
+
+
+> @aldus-palace/core@0.5.3 eval /Users/zhu/R&D/Aldus-Palace/packages/core
+> tsx test/run-fixtures.ts
+
+PASS S04
+PASS S05
+PASS S06
+PASS S09
+PASS S25
+PASS S26
+PASS S27
+PASS S28
+PASS S29
+PASS S30
+PASS S31
+
+All fixtures passed.

@@ -1,0 +1,69 @@
+# GENERATED FILE — do not edit.
+# Regenerate: pnpm evidence
+# Command: pnpm test
+
+
+> aldus-palace@ test /Users/zhu/R&D/Aldus-Palace
+> pnpm -r test
+
+Scope: 8 of 9 workspace projects
+packages/core test$ tsx test/run-tests.ts
+packages/core test: actionable work tests passed.
+packages/core test: PASS actionableWork.test.ts
+packages/core test: adaptive planning tests passed.
+packages/core test: PASS adaptivePlanning.test.ts
+packages/core test: clarificationReply tests passed.
+packages/core test: PASS clarificationReply.test.ts
+packages/core test: commitment original input test passed.
+packages/core test: PASS commitmentOriginalInput.test.ts
+packages/core test: duration estimate tests passed.
+packages/core test: PASS durationEstimate.test.ts
+packages/core test: enrichment lease test passed.
+packages/core test: PASS enrichmentLease.test.ts
+packages/core test: format tests passed.
+packages/core test: PASS format.test.ts
+packages/core test: input object classification tests passed.
+packages/core test: PASS inputObjectClassification.test.ts
+packages/core test: memory activation tests passed.
+packages/core test: PASS memoryActivation.test.ts
+packages/core test: memory evolution tests passed.
+packages/core test: PASS memoryEvolution.test.ts
+packages/core test: projectMatch tests passed.
+packages/core test: PASS projectMatch.test.ts
+packages/core test: [llm] provider=dev (local rules)
+packages/core test: provider tests passed.
+packages/core test: PASS providers.test.ts
+packages/core test: relativeDay tests passed.
+packages/core test: PASS relativeDay.test.ts
+packages/core test: thoughtTitle tests passed: 邮件通知：跨端推送提醒与预览 | 推进：写清相册产品一句话定位与核心体验
+packages/core test: SEO summary sample:
+packages/core test:  要点：社交内容接入 Search Console 后可显关键词；分析 SERP 再写帖、关键词前置并分享，使内容进入 Google 搜索结果。
+packages/core test: 步骤：
+packages/core test: 1. 将你的社交内容添加到Search Console。
+packages/core test: 2. 等待至少2天，让一些关键词出现。
+packages/core test: 3. 访问GSC并记录一些关键词。
+packages/core test: 4. 分析SERP并撰写帖子。
+packages/core test: 5. 在开头放置一个关键词。
+packages/core test: 6. 分享帖子。
+packages/core test: 对 Nimbus 的启发：把可被搜索引擎抓取的公开内容层当作获客渠道（场景说明、对比页、使用帖），按邮件用户真实意图选题（隐私、多账户、效率、通知克制等），而不是只做 App Store 转化。
+packages/core test: 待验证：哪些内容能被索引并带来安装/试用意图。
+packages/core test: 主题标签：可索引内容 / 搜索获客
+packages/core test: PASS thoughtTitle.test.ts
+packages/core test: All 14 suites passed.
+packages/core test: Done
+apps/server test$ tsx test/run-tests.ts
+packages/mcp test$ tsx test/tools.test.ts
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
+apps/server test: commitment classification API test passed.
+apps/server test: PASS commitmentClassification.test.ts
+packages/mcp test: mcp tool tests passed.
+packages/mcp test: Done
+apps/server test: llm config tests passed
+apps/server test: PASS llm-config.test.ts
+apps/server test: All 2 suites passed.
+apps/server test: Done

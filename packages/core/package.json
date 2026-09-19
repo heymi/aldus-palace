@@ -1,7 +1,7 @@
 {
   "name": "@aldus-palace/core",
   "version": "0.5.3",
-  "description": "Write a sentence. It files the commitment, the decision and the rule — locally, with the original words still attached.",
+  "description": "The auditable memory layer for AI apps — free text into typed commitments, decisions and memories, each with its evidence, in a SQLite file you own.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {
@@ -69,7 +69,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "tsx test/run-tests.ts",
-    "eval": "tsx test/run-fixtures.ts"
+    "eval": "tsx test/run-fixtures.ts",
+    "bench": "tsx bench/run.ts"
   },
   "dependencies": {
     "dayjs": "^1.11.20",

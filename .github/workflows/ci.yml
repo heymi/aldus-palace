@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   verify:
-    name: typecheck · test · eval · build
+    name: typecheck · test · eval · bench · build · checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,8 +36,14 @@ jobs:
       - name: Acceptance fixtures
         run: pnpm eval
 
+      - name: Rule-layer benchmark
+        run: pnpm bench
+
       - name: Build @aldus-palace/core
         run: pnpm build
 
-      - name: spec/schema.sql is up to date
-        run: pnpm spec:check
+      - name: Generated files are up to date
+        run: pnpm spec:check && pnpm openapi:check && pnpm llms:check
+
+      - name: Documentation links and counts
+        run: pnpm check:docs

@@ -1,0 +1,246 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/heymi/aldus-palace/spec/action-card.schema.json",
+  "title": "ActionCard",
+  "description": "What a capture returns: the summary, the typed objects, the memory candidates and the warnings. Generated from the same components as spec/openapi.json.",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string"
+    },
+    "thoughts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "commitments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Commitment"
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "memory_candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Memory"
+      }
+    },
+    "memory_conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "clarifications": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Clarification"
+      }
+    },
+    "project_match": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "project_suggestion": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "summary",
+    "thoughts",
+    "commitments",
+    "decisions",
+    "memory_candidates",
+    "clarifications",
+    "warnings"
+  ],
+  "$defs": {
+    "Commitment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "goal": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "captured",
+            "planned",
+            "scheduled",
+            "completed",
+            "cancelled",
+            "risk"
+          ]
+        },
+        "deadline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "window_start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "window_end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "ai_slot_start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "ai_slot_end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "duration_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "importance": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "status"
+      ]
+    },
+    "Memory": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "preference",
+            "project_context",
+            "principle",
+            "decision",
+            "experience"
+          ]
+        },
+        "content": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "archived"
+          ]
+        },
+        "activation_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidence": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "importance": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "content",
+        "status"
+      ]
+    },
+    "Clarification": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "id",
+        "prompt"
+      ]
+    }
+  }
+}
