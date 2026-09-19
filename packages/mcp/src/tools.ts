@@ -1,10 +1,33 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import {
+  formatActionCard,
+  formatTodayText,
+  type ActionCard,
+  type TodayViewLike,
+} from "@aldus-palace/core";
 import type { Backend } from "./backend.js";
 
 function json(value: unknown): { content: Array<{ type: "text"; text: string }> } {
   return {
     content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
+  };
+}
+
+/**
+ * A return a person can read and a machine can parse: the card is the text
+ * content, the full payload stays in structuredContent.
+ */
+function card(
+  text: string,
+  payload: Record<string, unknown>
+): {
+  content: Array<{ type: "text"; text: string }>;
+  structuredContent: Record<string, unknown>;
+} {
+  return {
+    content: [{ type: "text", text }],
+    structuredContent: payload,
   };
 }
 
@@ -91,10 +114,20 @@ export function registerTools(
             .optional()
             .describe("progressive (default) | local | sync"),
         },
+        outputSchema: {
+          id: z.string(),
+          processing_status: z.string(),
+          stage: z.string(),
+          action_card: z.record(z.string(), z.unknown()),
+        },
       },
       async ({ content, mode }) => {
         try {
-          return json(await backend.capture(content, mode ?? "progressive"));
+          const outcome = await backend.capture(content, mode ?? "progressive");
+          return card(
+            formatActionCard(outcome.action_card as ActionCard, backend.locale),
+            outcome as unknown as Record<string, unknown>
+          );
         } catch (error) {
           return failure(error);
         }
@@ -113,10 +146,32 @@ export function registerTools(
           "risk items and unscheduled work. This is a projection over commitments, " +
           "not a separate task list.",
         inputSchema: {},
+        outputSchema: {
+          date_key: z.string(),
+          timezone: z.string(),
+          now: z.record(z.string(), z.unknown()).nullable(),
+          timeline: z.array(z.record(z.string(), z.unknown())),
+          risks: z.array(z.record(z.string(), z.unknown())),
+          unscheduled: z.array(z.record(z.string(), z.unknown())),
+          unscheduled_total: z.number(),
+          unscheduled_from_thought_total: z.number(),
+          summary: z.string(),
+          auto_planned: z.array(z.record(z.string(), z.unknown())).optional(),
+          planning: z.object({
+            mode: z.string(),
+            effective_cap: z.number(),
+            completed_today: z.number(),
+            auto_fill_paused: z.boolean(),
+          }),
+        },
       },
       async () => {
         try {
-          return json(await backend.listToday());
+          const today = await backend.listToday();
+          return card(
+            formatTodayText(today as TodayViewLike, backend.locale),
+            today as Record<string, unknown>
+          );
         } catch (error) {
           return failure(error);
         }

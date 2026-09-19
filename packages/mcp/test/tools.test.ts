@@ -18,6 +18,10 @@ function textOf(result: unknown): string {
     .join("");
 }
 
+function structuredOf(result: unknown): unknown {
+  return (result as { structuredContent?: unknown }).structuredContent;
+}
+
 async function connect(profile: Profile) {
   const backend = await LocalBackend.open({
     databasePath: ":memory:",
@@ -101,7 +105,10 @@ const captured = await client.callTool({
   arguments: { content: "Ship the onboarding page next week", mode: "local" },
 });
 assert(!captured.isError, `capture failed: ${textOf(captured)}`);
-const card = JSON.parse(textOf(captured)) as {
+const capturedCard = textOf(captured);
+assert(capturedCard.includes("Captured"), `the card leads with the receipt: ${capturedCard}`);
+assert(capturedCard.includes("commitment"), `the card names the object: ${capturedCard}`);
+const card = structuredOf(captured) as {
   id: string;
   processing_status: string;
   action_card: { commitments: Array<{ title: string }>; memory_conflicts?: unknown[] };
@@ -114,7 +121,11 @@ assert(Array.isArray(card.action_card.memory_conflicts), "conflicts are always r
 // today + commitments
 const today = await client.callTool({ name: "list_today", arguments: {} });
 assert(!today.isError, `list_today failed: ${textOf(today)}`);
-const todayPayload = JSON.parse(textOf(today)) as {
+assert(
+  textOf(today).startsWith("Today ·"),
+  `the Today card leads with the date: ${textOf(today)}`
+);
+const todayPayload = structuredOf(today) as {
   date_key: string;
   unscheduled: unknown[];
 };
@@ -160,7 +171,7 @@ const statedCapture = await client.callTool({
   arguments: { content: "以后产品不要做太复杂，保持克制。", mode: "local" },
 });
 assert(!statedCapture.isError, `memory capture failed: ${textOf(statedCapture)}`);
-const statedCard = JSON.parse(textOf(statedCapture)) as {
+const statedCard = structuredOf(statedCapture) as {
   action_card: { memory_candidates: Array<{ id: string; status: string }> };
 };
 const stated = statedCard.action_card.memory_candidates[0];
@@ -199,7 +210,7 @@ const candidateCapture = await client.callTool({
   arguments: { content: "保持 Mac-only，不做 Windows 版", mode: "local" },
 });
 assert(!candidateCapture.isError, `candidate capture failed: ${textOf(candidateCapture)}`);
-const candidateCard = JSON.parse(textOf(candidateCapture)) as {
+const candidateCard = structuredOf(candidateCapture) as {
   action_card: { memory_candidates: Array<{ id: string; status: string }> };
 };
 const candidate = candidateCard.action_card.memory_candidates[0];

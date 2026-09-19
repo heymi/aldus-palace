@@ -16,12 +16,14 @@ import {
   rejectMemory as rejectMemoryRow,
   listMemoriesByState,
   listWorkStreams,
+  localeOf,
   newId,
   nowIso,
   processRawInput,
   resolveProviderConfig,
   writeActionLog,
   confirmMemory as confirmMemoryCandidate,
+  type Locale,
   type MemoryListState,
   type SqlDatabase,
   type User,
@@ -47,6 +49,8 @@ export type ConfirmMemoryArgs = {
 export interface Backend {
   /** Human-readable description used in tool output/errors. */
   readonly description: string;
+  /** Locale for the human-readable tool cards. */
+  readonly locale: Locale;
   capture(content: string, mode: CaptureMode): Promise<CaptureOutcome>;
   listToday(): Promise<unknown>;
   listCommitments(status?: string): Promise<unknown>;
@@ -71,6 +75,7 @@ export type LocalBackendOptions = {
 
 export class LocalBackend implements Backend {
   readonly description: string;
+  readonly locale: Locale;
   private constructor(
     private readonly db: SqlDatabase,
     private readonly user: User,
@@ -78,6 +83,7 @@ export class LocalBackend implements Backend {
     databasePath: string
   ) {
     this.description = `local SQLite (${databasePath})`;
+    this.locale = localeOf(user.language);
   }
 
   static async open(options: LocalBackendOptions): Promise<LocalBackend> {
@@ -194,6 +200,7 @@ export type HttpBackendOptions = {
 
 export class HttpBackend implements Backend {
   readonly description: string;
+  readonly locale: Locale = "en";
   private readonly baseUrl: string;
   private readonly token: string;
 
