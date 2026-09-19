@@ -5,15 +5,22 @@ A minimal browser client for the HTTP API.
 **Online demo:** <https://aldus-palace-demo.iheymi.workers.dev> — each visitor
 gets a private context, so what you capture is yours alone.
 
-One page, four sections. Capture is the primary act; Today and Memory are its
-two consequences, and decisions wait at the end:
+Shaped like a macOS app: a source list, a content pane and an inspector, with a
+quick-capture sheet from anywhere.
 
 | Section | Route | What it shows |
 |---|---|---|
-| Capture | `POST /v1/inputs`, `POST /v1/inputs/:id/enrich` | the sentence you wrote, and a receipt of what it became |
-| Today | `GET /v1/today` | the one thing to do now, the day's plan, what is at risk |
-| Memory | `GET /v1/memories` | what the system remembers, active or candidate; open one to see its source inline (`GET /v1/inputs/:id`) |
-| Needs a decision | `GET /v1/actions?status=all`, `POST /v1/actions/:id/decide` | proposed and half-approved actions, with approve / reject |
+| Home | `GET /v1/today`, `GET /v1/thoughts`, `GET /v1/actions` | the greeting, Now with Start / Done / Later, the rest of the day, risks, recent thoughts and anything waiting for a decision |
+| Thoughts | `GET /v1/thoughts`, `GET /v1/thoughts/:id` | what you noticed; the inspector can turn a thought into a commitment |
+| Projects | `GET /v1/projects`, `GET /v1/projects/:id` | work grouped by what it belongs to |
+| Memory | `GET /v1/memories`, `GET /v1/memories/:id/versions`, `GET /v1/inputs/:id` | active memories and candidates; the inspector shows the source sentence, the history, and confirms or rejects a candidate |
+| Decisions | `GET /v1/actions`, `POST /v1/actions/:id/decide` | actions that wait for one approval (critical: two) |
+| Activity | `GET /v1/activity` | what the system did, and why |
+| Input | `POST /v1/inputs`, `POST /v1/inputs/:id/enrich` | a composer, examples, and the receipt of what a sentence became |
+
+`⌘K` (or **Capture** in the toolbar) opens the quick-capture sheet from any
+section; `⌘↵` files, `Esc` closes. Selecting a row opens the inspector in the
+third column; selecting it again closes.
 
 No framework, no build step, no dependencies: a static page plus a small host
 that proxies `/api/*` with the bearer token, so the token never reaches the

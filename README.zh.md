@@ -277,7 +277,7 @@ pnpm --filter @aldus-palace/example-memory-gate-only start
 pnpm --filter @aldus-palace/example-today-only start
 ```
 
-每个示例都会打印它存储的记录以及背后的推理，无需 API key，无需网络。想直接在浏览器里体验，用托管好的在线 demo（每位访客一个私有上下文）：<https://aldus-palace-demo.iheymi.workers.dev>。想在本地跑同一套客户端，就启动 server 与 reference client —— 写一句话，然后看 Now、Memory、Evidence 与待批准队列如何变化：
+每个示例都会打印它存储的记录以及背后的推理，无需 API key，无需网络。想直接在浏览器里体验，用托管好的在线 demo（每位访客一个私有上下文）：<https://aldus-palace-demo.iheymi.workers.dev>。想在本地跑同一套客户端，就启动 macOS 形态的 reference client —— 写一句话，然后看它进入首页、记忆与待决定队列：
 
 ```bash
 pnpm --filter @aldus-palace/server start                   # API 在 :8787

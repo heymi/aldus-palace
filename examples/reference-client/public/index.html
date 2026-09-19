@@ -7,84 +7,70 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <a class="skip" href="#capture" data-i18n="skip"></a>
+    <a class="skip" href="#content" data-i18n="skip"></a>
 
-    <header class="masthead">
-      <div class="masthead-row">
-        <h1>Aldus</h1>
-        <div class="masthead-tools">
-          <p class="status" id="status"></p>
-          <div class="lang" id="lang-switch" role="group" aria-label="Language"></div>
+    <div class="desktop">
+      <div class="window">
+        <header class="titlebar">
+          <div class="traffic" aria-hidden="true">
+            <span class="dot dot-close"></span>
+            <span class="dot dot-min"></span>
+            <span class="dot dot-zoom"></span>
+          </div>
+          <div class="titlebar-title">
+            <strong data-i18n="app.name"></strong>
+            <span data-i18n="app.tagline"></span>
+          </div>
+          <div class="titlebar-tools">
+            <span class="status" id="status"></span>
+            <div class="lang" id="lang-switch" role="group"></div>
+            <button type="button" class="tool" id="quick-capture">
+              <span data-i18n="toolbar.capture"></span>
+              <kbd data-i18n="toolbar.captureHint"></kbd>
+            </button>
+          </div>
+        </header>
+
+        <div class="split" id="split">
+          <nav class="sidebar" id="sidebar" aria-label="Sections"></nav>
+
+          <main class="content" id="content">
+            <header class="content-head">
+              <div>
+                <h1 id="section-title"></h1>
+                <p id="section-subtitle"></p>
+              </div>
+              <div class="content-actions" id="section-actions"></div>
+            </header>
+            <div class="panes" id="panes"></div>
+          </main>
+
+          <aside class="inspector" id="inspector" hidden></aside>
         </div>
+
+        <footer class="statusbar">
+          <span id="statusbar"></span>
+          <span class="statusbar-note" id="footer-text"></span>
+        </footer>
       </div>
-      <p class="deck" data-i18n="masthead.deck"></p>
-    </header>
+    </div>
 
-    <nav class="tabs" aria-label="Sections">
-      <a href="#capture" data-i18n="nav.capture"></a>
-      <a href="#today"><span data-i18n="nav.today"></span> <span class="tally" id="today-tally"></span></a>
-      <a href="#memory"><span data-i18n="nav.memory"></span> <span class="tally" id="memory-tally"></span></a>
-      <a href="#decisions">
-        <span data-i18n="nav.decisions"></span>
-        <span class="tally tally-accent" id="decision-tally" hidden></span>
-      </a>
-    </nav>
-
-    <main>
-      <section id="capture" class="capture" aria-labelledby="capture-title">
-        <h2 id="capture-title" class="hero" data-i18n="capture.hero"></h2>
-        <p class="capture-sub" data-i18n="capture.sub"></p>
-        <form id="capture-form">
-          <textarea
-            id="input"
-            rows="2"
-            data-i18n-placeholder="capture.placeholder"
-            aria-label="A sentence to capture"
-          ></textarea>
-          <div class="row">
-            <button type="submit" class="primary" id="file-button" data-i18n="capture.button"></button>
-            <span class="hint" id="capture-hint"></span>
+    <div class="sheet" id="sheet" hidden>
+      <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+        <header class="sheet-head">
+          <h2 id="sheet-title" data-i18n="sheet.title"></h2>
+          <span class="hint" id="sheet-hint" data-i18n="sheet.hint"></span>
+        </header>
+        <form id="sheet-form">
+          <textarea id="sheet-input" rows="2" data-i18n-placeholder="input.placeholder"></textarea>
+          <div class="sheet-actions">
+            <button type="submit" class="primary" id="sheet-button" data-i18n="input.button"></button>
+            <button type="button" class="ghost" id="sheet-close" data-i18n="sheet.close"></button>
           </div>
         </form>
-        <div class="chips" id="examples">
-          <span class="chips-label" id="chips-label"></span>
-        </div>
-        <div id="receipt" class="receipt" hidden aria-live="polite"></div>
-      </section>
-
-      <div class="work">
-        <section id="today" class="panel" aria-labelledby="today-title">
-          <header class="panel-head">
-            <h2 id="today-title" data-i18n="today.title"></h2>
-            <span class="panel-note" id="today-note"></span>
-          </header>
-          <div id="now"></div>
-        </section>
-
-        <section id="memory" class="panel" aria-labelledby="memory-title">
-          <header class="panel-head">
-            <h2 id="memory-title" data-i18n="memory.title"></h2>
-            <label class="toggle">
-              <input type="checkbox" id="show-candidates" />
-              <span data-i18n="memory.candidates"></span>
-            </label>
-          </header>
-          <div id="memory-list"></div>
-        </section>
+        <div id="sheet-receipt" class="receipt" hidden aria-live="polite"></div>
       </div>
-
-      <section id="decisions" class="panel" aria-labelledby="decisions-title">
-        <header class="panel-head">
-          <h2 id="decisions-title" data-i18n="decisions.title"></h2>
-          <span class="panel-note" id="decisions-note"></span>
-        </header>
-        <div id="actions"></div>
-      </section>
-    </main>
-
-    <footer>
-      <p id="footer-text"></p>
-    </footer>
+    </div>
 
     <script type="module" src="/app.js"></script>
   </body>
