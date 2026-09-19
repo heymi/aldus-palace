@@ -50,6 +50,15 @@ assert(
 assert(toMatchQuery("😀 hello") === "hello*", "an emoji word is dropped");
 assert(toMatchQuery("😀") === "", "a query of only emoji has no expression");
 
+// A very long query is bounded, not turned into an unbounded OR chain.
+const manyWords = Array.from({ length: 200 }, (_, i) => `word${i}`).join(" ");
+const bounded = toMatchQuery(manyWords);
+assert(
+  bounded.split(" OR ").length === 24,
+  `a long query is capped at 24 terms, got ${bounded.split(" OR ").length}`
+);
+assert(!bounded.endsWith(" OR "), "a capped query has no dangling OR");
+
 // --- the retriever over the real schema -------------------------------------
 
 const db = await createTestDb();
