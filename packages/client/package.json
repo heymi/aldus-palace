@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/client",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Typed HTTP client for the trustworthy context layer — one method per route, no runtime dependencies.",
   "license": "Apache-2.0",
   "type": "module",
