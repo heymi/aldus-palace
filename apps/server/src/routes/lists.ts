@@ -2,6 +2,9 @@ import { Hono } from "hono";
 import {
   actionSummary,
   buildToday,
+  decideAction,
+  listActionProposals,
+  revokeAction,
   commitmentsAreNearDuplicate,
   commitmentTitleFromThought,
   conceptsForMemory,
@@ -949,6 +952,54 @@ export function createListRoutes(deps: AppDeps): Hono<{
     const user = await requireUser(c, db);
     const items = await listActionLogs(db, user.id, 100);
     return c.json({ items });
+  });
+
+  /** The Action Gate: proposed, waiting and decided agent actions. */
+  listRoutes.get("/actions", async (c) => {
+    const user = await requireUser(c, db);
+    const status = c.req.query("status") as
+      | "approved"
+      | "notified"
+      | "proposed"
+      | "pending_second"
+      | "rejected"
+      | "revoked"
+      | "all"
+      | undefined;
+    const items = await listActionProposals(db, user.id, status);
+    return c.json({ items });
+  });
+
+  listRoutes.post("/actions/:id/decide", async (c) => {
+    const user = await requireUser(c, db);
+    const body = (await c.req.json().catch(() => ({}))) as {
+      decision?: "approve" | "reject";
+      reason?: string;
+    };
+    if (body.decision !== "approve" && body.decision !== "reject") {
+      return c.json({ error: "decision_must_be_approve_or_reject" }, 400);
+    }
+    const result = await decideAction(db, user.id, c.req.param("id"), body.decision, {
+      reason: body.reason,
+      locale: localeOf(user.language),
+    });
+    if (!result.ok) {
+      return c.json({ error: result.error }, result.error === "not_found" ? 404 : 400);
+    }
+    return c.json({ proposal: result.proposal });
+  });
+
+  listRoutes.post("/actions/:id/revoke", async (c) => {
+    const user = await requireUser(c, db);
+    const body = (await c.req.json().catch(() => ({}))) as { reason?: string };
+    const result = await revokeAction(db, user.id, c.req.param("id"), {
+      reason: body.reason,
+      locale: localeOf(user.language),
+    });
+    if (!result.ok) {
+      return c.json({ error: result.error }, result.error === "not_found" ? 404 : 400);
+    }
+    return c.json({ proposal: result.proposal });
   });
 
   listRoutes.get("/projects", async (c) => {
