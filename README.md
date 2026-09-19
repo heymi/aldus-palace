@@ -36,7 +36,7 @@ Captured · remembered 1
 That output comes from the deterministic provider, offline; dates resolve on the
 day you run it. `pnpm demo` runs the same pipeline with no API key.
 
-**Try it in one line.** MCP inside Claude, Cursor or any MCP client:
+**Try it in your assistant.** MCP inside Claude, Cursor or any MCP client:
 
 ```bash
 npm install -g @aldus-palace/mcp
@@ -114,8 +114,8 @@ no API key.
 **Library**
 
 ```ts
-import { DevLLMProvider, ensureDevUser, initialize, newId, nowIso,
-         processRawInput } from "@aldus-palace/core";
+import { DevLLMProvider, ensureDevUser, formatActionCard, initialize, newId,
+         nowIso, processRawInput } from "@aldus-palace/core";
 import { openSqliteDatabase } from "@aldus-palace/core/db/sqlite";
 
 const db = await openSqliteDatabase("./aldus.db");
@@ -130,8 +130,9 @@ await db.prepare(`INSERT INTO raw_inputs
   .run(id, user.id, text, nowIso(), nowIso());
 
 const card = await processRawInput(db, new DevLLMProvider(), user, id, "local");
-console.log(card.summary);        // Captured · 1 commitment
-console.log(card.commitments);    // one commitment, window_start / window_end resolved
+console.log(formatActionCard(card));
+// Captured · 1 commitment
+//   commitment  Ship the onboarding page next week  ·  window 2026-09-19 → 2026-09-26
 ```
 
 **MCP** — inside Claude, Cursor or any MCP client
@@ -242,9 +243,6 @@ mid-update after a crash.
 **Memory is a liability.** Store the first inference and the user owns a
 personality from one remark. Replace the old record and the history disappears.
 
-**A paid test gets skipped.** Calling an API to check extraction is a test nobody
-repeats. The runtime ships a deterministic provider, so the pipeline runs offline.
-
 ## What the code enforces
 
 | Capability | The point | Where |
@@ -295,7 +293,7 @@ API key and no network.
 | [INTEGRATION.md](docs/INTEGRATION.md) | the three levels, with copy-paste configs |
 | [CAPABILITIES.md](docs/CAPABILITIES.md) | the nine capabilities and their contracts |
 | [USE-CASES.md](docs/USE-CASES.md) | five things people build with this |
-| [POSITIONING.md](docs/POSITIONING.md) | differentiation, and the designed scope |
+| [POSITIONING.md](docs/POSITIONING.md) | differentiation, and the current scope |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | the runtime, module boundaries, storage port |
 | [INTELLIGENCE.md](docs/INTELLIGENCE.md) | the four engines and the privacy design, shipped vs planned |
 | [DOMAIN-SCHEMA.md](docs/DOMAIN-SCHEMA.md) | objects, invariants, memory evolution |

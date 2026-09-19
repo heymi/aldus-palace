@@ -118,7 +118,7 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 - **Teams that need AI-written data to be auditable** — evidence, provenance and
   an action log on every change.
 
-## Designed scope
+## Current scope
 
 These are choices, not gaps:
 
