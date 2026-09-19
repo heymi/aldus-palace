@@ -94,6 +94,16 @@ const meta = {
   "GET /v1/activity": { summary: "The action log", tag: "Activity", response: "ActionLog" },
   "GET /v1/actions": { summary: "Agent actions proposed, waiting and decided", tag: "Actions", response: "ActionProposal" },
   "GET /v1/autonomy": { summary: "The trust score and autonomy level derived from decided actions", tag: "Actions", response: "AutonomyState" },
+  "POST /v1/autonomy": {
+    summary: "Set how far earned trust may widen autonomy",
+    tag: "Actions",
+    request: {
+      type: "object",
+      required: ["ceiling"],
+      properties: { ceiling: { type: "integer", enum: [2, 3, 4] } },
+    },
+    response: "AutonomyState",
+  },
   "POST /v1/actions/{id}/decide": {
     summary: "Approve or reject a waiting action; a critical action needs two approvals",
     tag: "Actions",
@@ -311,9 +321,16 @@ const spec = {
           approvals: { type: "integer" },
           rejections: { type: "integer" },
           samples: { type: "integer" },
-          level: { type: "integer", minimum: 0, maximum: 4 },
+          level: { type: "integer", minimum: 0, maximum: 4, description: "The level the record earned." },
+          ceiling: { type: "integer", minimum: 2, maximum: 4 },
+          effective_level: {
+            type: "integer",
+            minimum: 0,
+            maximum: 4,
+            description: "min(max(level, 2), ceiling) — what the gate applies.",
+          },
         },
-        required: ["score", "level"],
+        required: ["score", "level", "ceiling", "effective_level"],
       },
       ActionProposal: {
         type: "object",

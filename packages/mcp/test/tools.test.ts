@@ -297,14 +297,22 @@ assert(
 );
 const actionItems = structuredOf(actions) as {
   items: unknown[];
-  autonomy: { level: number; score: number; samples: number };
+  autonomy: {
+    level: number;
+    effective_level: number;
+    ceiling: number;
+    score: number;
+    samples: number;
+  };
 };
 assert(actionItems.items.length === 0, "no action waits by default");
-assert(actionItems.autonomy.level === 0, "no decisions means autonomy level 0");
+assert(actionItems.autonomy.level === 0, "no decisions means no earned level");
+assert(actionItems.autonomy.ceiling === 2, "the default ceiling is the published baseline");
+assert(actionItems.autonomy.effective_level === 2, "the baseline applies");
 assert(actionItems.autonomy.samples === 0, "no decisions are counted yet");
 assert(
-  textOf(actions).includes("Trust 0.50 · level 0"),
-  `the card carries the trust footer: ${textOf(actions)}`
+  textOf(actions).includes("Trust 0.50 · level 2"),
+  `the card carries the effective level: ${textOf(actions)}`
 );
 
 const decideMissing = await client.callTool({

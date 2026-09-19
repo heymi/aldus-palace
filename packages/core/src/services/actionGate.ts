@@ -89,7 +89,17 @@ export type TrustScore = {
   samples: number;
 };
 
-export type AutonomyState = TrustScore & { level: AutonomyLevel };
+export type AutonomyState = TrustScore & {
+  /** The level the record has earned. */
+  level: AutonomyLevel;
+  /** How far the user lets earned trust widen autonomy. Default 2. */
+  ceiling: AutonomyLevel;
+  /** `min(max(level, baseline), ceiling)` — what the gate applies. */
+  effective_level: AutonomyLevel;
+};
+
+/** The published rule: low runs, medium runs as a notification. */
+export const AUTONOMY_BASELINE: AutonomyLevel = 2;
 
 const AUTONOMY_THRESHOLDS: Array<{ level: AutonomyLevel; minSamples: number; minScore: number }> = [
   { level: 4, minSamples: 20, minScore: 0.95 },
@@ -160,13 +170,68 @@ export async function computeTrustScore(
   return trustScoreFrom(approvals, rejections);
 }
 
+async function getAutonomyCeiling(
+  db: SqlDatabase,
+  userId: string
+): Promise<AutonomyLevel> {
+  const row = (await db
+    .prepare(`SELECT ceiling FROM autonomy_settings WHERE user_id = ?`)
+    .get(userId)) as { ceiling: number } | undefined;
+  return (row?.ceiling ?? AUTONOMY_BASELINE) as AutonomyLevel;
+}
+
 export async function getAutonomyState(
   db: SqlDatabase,
   userId: string,
   options: { days?: number; at?: Date } = {}
 ): Promise<AutonomyState> {
   const trust = await computeTrustScore(db, userId, options);
-  return { ...trust, level: autonomyLevelFor(trust.score, trust.samples) };
+  const level = autonomyLevelFor(trust.score, trust.samples);
+  const ceiling = await getAutonomyCeiling(db, userId);
+  const effective = Math.min(
+    Math.max(level, AUTONOMY_BASELINE),
+    ceiling
+  ) as AutonomyLevel;
+  return { ...trust, level, ceiling, effective_level: effective };
+}
+
+/**
+ * Set how far earned trust may widen autonomy. The ceiling never goes below the
+ * published baseline; raising it is the user's explicit consent.
+ */
+export async function setAutonomyCeiling(
+  db: SqlDatabase,
+  userId: string,
+  ceiling: number,
+  options: { locale?: Locale; at?: Date } = {}
+): Promise<{ ok: true; state: AutonomyState } | { ok: false; error: string }> {
+  if (ceiling !== 2 && ceiling !== 3 && ceiling !== 4) {
+    return { ok: false, error: "ceiling_must_be_2_3_or_4" };
+  }
+  const t = (options.at ?? new Date()).toISOString();
+  await db
+    .prepare(
+      `INSERT INTO autonomy_settings (user_id, ceiling, created_at, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET ceiling = excluded.ceiling, updated_at = excluded.updated_at`
+    )
+    .run(userId, ceiling, t, t);
+  await writeActionLog(db, {
+    user_id: userId,
+    actor: "user",
+    action_type: "autonomy_ceiling_changed",
+    summary: actionSummary(
+      "autonomy_ceiling_changed",
+      { ceiling },
+      options.locale ?? "en"
+    ),
+    reason: `ceiling=${ceiling}`,
+    entity_type: "autonomy_settings",
+    entity_id: userId,
+    payload: { ceiling },
+    reversible: true,
+  });
+  return { ok: true, state: await getAutonomyState(db, userId, { at: options.at }) };
 }
 
 async function getProposal(
@@ -237,10 +302,11 @@ export async function proposeAction(
 ): Promise<ProposeActionResult> {
   const actor = input.actor ?? "agent";
   const { risk, reason } = assessActionRisk(input.action_type);
-  const status =
-    input.autonomyLevel === undefined
-      ? initialStatus(risk)
-      : effectiveStatusFor(risk, input.autonomyLevel);
+  // Earned trust widens the gate up to the user's ceiling; the baseline keeps
+  // the published rule, so a fresh user behaves exactly as before.
+  const level =
+    input.autonomyLevel ?? (await getAutonomyState(db, userId)).effective_level;
+  const status = effectiveStatusFor(risk, level);
   const id = newId("act");
   const t = nowIso();
 

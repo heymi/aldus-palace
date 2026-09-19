@@ -24,6 +24,8 @@ export type ActionProposalView = {
 export type AutonomyView = {
   score?: unknown;
   level?: unknown;
+  effective_level?: unknown;
+  ceiling?: unknown;
   approvals?: unknown;
   rejections?: unknown;
 };
@@ -159,7 +161,7 @@ export function formatActionProposals(
   }
   if (autonomy) {
     const score = Number(autonomy.score ?? 0).toFixed(2);
-    const level = Number(autonomy.level ?? 0);
+    const level = Number(autonomy.effective_level ?? autonomy.level ?? 0);
     const approvals = Number(autonomy.approvals ?? 0);
     const rejections = Number(autonomy.rejections ?? 0);
     lines.push(

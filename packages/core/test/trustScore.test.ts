@@ -5,6 +5,7 @@ import {
   getAutonomyState,
   proposeAction,
   runGatedAction,
+  setAutonomyCeiling,
   trustScoreFrom,
 } from "../src/services/actionGate.js";
 import { createTestDb, finish } from "./support/db.js";
@@ -83,6 +84,8 @@ assert(Math.abs(trust.score - 6 / 8) < 1e-9, `the score is 6/8, got ${trust.scor
 
 const state = await getAutonomyState(db, "u1");
 assert(state.level === 2, `six decisions at 0.75 reach level 2, got ${state.level}`);
+assert(state.ceiling === 2, "the default ceiling is the baseline");
+assert(state.effective_level === 2, "the baseline applies to a fresh user");
 
 // An old decision outside the window is ignored.
 const outside = await computeTrustScore(db, "u1", {
@@ -113,5 +116,76 @@ assert(
   defaultRule.status === "approved",
   "without an autonomy level the published table still applies"
 );
+
+// --- permission evolution ---------------------------------------------------
+
+// The baseline holds a fresh user: high risk waits.
+const highAtBaseline = await proposeAction(db, "u1", { action_type: "memory_deleted" });
+assert(highAtBaseline.status === "proposed", "high risk waits at the baseline");
+
+// Raising the ceiling does not skip the record: level 2 still waits.
+const raised = await setAutonomyCeiling(db, "u1", 3);
+assert(raised.ok, "the ceiling can be raised");
+assert(raised.ok && raised.state.ceiling === 3, "the ceiling is stored");
+const stillWaiting = await proposeAction(db, "u1", { action_type: "memory_deleted" });
+assert(stillWaiting.status === "proposed", "a raised ceiling waits for the earned level");
+
+// More approvals push the record to level 3; high risk now runs.
+for (let index = 0; index < 6; index++) {
+  await seedDecision(`act_more_${index}`, "approved", now);
+}
+const levelThree = await getAutonomyState(db, "u1");
+assert(levelThree.level === 3, `eleven approvals reach level 3, got ${levelThree.level}`);
+assert(levelThree.effective_level === 3, "the ceiling lets level 3 apply");
+const highRuns = await proposeAction(db, "u1", { action_type: "memory_deleted" });
+assert(highRuns.status === "approved", "level 3 runs high risk");
+
+// Rejections pull the record back down; the published baseline is the floor.
+for (let index = 0; index < 8; index++) {
+  await seedDecision(`act_bad_${index}`, "rejected", now);
+}
+const fallen = await getAutonomyState(db, "u1");
+assert(fallen.level === 1, `rejections lower the earned level, got ${fallen.level}`);
+assert(fallen.effective_level === 2, "the baseline is the floor");
+const highWaitsAgain = await proposeAction(db, "u1", { action_type: "memory_deleted" });
+assert(highWaitsAgain.status === "proposed", "high risk waits again after the fall");
+
+// Critical needs the top ceiling and a top record.
+await db
+  .prepare(
+    `INSERT INTO users (id, name, timezone, language, created_at, updated_at)
+     VALUES ('u2', 'Tester', 'Asia/Shanghai', 'en', ?, ?)`
+  )
+  .run(now, now);
+for (let index = 0; index < 20; index++) {
+  await db
+    .prepare(
+      `INSERT INTO action_proposals
+       (id, user_id, action_type, payload, risk, status, actor, reason,
+        decided_by, decided_at, confirmations, created_at, updated_at)
+       VALUES (?, 'u2', 'memory_deleted', '{}', 'high', 'approved', 'agent', 'r',
+               'user', ?, 1, ?, ?)`
+    )
+    .run(`act_u2_${index}`, now, now, now);
+}
+const ceilingFour = await setAutonomyCeiling(db, "u2", 4);
+assert(ceilingFour.ok && ceilingFour.state.level === 4, "twenty approvals reach level 4");
+assert(
+  ceilingFour.ok && ceilingFour.state.effective_level === 4,
+  "the top ceiling lets level 4 apply"
+);
+const criticalRuns = await proposeAction(db, "u2", { action_type: "payment" });
+assert(criticalRuns.status === "notified", "level 4 runs a critical action with a record");
+
+// Invalid ceilings are refused, and the change is logged.
+const invalid = await setAutonomyCeiling(db, "u2", 5);
+assert(!invalid.ok && invalid.error === "ceiling_must_be_2_3_or_4", "only 2, 3 and 4 are accepted");
+const ceilingLogs = (await db
+  .prepare(
+    `SELECT COUNT(*) AS count FROM action_logs
+     WHERE user_id = 'u1' AND action_type = 'autonomy_ceiling_changed'`
+  )
+  .get()) as { count: number };
+assert(Number(ceilingLogs.count) === 1, "the ceiling change is logged");
 
 finish("trust score tests passed.");

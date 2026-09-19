@@ -154,11 +154,27 @@ const actionGate: Migration = {
   },
 };
 
+const autonomySettings: Migration = {
+  version: "2026-09-19-autonomy-settings",
+  async up(db) {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS autonomy_settings (
+        user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        ceiling INTEGER NOT NULL DEFAULT 2,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        CHECK (ceiling IN (2, 3, 4))
+      );
+    `);
+  },
+};
+
 export const MIGRATIONS: Migration[] = [
   workClassificationV1,
   progressiveCaptureColumns,
   memoryEvolution,
   actionGate,
+  autonomySettings,
 ];
 
 /**

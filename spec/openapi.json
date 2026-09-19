@@ -527,6 +527,67 @@
             }
           }
         }
+      },
+      "post": {
+        "summary": "Set how far earned trust may widen autonomy",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ceiling"
+                ],
+                "properties": {
+                  "ceiling": {
+                    "type": "integer",
+                    "enum": [
+                      2,
+                      3,
+                      4
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutonomyState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/clarifications": {
@@ -2521,12 +2582,26 @@
           "level": {
             "type": "integer",
             "minimum": 0,
+            "maximum": 4,
+            "description": "The level the record earned."
+          },
+          "ceiling": {
+            "type": "integer",
+            "minimum": 2,
             "maximum": 4
+          },
+          "effective_level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4,
+            "description": "min(max(level, 2), ceiling) — what the gate applies."
           }
         },
         "required": [
           "score",
-          "level"
+          "level",
+          "ceiling",
+          "effective_level"
         ]
       },
       "ActionProposal": {

@@ -6,6 +6,7 @@ import {
   getAutonomyState,
   listActionProposals,
   revokeAction,
+  setAutonomyCeiling,
   commitmentsAreNearDuplicate,
   commitmentTitleFromThought,
   conceptsForMemory,
@@ -960,6 +961,20 @@ export function createListRoutes(deps: AppDeps): Hono<{
     const user = await requireUser(c, db);
     const state = await getAutonomyState(db, user.id);
     return c.json(state);
+  });
+
+  /** Set how far earned trust may widen autonomy (2, 3 or 4). */
+  listRoutes.post("/autonomy", async (c) => {
+    const user = await requireUser(c, db);
+    const body = (await c.req.json().catch(() => ({}))) as { ceiling?: number };
+    if (typeof body.ceiling !== "number") {
+      return c.json({ error: "ceiling_required" }, 400);
+    }
+    const result = await setAutonomyCeiling(db, user.id, body.ceiling, {
+      locale: localeOf(user.language),
+    });
+    if (!result.ok) return c.json({ error: result.error }, 400);
+    return c.json(result.state);
   });
 
   /** The Action Gate: proposed, waiting and decided agent actions. */

@@ -197,6 +197,11 @@ function build(locale: ActionLocale): Record<string, MsgFn> {
       if (zh) return `已撤销动作：${action}`;
       return `Revoked action: ${action}`;
     },
+    autonomy_ceiling_changed: (p) => {
+      const ceiling = Number(p?.ceiling ?? 0);
+      if (zh) return `自主上限设为 ${ceiling}`;
+      return `Autonomy ceiling set to ${ceiling}`;
+    },
   };
 }
 

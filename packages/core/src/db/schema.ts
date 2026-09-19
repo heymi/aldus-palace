@@ -284,6 +284,16 @@ CREATE TABLE IF NOT EXISTS action_proposals (
 CREATE INDEX IF NOT EXISTS idx_action_proposals_user_status
   ON action_proposals(user_id, status, created_at);
 
+-- How far earned trust may widen autonomy. The published rule is the baseline
+-- (level 2); a user raises the ceiling to let the record widen it.
+CREATE TABLE IF NOT EXISTS autonomy_settings (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  ceiling INTEGER NOT NULL DEFAULT 2,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  CHECK (ceiling IN (2, 3, 4))
+);
+
 -- Today is a projection over Commitments. This table records assignment
 -- provenance without turning "task" into a primary domain object.
 CREATE TABLE IF NOT EXISTS today_assignments (
