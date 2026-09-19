@@ -1,5 +1,19 @@
 # @aldus-palace/core
 
+## 0.9.2
+
+### Patch Changes
+
+- 38175b8: Harden the FTS5 retriever and true deletion.
+
+  - A query that contains an emoji or a punctuation-only word (`"? hello"`,
+    `"😀 hello"`) no longer produces a dangling `OR`; the expression stays valid,
+    so a capture never fails on such input.
+  - Context retrieval falls back to the keyword pass when the FTS query errors,
+    instead of failing the whole capture.
+  - `purgeUserData` now also deletes the `memory_search` rows, so a purged memory
+    leaves nothing behind in the full-text index.
+
 ## 0.9.1
 
 ### Patch Changes
