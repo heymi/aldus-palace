@@ -47,6 +47,7 @@ Two sentences show every panel:
 
 | Variable | Default | Meaning |
 |---|---|---|
+| `HOST` | `127.0.0.1` | interface the host listens on; loopback, since it holds the token |
 | `PORT` | `5173` | port the client is served on |
 | `ALDUS_API_URL` | `http://127.0.0.1:8787` | where the API runs |
 | `ALDUS_API_TOKEN` | `dev-local-token` | bearer token the host sends upstream |
