@@ -3,7 +3,7 @@
  * Aldus Palace MCP server (stdio).
  *
  * Configuration (environment):
- *   ALDUS_PALACE_PROFILE     tool set: full | capture | today | workstreams | memory
+ *   ALDUS_PALACE_PROFILE     tool set: full | capture | today | workstreams | memory | actions
  *   ALDUS_PALACE_API_URL     talk to a running server instead of the local DB
  *   ALDUS_PALACE_API_TOKEN   bearer token for the server (DEV_AUTH_TOKEN)
  *   ALDUS_PALACE_DB          SQLite path when running locally
@@ -14,6 +14,7 @@
  * Focused bins (same code, different default profile):
  *   aldus-palace-mcp-capture · aldus-palace-mcp-today
  *   aldus-palace-mcp-memory  · aldus-palace-mcp-workstreams
+ *   aldus-palace-mcp-actions
  *
  * Note: SQLite allows a single writer. If you run more than one server against
  * the same file, point the extra ones at ALDUS_PALACE_API_URL instead — or use
@@ -43,6 +44,7 @@ const BIN_PROFILES: Record<string, Profile> = {
   "aldus-palace-mcp-today": "today",
   "aldus-palace-mcp-workstreams": "workstreams",
   "aldus-palace-mcp-memory": "memory",
+  "aldus-palace-mcp-actions": "actions",
 };
 
 /** Explicit env wins; otherwise the bin name decides; otherwise everything. */

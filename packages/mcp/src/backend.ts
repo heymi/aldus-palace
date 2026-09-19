@@ -14,6 +14,7 @@ import {
   ensureDevUser,
   listCommitments,
   rejectMemory as rejectMemoryRow,
+  listActionProposals,
   listMemoriesByState,
   listWorkStreams,
   localeOf,
@@ -23,6 +24,9 @@ import {
   resolveProviderConfig,
   writeActionLog,
   confirmMemory as confirmMemoryCandidate,
+  decideAction as decideActionProposal,
+  revokeAction as revokeActionProposal,
+  type ActionStatus,
   type Locale,
   type MemoryListState,
   type SqlDatabase,
@@ -59,6 +63,14 @@ export interface Backend {
   confirmMemory(memoryId: string, args?: ConfirmMemoryArgs): Promise<unknown>;
   /** Archive a memory the user does not want kept. */
   rejectMemory(memoryId: string): Promise<unknown>;
+  /** The Action Gate queue. */
+  listActions(status?: ActionStatus | "all"): Promise<unknown>;
+  decideAction(
+    proposalId: string,
+    decision: "approve" | "reject",
+    reason?: string
+  ): Promise<unknown>;
+  revokeAction(proposalId: string, reason?: string): Promise<unknown>;
   /** Release any resources the backend owns (a no-op for HTTP). */
   close(): void;
 }
@@ -184,6 +196,32 @@ export class LocalBackend implements Backend {
     return { archived: memoryId, previous_status: result.previous_status };
   }
 
+  async listActions(status?: ActionStatus | "all"): Promise<unknown> {
+    return await listActionProposals(this.db, this.user.id, status ?? "all");
+  }
+
+  async decideAction(
+    proposalId: string,
+    decision: "approve" | "reject",
+    reason?: string
+  ): Promise<unknown> {
+    const result = await decideActionProposal(this.db, this.user.id, proposalId, decision, {
+      reason,
+      locale: this.locale,
+    });
+    if (!result.ok) throw new Error(`action ${proposalId}: ${result.error}`);
+    return { proposal: result.proposal };
+  }
+
+  async revokeAction(proposalId: string, reason?: string): Promise<unknown> {
+    const result = await revokeActionProposal(this.db, this.user.id, proposalId, {
+      reason,
+      locale: this.locale,
+    });
+    if (!result.ok) throw new Error(`action ${proposalId}: ${result.error}`);
+    return { proposal: result.proposal };
+  }
+
   close(): void {
     (this.db as unknown as { close?: () => void }).close?.();
   }
@@ -281,6 +319,29 @@ export class HttpBackend implements Backend {
     return this.request(`/v1/memories/${encodeURIComponent(memoryId)}/confirm`, {
       method: "POST",
       body,
+    });
+  }
+
+  async listActions(status?: ActionStatus | "all"): Promise<unknown> {
+    const query = status && status !== "all" ? `?status=${status}` : "";
+    return this.request(`/v1/actions${query}`);
+  }
+
+  async decideAction(
+    proposalId: string,
+    decision: "approve" | "reject",
+    reason?: string
+  ): Promise<unknown> {
+    return this.request(`/v1/actions/${encodeURIComponent(proposalId)}/decide`, {
+      method: "POST",
+      body: { decision, reason },
+    });
+  }
+
+  async revokeAction(proposalId: string, reason?: string): Promise<unknown> {
+    return this.request(`/v1/actions/${encodeURIComponent(proposalId)}/revoke`, {
+      method: "POST",
+      body: { reason },
     });
   }
 }

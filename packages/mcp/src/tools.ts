@@ -2,8 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   formatActionCard,
+  formatActionProposals,
   formatTodayText,
   type ActionCard,
+  type ActionProposalView,
   type TodayViewLike,
 } from "@aldus-palace/core";
 import type { Backend } from "./backend.js";
@@ -65,11 +67,15 @@ export const PROFILES = {
     "list_memories",
     "confirm_memory",
     "reject_memory",
+    "list_actions",
+    "decide_action",
+    "revoke_action",
   ],
   capture: ["capture"],
   today: ["list_today", "list_commitments"],
   workstreams: ["list_work_streams"],
   memory: ["list_memories", "confirm_memory", "reject_memory"],
+  actions: ["list_actions", "decide_action", "revoke_action"],
 } as const;
 
 export type Profile = keyof typeof PROFILES;
@@ -335,6 +341,115 @@ export function registerTools(
       async ({ memory_id }) => {
         try {
           return json(await backend.rejectMemory(memory_id));
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+
+  if (enabled.has("list_actions")) {
+    server.registerTool(
+      "list_actions",
+      {
+        title: "Agent actions waiting for a decision",
+        description:
+          "The Action Gate queue. Call this when the user asks what the system " +
+          "wants to do on its own, what is waiting for approval, or what it has " +
+          "done. Low and medium risk actions run and are recorded; high risk " +
+          "actions wait for one approval; critical actions need two. Each row " +
+          "carries its risk, status and reason.",
+        inputSchema: {
+          status: z
+            .enum([
+              "proposed",
+              "pending_second",
+              "approved",
+              "notified",
+              "rejected",
+              "revoked",
+              "all",
+            ])
+            .optional(),
+        },
+        outputSchema: {
+          items: z.array(z.record(z.string(), z.unknown())),
+        },
+      },
+      async ({ status }) => {
+        try {
+          const items = (await backend.listActions(status)) as ActionProposalView[];
+          return card(formatActionProposals(items, backend.locale), {
+            items: items as unknown[],
+          });
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+
+  if (enabled.has("decide_action")) {
+    server.registerTool(
+      "decide_action",
+      {
+        title: "Approve or reject a waiting action",
+        description:
+          "Decide an action the gate is holding. Call this only after showing the " +
+          "proposal to the user and getting an explicit yes or no. A critical " +
+          "action needs two approvals: the first call moves it to " +
+          "`pending_second`, the second approves it. The decision is logged and " +
+          "can be revoked.",
+        inputSchema: {
+          proposal_id: z.string().min(1).describe("The action proposal id."),
+          decision: z.enum(["approve", "reject"]),
+          reason: z
+            .string()
+            .optional()
+            .describe("Short reason recorded with the decision."),
+        },
+        outputSchema: { proposal: z.record(z.string(), z.unknown()) },
+      },
+      async ({ proposal_id, decision, reason }) => {
+        try {
+          const result = (await backend.decideAction(
+            proposal_id,
+            decision,
+            reason
+          )) as { proposal: ActionProposalView };
+          return card(formatActionProposals([result.proposal], backend.locale), {
+            proposal: result.proposal as unknown as Record<string, unknown>,
+          });
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+
+  if (enabled.has("revoke_action")) {
+    server.registerTool(
+      "revoke_action",
+      {
+        title: "Revoke an action",
+        description:
+          "Take back a proposal or an approval. The row is kept as history and " +
+          "its status becomes `revoked`; nothing is deleted. Use it when the user " +
+          "changes their mind about something the gate was allowed to do.",
+        inputSchema: {
+          proposal_id: z.string().min(1).describe("The action proposal id."),
+          reason: z.string().optional().describe("Short reason recorded with the revocation."),
+        },
+        outputSchema: { proposal: z.record(z.string(), z.unknown()) },
+      },
+      async ({ proposal_id, reason }) => {
+        try {
+          const result = (await backend.revokeAction(proposal_id, reason)) as {
+            proposal: ActionProposalView;
+          };
+          return card(formatActionProposals([result.proposal], backend.locale), {
+            proposal: result.proposal as unknown as Record<string, unknown>,
+          });
         } catch (error) {
           return failure(error);
         }

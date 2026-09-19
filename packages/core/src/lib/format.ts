@@ -11,6 +11,15 @@ import { DEFAULT_LOCALE, pick, plural, type Locale } from "./locale.js";
 
 type Row = Record<string, unknown>;
 
+/** The slice of an action proposal these builders read. */
+export type ActionProposalView = {
+  id?: unknown;
+  action_type?: unknown;
+  risk?: unknown;
+  status?: unknown;
+  reason?: unknown;
+};
+
 /** The slice of the Today payload these builders read. */
 export type TodayViewLike = {
   date_key?: unknown;
@@ -91,6 +100,53 @@ export function formatActionCard(
   }
   for (const warning of card.warnings.slice(0, 3)) {
     lines.push(`  ! ${warning}`);
+  }
+  return lines.join("\n");
+}
+
+function actionState(status: string, locale: Locale): string {
+  switch (status) {
+    case "approved":
+      return pick(locale, "approved", "已批准");
+    case "notified":
+      return pick(locale, "ran, recorded", "已执行并记录");
+    case "proposed":
+      return pick(locale, "waiting", "待决定");
+    case "pending_second":
+      return pick(locale, "needs a second approval", "待二次确认");
+    case "rejected":
+      return pick(locale, "rejected", "已拒绝");
+    case "revoked":
+      return pick(locale, "revoked", "已撤销");
+    default:
+      return status;
+  }
+}
+
+/** The Action Gate queue: what is waiting, and how it was decided. */
+export function formatActionProposals(
+  proposals: ActionProposalView[],
+  locale: Locale = DEFAULT_LOCALE
+): string {
+  const waiting = proposals.filter(
+    (row) => row.status === "proposed" || row.status === "pending_second"
+  ).length;
+  const lines = [
+    waiting > 0
+      ? pick(locale, `Actions · ${waiting} waiting`, `动作 · ${waiting} 项待决定`)
+      : pick(
+          locale,
+          `Actions · ${proposals.length} recorded`,
+          `动作 · 已记录 ${proposals.length} 项`
+        ),
+  ];
+  for (const row of proposals.slice(0, 10)) {
+    const risk = text(row.risk);
+    const state = actionState(text(row.status), locale);
+    const reason = text(row.reason);
+    lines.push(
+      `  ${risk.padEnd(8)}  ${text(row.action_type)}  ·  ${state}${reason ? `  ·  ${reason}` : ""}`
+    );
   }
   return lines.join("\n");
 }

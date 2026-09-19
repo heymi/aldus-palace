@@ -47,6 +47,10 @@ assert(
   "bin name selects the profile"
 );
 assert(
+  resolveProfile({}, ["node", "aldus-palace-mcp-actions"]) === "actions",
+  "the actions bin selects the action gate profile"
+);
+assert(
   resolveProfile({ ALDUS_PALACE_PROFILE: "memory" }, ["node", "aldus-palace-mcp"]) ===
     "memory",
   "env overrides the bin default"
@@ -78,7 +82,7 @@ for (const [profile, expected] of Object.entries(PROFILES)) {
 const { client, server, backend } = await connect("full");
 
 const { tools } = await client.listTools();
-assert(tools.length === 7, `full profile exposes seven tools, got ${tools.length}`);
+assert(tools.length === 10, `full profile exposes ten tools, got ${tools.length}`);
 for (const tool of tools) {
   assert(!!tool.description, `${tool.name} must document itself`);
 }
@@ -281,6 +285,30 @@ const missing = await client.callTool({
   arguments: { memory_id: "mem_does_not_exist" },
 });
 assert(missing.isError === true, "unknown memory ids return a tool error");
+
+// action gate
+//
+// The queue starts empty; a decision on an unknown proposal is a tool error.
+const actions = await client.callTool({ name: "list_actions", arguments: {} });
+assert(!actions.isError, `list_actions failed: ${textOf(actions)}`);
+assert(
+  textOf(actions).startsWith("Actions ·"),
+  `the action card leads with the queue: ${textOf(actions)}`
+);
+const actionItems = structuredOf(actions) as { items: unknown[] };
+assert(actionItems.items.length === 0, "no action waits by default");
+
+const decideMissing = await client.callTool({
+  name: "decide_action",
+  arguments: { proposal_id: "act_missing", decision: "approve" },
+});
+assert(decideMissing.isError === true, "an unknown proposal returns a tool error");
+
+const revokeMissing = await client.callTool({
+  name: "revoke_action",
+  arguments: { proposal_id: "act_missing" },
+});
+assert(revokeMissing.isError === true, "an unknown proposal cannot be revoked");
 
 await client.close();
 await server.close();

@@ -1,4 +1,8 @@
-import { formatActionCard, formatTodayText } from "../src/lib/format.js";
+import {
+  formatActionCard,
+  formatActionProposals,
+  formatTodayText,
+} from "../src/lib/format.js";
 import type { ActionCard } from "../src/domain/types.js";
 
 function assert(condition: boolean, message: string): asserts condition {
@@ -83,5 +87,24 @@ assert(todayZh.includes("自动补充已暂停"), "Chinese pause note");
 
 const emptyToday = formatTodayText({ date_key: "2026-09-19" }, "en");
 assert(emptyToday.includes("nothing picked yet"), "an empty day has no focus");
+
+const proposals = [
+  { id: "act_1", action_type: "memory_deleted", risk: "high", status: "proposed", reason: "replaces_a_belief" },
+  { id: "act_2", action_type: "payment", risk: "critical", status: "pending_second" },
+  { id: "act_3", action_type: "capture", risk: "low", status: "approved" },
+];
+
+const proposalsEn = formatActionProposals(proposals, "en");
+assert(proposalsEn.startsWith("Actions · 2 waiting"), `the header counts the queue, got: ${proposalsEn}`);
+assert(proposalsEn.includes("high      memory_deleted  ·  waiting"), "a waiting action is listed");
+assert(proposalsEn.includes("critical  payment  ·  needs a second approval"), "a critical action asks again");
+assert(proposalsEn.includes("low       capture  ·  approved"), "an approved action is listed");
+
+const proposalsZh = formatActionProposals(proposals, "zh-CN");
+assert(proposalsZh.startsWith("动作 · 2 项待决定"), `Chinese header, got: ${proposalsZh}`);
+assert(proposalsZh.includes("待二次确认"), "Chinese second-approval state");
+
+const noneEn = formatActionProposals([], "en");
+assert(noneEn === "Actions · 0 recorded", `an empty queue is quiet, got: ${noneEn}`);
 
 console.log("format tests passed.");

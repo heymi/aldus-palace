@@ -24,7 +24,8 @@
     "aldus-palace-mcp-capture": "./dist/index.js",
     "aldus-palace-mcp-today": "./dist/index.js",
     "aldus-palace-mcp-workstreams": "./dist/index.js",
-    "aldus-palace-mcp-memory": "./dist/index.js"
+    "aldus-palace-mcp-memory": "./dist/index.js",
+    "aldus-palace-mcp-actions": "./dist/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
