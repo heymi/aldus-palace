@@ -419,7 +419,7 @@ file that proves it.
 ```bash
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
-pnpm verify     # typecheck · suites · fixtures · build · schema check
+pnpm verify     # typecheck · suites · fixtures · benchmark · build · spec · openapi · llms · docs
 pnpm demo       # the offline capture demo
 ```
 
@@ -478,6 +478,7 @@ If you cannot run the repository, the real output is committed:
 | The schema is the single source of truth | `pnpm spec:check` | `spec/schema.sql` matches `db/schema.ts` |
 | One record, three surfaces | `packages/mcp`, `apps/server`, `packages/core` | the same schema and migrations everywhere |
 | MCP tools return a readable card | `pnpm --filter @aldus-palace/mcp test` | card text asserted, payload in `structuredContent` |
+| The rule layer has measured numbers | `pnpm bench` | see [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) |
 
 ## Layout for agents
 

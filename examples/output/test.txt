@@ -6,7 +6,7 @@
 > aldus-palace@ test /Users/zhu/R&D/Aldus-Palace
 > pnpm -r test
 
-Scope: 9 of 10 workspace projects
+Scope: 10 of 11 workspace projects
 packages/client test$ tsx test/client.test.ts
 packages/core test$ tsx test/run-tests.ts
 packages/client test: client tests passed.
@@ -37,6 +37,8 @@ packages/core test: memory evolution tests passed.
 packages/core test: PASS memoryEvolution.test.ts
 packages/core test: memory value tests passed.
 packages/core test: PASS memoryValue.test.ts
+packages/core test: model date normalization tests passed.
+packages/core test: PASS modelDateNormalization.test.ts
 packages/core test: planning intelligence tests passed.
 packages/core test: PASS planningIntelligence.test.ts
 packages/core test: privacy tests passed.
@@ -48,6 +50,8 @@ packages/core test: provider tests passed.
 packages/core test: PASS providers.test.ts
 packages/core test: relativeDay tests passed.
 packages/core test: PASS relativeDay.test.ts
+packages/core test: retriever tests passed.
+packages/core test: PASS retriever.test.ts
 packages/core test: thoughtTitle tests passed: 邮件通知：跨端推送提醒与预览 | 推进：写清相册产品一句话定位与核心体验
 packages/core test: SEO summary sample:
 packages/core test:  要点：社交内容接入 Search Console 后可显关键词；分析 SERP 再写帖、关键词前置并分享，使内容进入 Google 搜索结果。
@@ -66,19 +70,19 @@ packages/core test: trust score tests passed.
 packages/core test: PASS trustScore.test.ts
 packages/core test: work migration tests passed.
 packages/core test: PASS workMigration.test.ts
-packages/core test: All 21 suites passed.
+packages/core test: All 23 suites passed.
 packages/core test: Done
-apps/server test$ tsx test/run-tests.ts
 packages/mcp test$ tsx test/tools.test.ts
+apps/server test$ tsx test/run-tests.ts
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
+packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: [llm] provider=dev (local rules)
 apps/server test: action gate API test passed.
-packages/mcp test: [llm] provider=dev (local rules)
 apps/server test: PASS actionGate.test.ts
-packages/mcp test: [llm] provider=dev (local rules)
-packages/mcp test: [llm] provider=dev (local rules)
-packages/mcp test: [llm] provider=dev (local rules)
-packages/mcp test: [llm] provider=dev (local rules)
-packages/mcp test: [llm] provider=dev (local rules)
 packages/mcp test: mcp tool tests passed.
 packages/mcp test: Done
 apps/server test: commitment classification API test passed.

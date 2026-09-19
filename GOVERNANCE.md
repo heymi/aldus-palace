@@ -32,7 +32,8 @@ reviewing regularly, this file will define one.
 
 ## Merge rules
 
-- CI must be green: `typecheck`, `test`, `eval`, `build`, `spec:check`.
+- CI must be green. `pnpm verify` is the full list: typecheck, test, eval, bench,
+  build, spec:check, openapi:check, llms:check, check:docs.
 - Commits must carry a DCO sign-off (`git commit -s`).
 - One maintainer approval is required today.
 
