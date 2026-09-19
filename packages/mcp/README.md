@@ -23,13 +23,15 @@ database.
 ## Why not the assistant's built-in memory
 
 Built-in memory is a black box: scoped to one tool, unreadable, unexportable,
-and it cannot tell you why it believes something. Here, memories are candidates
-until you confirm them, every one carries its evidence, contradictions surface as
-a question, and replacing a belief keeps the old version readable.
+and it cannot tell you why it believes something. Here every memory says where it
+came from, contradictions surface as a question, replacing a belief keeps the old
+version readable, and any memory can be archived.
 
 - **Portable** — one file, or one Worker. Change client or model freely.
-- **Auditable** — every memory carries its evidence and confidence.
-- **Confirmable** — nothing becomes a belief about you without your yes.
+- **Auditable** — every memory carries its evidence, its confidence, and a note
+  that says whether you stated it, confirmed it, or the system inferred it.
+- **Reversible** — archive any memory from the list, including one the system
+  stored on its own.
 - **Queryable** — “what is planned today”, “what did I promise”, “what is at risk”.
 
 ## Tools
@@ -40,8 +42,9 @@ a question, and replacing a belief keeps the old version readable.
 | `list_today` | what to do now, what is next, what is at risk |
 | `list_commitments` | the full list, filterable by status |
 | `list_work_streams` | grouped view of the same commitments |
-| `list_memories` | candidates, active memories, and what you have since replaced |
+| `list_memories` | active memories, pending candidates, and what you have replaced — each with a note on why it is active |
 | `confirm_memory` | activates a candidate, optionally replacing an older belief |
+| `reject_memory` | archives a memory, including one the system stored on its own |
 
 Two prompts ship as slash commands:
 
@@ -60,7 +63,7 @@ accurately and costs fewer tokens.
 | `full` (default) | all six |
 | `capture` | `capture` |
 | `today` | `list_today`, `list_commitments` |
-| `memory` | `list_memories`, `confirm_memory` |
+| `memory` | `list_memories`, `confirm_memory`, `reject_memory` |
 | `workstreams` | `list_work_streams` |
 
 ```bash
@@ -117,7 +120,7 @@ it so every client shares one database:
 | Variable | Default | Meaning |
 |---|---|---|
 | `ALDUS_PALACE_PROFILE` | `full` | tool set |
-| `ALDUS_PALACE_API_URL` | — | use a running server instead of the local file |
+| `ALDUS_PALACE_API_URL` | — | point at a running server, using its database |
 | `ALDUS_PALACE_API_TOKEN` | — | bearer token for that server |
 | `ALDUS_PALACE_DB` | `~/.aldus-palace/aldus.db` | local SQLite path |
 | `ALDUS_PALACE_USER_NAME` / `_TIMEZONE` / `_LANGUAGE` | `Local User` / `UTC` / `en` | local user defaults |

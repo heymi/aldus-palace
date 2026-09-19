@@ -1,0 +1,11 @@
+{
+  "id": "S26",
+  "input": "以后产品不要做太复杂，保持克制",
+  "expect": {
+    "thoughts_max": 0,
+    "commitments_max": 0,
+    "memory_candidates_min": 1,
+    "memory_active_min": 1,
+    "memory_types_allowed": ["preference", "principle"]
+  }
+}

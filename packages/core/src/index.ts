@@ -76,6 +76,7 @@ export * from "./lib/actionMessages.js";
 export * from "./lib/clarificationReply.js";
 export * from "./lib/concepts.js";
 export * from "./lib/inputObjectMode.js";
+export * from "./lib/memoryActivation.js";
 export * from "./lib/memoryExtract.js";
 export * from "./lib/projectMatch.js";
 export * from "./lib/relativeDay.js";

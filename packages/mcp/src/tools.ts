@@ -41,11 +41,12 @@ export const PROFILES = {
     "list_work_streams",
     "list_memories",
     "confirm_memory",
+    "reject_memory",
   ],
   capture: ["capture"],
   today: ["list_today", "list_commitments"],
   workstreams: ["list_work_streams"],
-  memory: ["list_memories", "confirm_memory"],
+  memory: ["list_memories", "confirm_memory", "reject_memory"],
 } as const;
 
 export type Profile = keyof typeof PROFILES;
@@ -195,9 +196,10 @@ export function registerTools(
         title: "List memories",
         description:
           "Call this when the user asks what you know or remember about them, " +
-          "their preferences or their projects. Candidates are what the system " +
-          "proposes from recent captures and are NOT active until the user confirms " +
-          "them; `superseded` shows memories the user has since replaced.",
+          "their preferences or their projects. Each row carries `state` and an " +
+          "`activation_note` that explains why it is active. High-confidence " +
+          "memories take effect on capture; the rest wait as `candidate` until the " +
+          "user confirms them. `superseded` shows memories the user has replaced.",
         inputSchema: {
           state: z
             .enum(["candidate", "active", "superseded", "archived", "all"])
@@ -220,9 +222,10 @@ export function registerTools(
       {
         title: "Confirm a memory candidate",
         description:
-          "Promote a candidate memory to active. Call this only after showing the " +
-          "candidate to the user and getting an explicit yes — memory must never be " +
-          "activated silently. If the candidate contradicts an existing memory " +
+          "Promote a candidate memory to active. Call this after showing the " +
+          "candidate to the user and getting an explicit yes; candidates are the " +
+          "memories the system decided to hold back, and they stay inactive until " +
+          "someone confirms them. If the candidate contradicts an existing memory " +
           "(the candidate carries `conflicts_with`), pass that memory's id as " +
           "`supersedes` when the user chooses to replace it; the old memory is kept " +
           "as history, never deleted.",
@@ -253,6 +256,30 @@ export function registerTools(
               reason,
             })
           );
+        } catch (error) {
+          return failure(error);
+        }
+      }
+    );
+  }
+
+  if (enabled.has("reject_memory")) {
+    server.registerTool(
+      "reject_memory",
+      {
+        title: "Forget a memory",
+        description:
+          "Archive a memory from the user's knowledge base. Use it when the user " +
+          "says something is wrong, out of date, or unwanted — including a memory " +
+          "the system stored on its own during a capture. The row is kept as " +
+          "history; it stops influencing future understanding.",
+        inputSchema: {
+          memory_id: z.string().min(1).describe("The memory id to archive."),
+        },
+      },
+      async ({ memory_id }) => {
+        try {
+          return json(await backend.rejectMemory(memory_id));
         } catch (error) {
           return failure(error);
         }

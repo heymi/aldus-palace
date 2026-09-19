@@ -59,9 +59,25 @@ for (const content of inputs) {
   const linked = card.commitments.length - newCommitments;
   console.log(
     `  objects: thoughts=${card.thoughts.length} commitments=${newCommitments}` +
-      ` decisions=${card.decisions.length} memory_candidates=${card.memory_candidates.length}` +
+      ` decisions=${card.decisions.length}` +
       (linked ? ` (${linked} already existed)` : "")
   );
+
+  for (const memory of card.memory_candidates) {
+    const row = memory as {
+      status?: string;
+      type?: string;
+      content?: string;
+      activation_reason?: string;
+    };
+    const label =
+      row.status === "active"
+        ? "remembered"
+        : "waiting for your confirmation";
+    console.log(`  memory: ${label} — ${row.content}`);
+    if (row.activation_reason) console.log(`          (${row.activation_reason})`);
+  }
+
   for (const warning of card.warnings) console.log(`  · ${warning}`);
 }
 
@@ -73,6 +89,6 @@ function describeMode(card: {
   if (card.thoughts.length && card.commitments.length) return "mixed (thought + commitment)";
   if (card.commitments.length) return "commitment";
   if (card.thoughts.length) return "thought";
-  if (card.memory_candidates.length) return "memory candidate only";
+  if (card.memory_candidates.length) return "memory";
   return "nothing stored";
 }

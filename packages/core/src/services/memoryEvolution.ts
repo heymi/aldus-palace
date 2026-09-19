@@ -10,6 +10,7 @@
 import type { SqlDatabase } from "../db/port.js";
 import { nowIso } from "../db/port.js";
 import { actionSummary } from "../lib/actionMessages.js";
+import { explainActivation } from "../lib/memoryActivation.js";
 import { writeActionLog } from "../repos/actionLogs.js";
 import type { MemoryRow } from "./memoryLifecycle.js";
 
@@ -334,7 +335,15 @@ export async function listMemoriesByState(
   userId: string,
   state: MemoryListState = "candidate",
   limit = 50
-): Promise<Array<MemoryRow & { state: MemoryState }>> {
+): Promise<
+  Array<
+    MemoryRow & {
+      state: MemoryState;
+      activation: "auto" | "confirmed" | null;
+      activation_note: string;
+    }
+  >
+> {
   const rows = (await db
     .prepare(
       `SELECT * FROM memories WHERE user_id = ?
@@ -343,6 +352,17 @@ export async function listMemoriesByState(
     .all(userId, limit)) as MemoryRow[];
 
   return rows
-    .map((row) => ({ ...row, state: memoryState(row) }))
+    .map((row) => {
+      const derived = memoryState(row);
+      const confirmed =
+        typeof row.confirmed_at === "string" && row.confirmed_at.length > 0;
+      return {
+        ...row,
+        state: derived,
+        activation:
+          derived === "active" ? (confirmed ? ("confirmed" as const) : ("auto" as const)) : null,
+        activation_note: explainActivation(row),
+      };
+    })
     .filter((row) => state === "all" || row.state === state);
 }

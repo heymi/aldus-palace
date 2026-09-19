@@ -13,6 +13,7 @@ import {
   createLLMProvider,
   ensureDevUser,
   listCommitments,
+  rejectMemory as rejectMemoryRow,
   listMemoriesByState,
   listWorkStreams,
   newId,
@@ -52,6 +53,8 @@ export interface Backend {
   listWorkStreams(options?: { limitPerGroup?: number }): Promise<unknown>;
   listMemories(state: MemoryListState): Promise<unknown>;
   confirmMemory(memoryId: string, args?: ConfirmMemoryArgs): Promise<unknown>;
+  /** Archive a memory the user does not want kept. */
+  rejectMemory(memoryId: string): Promise<unknown>;
   /** Release any resources the backend owns (a no-op for HTTP). */
   close(): void;
 }
@@ -169,6 +172,12 @@ export class LocalBackend implements Backend {
     };
   }
 
+  async rejectMemory(memoryId: string): Promise<unknown> {
+    const result = await rejectMemoryRow(this.db, this.user.id, memoryId);
+    if (!result.ok) throw new Error(`memory ${memoryId}: not found or not active`);
+    return { archived: memoryId, previous_status: result.previous_status };
+  }
+
   close(): void {
     (this.db as unknown as { close?: () => void }).close?.();
   }
@@ -244,6 +253,13 @@ export class HttpBackend implements Backend {
 
   async listMemories(state: MemoryListState): Promise<unknown> {
     return this.request(`/v1/memories?state=${state}`);
+  }
+
+  async rejectMemory(memoryId: string): Promise<unknown> {
+    return this.request(`/v1/memories/${encodeURIComponent(memoryId)}/reject`, {
+      method: "POST",
+      body: {},
+    });
   }
 
   close(): void {

@@ -1,0 +1,11 @@
+{
+  "id": "S27",
+  "input": "最近觉得 AI 产品都太吵了，干扰太多",
+  "expect": {
+    "thoughts_min": 1,
+    "commitments_max": 0,
+    "memory_candidates_max": 0,
+    "memory_active_max": 0,
+    "forbidden": ["memory_active"]
+  }
+}

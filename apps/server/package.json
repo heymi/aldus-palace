@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/server",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Reference HTTP server and Cloudflare Worker for Aldus Palace.",
   "license": "Apache-2.0",

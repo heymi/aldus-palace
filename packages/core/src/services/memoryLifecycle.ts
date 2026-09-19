@@ -117,14 +117,25 @@ export async function rejectMemory(
   db: SqlDatabase,
   userId: string,
   memoryId: string
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; previous_status?: string }> {
+  const existing = await getMemory(db, userId, memoryId);
+  if (!existing) return { ok: false };
+
+  // Reverse an automated activation as readily as a pending candidate: the
+  // user keeps the final say over what the system remembers.
+  const previous = String(existing.status);
+  const superseded = existing.superseded_by_id;
+  if ((previous !== "candidate" && previous !== "active") || superseded) {
+    return { ok: false };
+  }
+
   const t = nowIso();
   const result = await db
     .prepare(
       `UPDATE memories SET status = 'archived', updated_at = ?
-       WHERE id = ? AND user_id = ? AND status = 'candidate'`
+       WHERE id = ? AND user_id = ? AND status = ?`
     )
-    .run(t, memoryId, userId);
+    .run(t, memoryId, userId, previous);
 
   if (result.changes === 0) return { ok: false };
 
@@ -135,8 +146,9 @@ export async function rejectMemory(
     summary: actionSummary("memory_archived"),
     entity_type: "memory",
     entity_id: memoryId,
+    payload: { previous_status: previous },
   });
-  return { ok: true };
+  return { ok: true, previous_status: previous };
 }
 
 export type MemoryListStatus = "candidate" | "active" | "archived";

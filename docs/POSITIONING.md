@@ -47,12 +47,17 @@ such thing.** A missed date becomes a risk you can see and rearrange.
 Assistant memory is usually a black box: something gets written, nobody knows
 why, and it never changes.
 
-Here, memory has a lifecycle you can inspect:
+Here, every memory can explain itself and can be taken back:
 
-- **Candidates, not facts.** A capture proposes; only a human confirmation makes
-  a memory active. High confidence is still not enough.
+- **High-confidence memories take effect on capture.** Rules you state, and
+  inferences the system is confident about, start working at once. Everything
+  else waits as a candidate until you confirm it.
+- **Every row says why it is active.** `activation_note` distinguishes "stated by
+  you", "confirmed by you" and "inferred during a capture", with the confidence
+  and importance that decided it.
 - **Evidence on every row.** Each memory carries the excerpt it came from, a
-  confidence value, and the input id.
+  confidence value, and the input id. Archive any of them, including one the
+  system stored on its own.
 - **Temporary states are rejected.** “I'm tired today” never becomes a
   personality trait — the gate drops it before it is stored.
 - **Duplicates collapse.** Different phrasings of the same principle normalise to

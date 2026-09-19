@@ -41,6 +41,11 @@ import {
   normalizeMemoryKey,
 } from "../lib/memoryExtract.js";
 import {
+  decideMemoryActivation,
+  memoryImportanceFor,
+  type MemoryActivation,
+} from "../lib/memoryActivation.js";
+import {
   detectMemoryConflict,
   makeModelJudge,
   type MemoryConflict,
@@ -1097,8 +1102,8 @@ export async function processRawInput(
   const insertMemory = await db.prepare(
     `INSERT INTO memories
      (id, user_id, type, content, project_id, status, confidence, importance, source, evidence,
-      source_input_id, conflicts_with_id, conflict_reason, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 'candidate', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      source_input_id, conflicts_with_id, conflict_reason, confirmed_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
   // Memory evolution: a candidate that contradicts a confirmed memory is still
@@ -1128,7 +1133,7 @@ export async function processRawInput(
     if (already) {
       warnings.push(
         already.status === "active"
-          ? `已有相似已确认记忆，跳过重复候选`
+          ? `已有相似生效记忆，跳过重复候选`
           : `已有相似待确认记忆，跳过重复`
       );
       // surface existing candidate on card if still pending
@@ -1158,8 +1163,7 @@ export async function processRawInput(
     const resolved = await resolveProjectId(db, user.id, content, m.project_name ?? undefined);
     const projectId = resolved.projectId ?? contentProject.projectId;
     const conceptNames = suggestConceptNamesForMemory(type, m.content);
-    const importance =
-      type === "principle" ? 0.9 : type === "preference" ? 0.8 : 0.7;
+    const importance = memoryImportanceFor(type);
 
     let conflict: MemoryConflict | null = null;
     try {
@@ -1174,6 +1178,21 @@ export async function processRawInput(
       conflict = null;
     }
 
+    // High-confidence memories take effect on capture; the rest wait as
+    // candidates. See lib/memoryActivation.ts for the policy.
+    const decision = decideMemoryActivation({
+      type,
+      source,
+      content: m.content,
+      confidence: m.confidence ?? null,
+      importance,
+    });
+
+    const activation: MemoryActivation =
+      decision.activation === "active" ? "active" : "candidate";
+    const confirmedAt = activation === "active" ? t0 : null;
+    const activationReason = decision.reason;
+
     try {
       await insertMemory.run(
         id,
@@ -1181,6 +1200,7 @@ export async function processRawInput(
         type,
         m.content,
         projectId,
+        activation,
         m.confidence ?? null,
         importance,
         source,
@@ -1188,6 +1208,7 @@ export async function processRawInput(
         rawInputId,
         conflict?.memory_id ?? null,
         conflict?.reason ?? null,
+        confirmedAt,
         t0,
         t0
       );
@@ -1202,13 +1223,14 @@ export async function processRawInput(
       id,
       type,
       content: m.content,
-      status: "candidate",
+      status: activation,
     });
     memoriesOut.push({
       id,
       type,
       content: m.content,
-      status: "candidate",
+      status: activation,
+      activation_reason: activationReason,
       source,
       confidence: m.confidence ?? null,
       importance,
@@ -1220,7 +1242,7 @@ export async function processRawInput(
     if (conflict) {
       memoryConflicts.push(conflict);
       warnings.push(
-        `这条记忆与你已确认的「${conflict.memory_content}」冲突（${conflict.reason}）：确认时可选择替换`
+        `这条记忆与已生效的「${conflict.memory_content}」冲突（${conflict.reason}）：确认时可选择替换`
       );
       await writeActionLog(db, {
         user_id: user.id,
@@ -1236,11 +1258,23 @@ export async function processRawInput(
     await writeActionLog(db, {
       user_id: user.id,
       actor: "agent",
-      action_type: "memory_candidate_created",
-      summary: actionSummary("memory_candidate_created", { type }),
+      action_type:
+        activation === "active" ? "memory_activated" : "memory_candidate_created",
+      summary:
+        activation === "active"
+          ? `已记住：${m.content.slice(0, 60)}`
+          : actionSummary("memory_candidate_created", { type }),
+      reason: activation === "active" ? activationReason : undefined,
       entity_type: "memory",
       entity_id: id,
-      payload: { type },
+      payload: {
+        type,
+        activation,
+        activation_reason: activationReason,
+        confidence: m.confidence ?? null,
+        importance,
+        source,
+      },
     });
   }
 
@@ -1260,7 +1294,7 @@ export async function processRawInput(
       },
     });
     warnings.push(
-      `已参考 ${activeMemories.length} 条已确认记忆（认知上下文）`
+      `已参考 ${activeMemories.length} 条生效记忆（认知上下文）`
     );
   }
 
@@ -1314,7 +1348,10 @@ export async function processRawInput(
     mode === "local" ? ["已记下"] : ["已理解"];
   if (thoughtsOut.length) summaryParts.push(`${thoughtsOut.length} 条想法`);
   if (commitmentsOut.length) summaryParts.push(`${commitmentsOut.length} 件要做`);
-  if (memoriesOut.length) summaryParts.push(`${memoriesOut.length} 条将记住`);
+  const rememberedCount = memoriesOut.filter((m) => m.status === "active").length;
+  const pendingCount = memoriesOut.length - rememberedCount;
+  if (rememberedCount) summaryParts.push(`已记住 ${rememberedCount} 条`);
+  if (pendingCount) summaryParts.push(`待确认 ${pendingCount} 条`);
   if (clarificationsOut.length) summaryParts.push(`待确认 ${clarificationsOut.length}`);
 
   return {

@@ -74,7 +74,7 @@ for (const [profile, expected] of Object.entries(PROFILES)) {
 const { client, server, backend } = await connect("full");
 
 const { tools } = await client.listTools();
-assert(tools.length === 6, `full profile exposes six tools, got ${tools.length}`);
+assert(tools.length === 7, `full profile exposes seven tools, got ${tools.length}`);
 for (const tool of tools) {
   assert(!!tool.description, `${tool.name} must document itself`);
 }
@@ -151,22 +151,74 @@ assert(
 );
 
 // memory lifecycle
-const memoryCapture = await client.callTool({
+//
+// A stated rule with high confidence takes effect on capture. A weaker signal
+// waits as a candidate. Both are reversible.
+
+const statedCapture = await client.callTool({
   name: "capture",
   arguments: { content: "以后产品不要做太复杂，保持克制。", mode: "local" },
 });
-assert(!memoryCapture.isError, `memory capture failed: ${textOf(memoryCapture)}`);
+assert(!statedCapture.isError, `memory capture failed: ${textOf(statedCapture)}`);
+const statedCard = JSON.parse(textOf(statedCapture)) as {
+  action_card: { memory_candidates: Array<{ id: string; status: string }> };
+};
+const stated = statedCard.action_card.memory_candidates[0];
+assert(stated !== undefined, "a stated rule yields a memory");
+assert(
+  stated!.status === "active",
+  `a high-confidence stated rule takes effect on capture, got ${stated!.status}`
+);
+
+const active = await client.callTool({
+  name: "list_memories",
+  arguments: { state: "active" },
+});
+const activeRows = JSON.parse(textOf(active)) as Array<{
+  id: string;
+  activation: string;
+  activation_note: string;
+}>;
+assert(activeRows.length >= 1, "the remembered rule is listed as active");
+assert(
+  activeRows.some((row) => row.id === stated!.id),
+  "the captured rule is the active memory"
+);
+assert(
+  activeRows.every((row) => row.activation_note.length > 0),
+  "every memory explains why it is active"
+);
+
+// A weaker signal waits for confirmation.
+const candidateCapture = await client.callTool({
+  name: "capture",
+  arguments: { content: "保持 Mac-only，不做 Windows 版", mode: "local" },
+});
+assert(!candidateCapture.isError, `candidate capture failed: ${textOf(candidateCapture)}`);
+const candidateCard = JSON.parse(textOf(candidateCapture)) as {
+  action_card: { memory_candidates: Array<{ id: string; status: string }> };
+};
+const candidate = candidateCard.action_card.memory_candidates[0];
+assert(candidate !== undefined, "the weaker signal yields a memory");
+assert(
+  candidate!.status === "candidate",
+  `a signal below the threshold waits, got ${candidate!.status}`
+);
 
 const candidates = await client.callTool({
   name: "list_memories",
   arguments: { state: "candidate" },
 });
-const candidateRows = JSON.parse(textOf(candidates)) as Array<{ id: string }>;
-assert(candidateRows.length >= 1, "a principle capture yields a memory candidate");
+assert(
+  (JSON.parse(textOf(candidates)) as Array<{ id: string }>).some(
+    (row) => row.id === candidate!.id
+  ),
+  "the candidate is listed as pending"
+);
 
 const confirmed = await client.callTool({
   name: "confirm_memory",
-  arguments: { memory_id: candidateRows[0]!.id },
+  arguments: { memory_id: candidate!.id },
 });
 assert(!confirmed.isError, `confirm_memory failed: ${textOf(confirmed)}`);
 const confirmedPayload = JSON.parse(textOf(confirmed)) as {
@@ -174,13 +226,29 @@ const confirmedPayload = JSON.parse(textOf(confirmed)) as {
 };
 assert(confirmedPayload.memory.status === "active", "confirmation activates the memory");
 
-const active = await client.callTool({
+// Archiving works on a memory the system stored on its own.
+const rejected = await client.callTool({
+  name: "reject_memory",
+  arguments: { memory_id: stated!.id },
+});
+assert(!rejected.isError, `reject_memory failed: ${textOf(rejected)}`);
+const rejectedPayload = JSON.parse(textOf(rejected)) as {
+  previous_status: string;
+};
+assert(
+  rejectedPayload.previous_status === "active",
+  `archiving records the prior state, got ${rejectedPayload.previous_status}`
+);
+
+const afterReject = await client.callTool({
   name: "list_memories",
   arguments: { state: "active" },
 });
 assert(
-  (JSON.parse(textOf(active)) as unknown[]).length >= 1,
-  "the active memory is listed"
+  (JSON.parse(textOf(afterReject)) as Array<{ id: string }>).every(
+    (row) => row.id !== stated!.id
+  ),
+  "the archived memory leaves the active list"
 );
 
 const superseded = await client.callTool({

@@ -8,7 +8,7 @@ Nine capabilities, three ways in. Use one, or all of them.
 | 2 | [Providers](capabilities/02-providers.md) | model abstraction + a deterministic provider so agents are testable | — | — | `core/providers` |
 | 3 | [Understanding Agent](capabilities/03-understanding.md) | prompt engineering, output validation, fallbacks, dedupe, date resolution | `capture` | `POST /v1/inputs` | `core` |
 | 4 | [Progressive capture](capabilities/04-progressive-capture.md) | concurrency, retry and crash-safety around background LLM enrichment | `capture` | `POST /v1/inputs/:id/enrich` | `core` |
-| 5 | [Memory](capabilities/05-memory.md) | a candidate/confirm/evidence gate that also versions what it learns | `memory` | `/v1/memories*` | `core` |
+| 5 | [Memory](capabilities/05-memory.md) | a confident memory store that explains itself, revisions included | `memory` | `/v1/memories*` | `core` |
 | 6 | [Today & planning](capabilities/06-today-and-planning.md) | scheduling heuristics, risk detection, adaptive daily limits | `today` | `/v1/today` `/v1/plan/today` | `core` |
 | 7 | [Work streams](capabilities/07-work-streams.md) | grouping that is rebuildable and never touches the source of truth | `workstreams` | `GET /v1/work-streams` | `core` |
 | 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 40+ routes | `apps/server` |

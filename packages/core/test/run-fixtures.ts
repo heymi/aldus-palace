@@ -3,6 +3,10 @@
  * Usage: pnpm eval
  */
 import { extractDev } from "../src/providers/dev.js";
+import {
+  decideMemoryActivation,
+  memoryImportanceFor,
+} from "../src/lib/memoryActivation.js";
 import { THOUGHT_TYPES, MEMORY_TYPES } from "../src/domain/types.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -20,7 +24,12 @@ type Fixture = {
     commitments_min?: number;
     commitments_max?: number;
     memory_candidates_min?: number;
+    /** Candidates that take effect on capture (see lib/memoryActivation.ts). */
+    memory_active_min?: number;
     memory_active_max?: number;
+    /** Candidates that wait for the user's confirmation. */
+    memory_pending_min?: number;
+    memory_pending_max?: number;
     thought_types_allowed?: string[];
     memory_types_allowed?: string[];
     must_include_thought?: boolean;
@@ -82,6 +91,40 @@ for (const fx of loadFixtures()) {
     );
   }
 
+  // A candidate is either activated on capture or held back for confirmation.
+  const decisions = result.memory_candidates.map((m) =>
+    decideMemoryActivation({
+      type: m.type,
+      source: m.source,
+      content: m.content,
+      confidence: m.confidence,
+      importance: memoryImportanceFor(m.type),
+    })
+  );
+  const activeCount = decisions.filter((d) => d.activation === "active").length;
+  const pendingCount = decisions.filter((d) => d.activation === "candidate").length;
+
+  if (activeCount < (fx.expect.memory_active_min ?? 0)) {
+    errors.push(
+      `memory_active_min: got ${activeCount}, want >= ${fx.expect.memory_active_min}`
+    );
+  }
+  if (fx.expect.memory_active_max !== undefined && activeCount > fx.expect.memory_active_max) {
+    errors.push(
+      `memory_active_max: got ${activeCount}, want <= ${fx.expect.memory_active_max}`
+    );
+  }
+  if (pendingCount < (fx.expect.memory_pending_min ?? 0)) {
+    errors.push(
+      `memory_pending_min: got ${pendingCount}, want >= ${fx.expect.memory_pending_min}`
+    );
+  }
+  if (fx.expect.memory_pending_max !== undefined && pendingCount > fx.expect.memory_pending_max) {
+    errors.push(
+      `memory_pending_max: got ${pendingCount}, want <= ${fx.expect.memory_pending_max}`
+    );
+  }
+
   for (const th of result.thoughts) {
     if (!(THOUGHT_TYPES as string[]).includes(th.type)) {
       errors.push(`illegal thought type: ${th.type}`);
@@ -104,8 +147,8 @@ for (const fx of loadFixtures()) {
     if (f === "thought_type:principle" && result.thoughts.some((t) => t.type === "principle")) {
       errors.push("forbidden thought principle");
     }
-    if (f === "memory_active" && (fx.expect.memory_active_max ?? 0) === 0) {
-      // candidates only — extraction never produces active
+    if (f === "memory_active" && activeCount > 0) {
+      errors.push(`forbidden memory_active: ${activeCount} would activate`);
     }
   }
 

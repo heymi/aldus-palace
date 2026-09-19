@@ -1,5 +1,46 @@
 # @aldus-palace/mcp
 
+## 0.5.0
+
+### Minor Changes
+
+- Memories take effect on capture, and every activation explains itself.
+
+  **core**
+
+  - `lib/memoryActivation.ts` — the activation policy. A candidate with
+    `confidence >= 0.8` and `importance >= 0.8` becomes active on capture;
+    everything else waits for confirmation. A principle the system inferred always
+    waits, per the memory-pollution rule.
+  - A candidate without a confidence score waits instead of being discarded.
+  - `memory_activated` action-log entries record the reason, the scores and the
+    source, so a silent activation stays explainable.
+  - `rejectMemory` archives an active memory as readily as a pending candidate, and
+    records the prior status.
+  - The memory list gains `activation` (`auto` / `confirmed`) and
+    `activation_note`, so the client can explain why a memory is active.
+  - Capture receipts split into `已记住 N 条` and `待确认 N 条`.
+  - Fixtures gained `memory_active_min` / `memory_active_max` /
+    `memory_pending_min` / `memory_pending_max`; S25 updated, S26–S28 added.
+
+  **mcp**
+
+  - New `reject_memory` tool in the `full` and `memory` profiles.
+  - `list_memories` documents the activation note; `confirm_memory` describes
+    candidates as the memories the system held back.
+
+  **docs**
+
+  - README rewritten around the problem each capability solves, with a capture
+    session rendered as an SVG hero.
+  - The memory promise is now "explains itself and archives on request" in place of
+    "needs a tap for everything".
+
+### Patch Changes
+
+- Updated dependencies
+  - @aldus-palace/core@0.4.0
+
 ## 0.4.3
 
 ### Patch Changes

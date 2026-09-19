@@ -13,7 +13,8 @@ decide — Mac only — is nowhere.
 
 | Behaviour | Detail |
 |---|---|
-| **Candidates, not facts** | a capture proposes; only a human confirmation activates. High confidence is still not enough |
+| **Two ways to become active** | a memory with `confidence >= 0.8` and `importance >= 0.8` takes effect on capture; everything else waits as a candidate for your confirmation |
+| **Inferred principles wait** | a principle the system inferred needs confirmation, whatever its score — one inference is not a belief about who you are |
 | **Evidence on every row** | the excerpt it came from, a confidence value, and the input id |
 | **Temporary states rejected** | “I'm tired today” is dropped before storage — no long-term signal, no memory |
 | **Junk filtered with reasons** | one-off creative fragments and low-confidence inferences are skipped, and `warnings[]` says why |
@@ -21,6 +22,7 @@ decide — Mac only — is nowhere.
 | **Contradictions surface** | an opposing statement is flagged against the confirmed memory it disagrees with |
 | **Replacements keep history** | confirming a replacement marks the old memory `superseded` with a pointer and a reason. Nothing is deleted |
 | **Memory feeds back** | active memories are injected into the next capture, so understanding improves — and every injection is logged |
+| **Every activation is reversible** | the memory list shows why a memory is active and archives any of them, including one the system stored on its own |
 
 **Who this is for.** Anyone building an assistant that remembers, in a product
 where being wrong about a user is expensive.
@@ -39,14 +41,16 @@ per state printed at the end.
 
 | Level | How |
 |---|---|
-| **MCP** | profile `memory` → `list_memories` (`state`: candidate \| active \| superseded \| archived \| all) and `confirm_memory` (with `supersedes`) |
+| **MCP** | profile `memory` → `list_memories` (`state`: candidate \| active \| superseded \| archived \| all), `confirm_memory` (with `supersedes`), `reject_memory` |
 | **HTTP** | `GET /v1/memories?state=`, `POST /v1/memories/:id/confirm { supersedes?, reason? }`, `GET /v1/memories/:id/versions`, `POST /v1/memories/dedupe` |
 | **Library** | `confirmMemory`, `rejectMemory`, `detectMemoryConflict`, `supersedeMemory`, `listMemoryVersions` |
 
 ```
-candidate ──confirm──► active ──superseded by a newer belief──► superseded
-    │                    │
-    └──reject──► archived └──feed back into the next capture
+capture ──high confidence──► active ──superseded by a newer belief──► superseded
+   │                           │
+   └──below threshold──► candidate        └──feeds back into the next capture
+                            │
+              confirm ──────┘        reject / archive ◄── any memory
 ```
 
 Conflict detection runs on rules offline (topic + polarity, e.g. “Mac only” vs

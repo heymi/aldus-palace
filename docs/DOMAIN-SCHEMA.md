@@ -71,6 +71,11 @@ A memory is never overwritten. These columns carry the history:
 from `status` plus `superseded_by_id`, so the `CHECK` constraint stays intact and
 existing databases need no table rebuild.
 
+`activation` distinguishes how a memory became active without another column:
+`confirmed_at` set means the user confirmed it, `confirmed_at` null means the
+capture activated it (`confidence >= 0.8` and `importance >= 0.8`). See
+`lib/memoryActivation.ts`.
+
 ## Migrations
 
 `migrate()` is forward-only and records every version in `schema_migrations`.

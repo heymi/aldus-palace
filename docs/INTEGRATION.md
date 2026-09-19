@@ -45,7 +45,7 @@ claude mcp add aldus-palace -- node /path/to/node_modules/@aldus-palace/mcp/dist
 | `full` (default) | all six | you want the whole loop |
 | `capture` | `capture` | you only want to record things |
 | `today` | `list_today`, `list_commitments` | you want the assistant to know your day |
-| `memory` | `list_memories`, `confirm_memory` | you only want the memory gate |
+| `memory` | `list_memories`, `confirm_memory`, `reject_memory` | you only want the memory store |
 | `workstreams` | `list_work_streams` | you want grouped summaries |
 
 Focused profiles also have their own binaries (`aldus-palace-mcp-today`, …).

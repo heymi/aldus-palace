@@ -1,7 +1,7 @@
 # @aldus-palace/core
 
 > **The user typed a paragraph. Somewhere in it there is a task, a decision and a
-> thing you should never forget. Your database needs all three, typed.**
+> thing worth keeping. Your database needs all three, typed.**
 
 ```bash
 npm install @aldus-palace/core
@@ -16,10 +16,10 @@ guess. Three weeks later the model produces shapes your tables cannot hold, the
 same task exists three times, and someone asks why the assistant believes the user
 prefers minimalism.
 
-**This is that problem, already solved and tested.** A domain model for human
-intent, an agent that turns free text into typed objects, a memory gate that
-requires evidence and confirmation, and a scheduling projection with no
-`overdue` state — with no global state and nothing to configure.
+**This is that problem, solved and tested.** A domain model for human intent, an
+agent that turns free text into typed objects, a memory store that explains what
+it keeps, and a scheduling projection with no `overdue` state — with no global
+state and nothing to configure.
 
 ## Why you'd use it
 
@@ -27,13 +27,13 @@ You are about to invent a data model, a prompt pipeline, a duplicate strategy, a
 memory policy and a scheduler. Here is what each of those looks like when it is
 already decided and tested:
 
-| You'd otherwise build | What's here instead |
+| You would otherwise build | What this provides |
 |---|---|
 | an object model for thoughts / commitments / decisions | a frozen schema with invariants as `CHECK` constraints, plus forward-only migrations |
 | prompt engineering + output validation | one pipeline with server-side gates and a deterministic fallback |
 | “wait for the model” UX | local-first capture, then leased background enrichment |
 | an assistant memory policy | candidates, evidence, conflicts, versioning, and no silent activation |
-| a scheduler | four kinds of time, risk instead of overdue, adaptive daily limits |
+| a scheduler | four kinds of time, risk in place of overdue, adaptive daily limits |
 
 ## Install it in four lines
 
@@ -49,7 +49,7 @@ const user = await ensureDevUser(db, { name: "Me", timezone: "UTC", language: "e
 const card = await processRawInput(db, new DevLLMProvider(), user, rawInputId, "local");
 ```
 
-The runtime never reads `process.env`, holds no module-level state, and imports no
+The runtime reads no environment variables, holds no module-level state, and imports no
 HTTP framework — you own configuration and I/O.
 
 ## Subpath exports
@@ -76,13 +76,14 @@ createLLMProvider(resolveProviderConfig(process.env));  // auto: key if present,
 
 ## Guarantees worth knowing
 
-- **Raw input is immutable.** Models fill derived fields; `raw_inputs` is never rewritten.
+- **Raw input is immutable.** Models fill derived fields; `raw_inputs` stays as written.
 - **Failures degrade, they don't lose data.** A bad model response leaves the
   deterministic result in place.
 - **Concurrency is safe.** Background enrichment is leased; a superseded writer
   cannot overwrite a newer result ([ADR 0003](../../docs/adr/0003-progressive-capture-with-enrichment-leases.md)).
-- **Memory is never activated silently.** Candidates require a human confirmation;
-  replacements keep their history.
+- **Memory explains every activation.** A rule you state takes effect on capture;
+  an inference waits for confirmation. Every row carries its evidence and a note
+  that says which. Replacements keep their history.
 - **Migrations are forward-only** and versioned in `schema_migrations`.
 
 ## Documentation

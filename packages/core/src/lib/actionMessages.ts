@@ -96,7 +96,7 @@ function build(locale: ActionLocale): Record<string, MsgFn> {
     },
     memory_context_injected: (p) => {
       const n = Number(p?.count ?? 0);
-      if (zh) return n > 0 ? `参考了 ${n} 条已确认记忆` : "参考了已确认记忆";
+      if (zh) return n > 0 ? `参考了 ${n} 条生效记忆` : "参考了生效记忆";
       return `Injected ${n} active memories into understanding`;
     },
     memory_confirmed: (p) => {
