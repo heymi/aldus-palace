@@ -10,6 +10,7 @@
     "build": "pnpm -r build",
     "dev": "pnpm --filter @aldus-palace/core build && pnpm --filter @aldus-palace/server dev",
     "start": "pnpm --filter @aldus-palace/server start",
+    "demo": "pnpm --filter @aldus-palace/core build && pnpm --filter @aldus-palace/example-capture-cli start",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "eval": "pnpm --filter @aldus-palace/core eval",

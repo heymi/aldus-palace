@@ -13,6 +13,7 @@
 
 import {
   buildToday,
+  formatTodayText,
   listWorkStreams,
   newId,
   nowIso,
@@ -27,16 +28,7 @@ await seed(db, timezone);
 
 const today = await buildToday(db, "u1", timezone, new Date());
 
-console.log("▸ Today");
-console.log(`  date: ${today.date_key}`);
-console.log(`  now:  ${today.now ? String((today.now as { title?: string }).title) : "—"}`);
-console.log(`  next: ${today.timeline.length} scheduled item(s)`);
-console.log(`  risks: ${today.risks.length}`);
-for (const risk of today.risks) console.log(`    ⚠ ${String((risk as { title?: string }).title)}`);
-console.log(`  unscheduled: ${today.unscheduled.length}`);
-for (const item of today.unscheduled) {
-  console.log(`    · ${String((item as { title?: string }).title)}`);
-}
+console.log(formatTodayText(today, "en"));
 
 const streams = await listWorkStreams(db, "u1", { limitPerGroup: 5 });
 console.log(`\n▸ Work streams (${streams.groups.length} groups, ${streams.total} commitments)`);
