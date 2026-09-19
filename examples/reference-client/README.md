@@ -2,9 +2,6 @@
 
 A minimal browser client for the HTTP API.
 
-**Online demo:** <https://aldus-palace-demo.iheymi.workers.dev> — each visitor
-gets a private context, so what you capture is yours alone.
-
 Shaped like a macOS app: a source list, a content pane and an inspector, with a
 quick-capture sheet from anywhere.
 
@@ -78,10 +75,10 @@ with `PATCH /v1/me`, so the text the runtime writes — capture cards, action
 summaries, rule-based memory wording — follows the same language. The deterministic provider follows the input script
 on its own, so a Chinese sentence reads back in Chinese even before a switch.
 
-## Deploy the online demo
+## Deploy it yourself (optional)
 
-The same page runs on Cloudflare Workers with a private Durable Object per
-visitor. The Worker serves these files and proxies `/api/*`, so the token never
+It is not hosted anywhere by default. The same page runs on Cloudflare Workers
+with a private Durable Object per visitor when you deploy it. The Worker serves these files and proxies `/api/*`, so the token never
 reaches the browser:
 
 ```bash

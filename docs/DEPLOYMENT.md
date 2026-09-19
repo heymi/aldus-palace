@@ -69,8 +69,9 @@ printf '%s' "$(openssl rand -hex 32)" | wrangler secret put DEV_AUTH_TOKEN -c wr
 pnpm cf:deploy:demo
 ```
 
-The hosted instance is <https://aldus-palace-demo.iheymi.workers.dev>; the client
-is in [`examples/reference-client`](../examples/reference-client).
+The client it serves is in
+[`examples/reference-client`](../examples/reference-client); the Worker is only
+created when `pnpm cf:deploy:demo` runs.
 
 ## 3. Embedded
 
