@@ -1,5 +1,25 @@
 # @aldus-palace/core
 
+## 0.8.0
+
+### Minor Changes
+
+- d0d813e: Add durable action execution. An approved proposal carries an executable
+  descriptor, an idempotency key, an execution status and the result or error;
+  `executeApprovedAction` claims a lease, runs the executor registered for the
+  action type, records the outcome, skips when the permission was revoked, and
+  never runs a succeeded action twice. New exports: `executeApprovedAction`,
+  `ActionExecutor`, `ActionExecutorContext`, `ActionExecutorRegistry`,
+  `ActionExecutionStatus` and `EXECUTION_LEASE_MS`.
+
+### Patch Changes
+
+- bde8de8: Normalise the dates a model returns. `normalizeModelDate` resolves free-text
+  dates ("next week", "Friday") with the server rules and drops a past date when
+  the words point at the future, so a model cannot store "next week" or a
+  hallucinated past date as a commitment window. Found by the new LLM benchmark
+  (`pnpm bench:llm`, see `docs/BENCHMARKS-LLM.md`).
+
 ## 0.7.0
 
 ### Minor Changes
