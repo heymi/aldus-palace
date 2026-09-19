@@ -1,5 +1,14 @@
 # @aldus-palace/core
 
+## 0.9.1
+
+### Patch Changes
+
+- 106c281: `toMatchQuery` OR-joins the words of a query (each Latin word a prefix term,
+  each CJK word a character phrase) so a memory that matches any word is a
+  candidate and bm25 ranks the rest. The retrieval benchmark now measures
+  Recall@K and MRR (`pnpm bench:retrieval`).
+
 ## 0.9.0
 
 ### Minor Changes
