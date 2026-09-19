@@ -26,7 +26,13 @@ function fakeFetch(response: { status?: number; body?: unknown } = {}) {
 
 // --- paths, methods and bodies ----------------------------------------------
 
-const { calls, impl } = fakeFetch({ body: { ok: true } });
+const { calls, impl } = fakeFetch({
+  body: {
+    ok: true,
+    proposal: { id: "act_x" },
+    execution: { ok: true, status: "succeeded", result: { purged: {}, total: 1 } },
+  },
+});
 const client = createClient({ baseUrl: "http://localhost:8787/", token: "t", fetch: impl });
 
 await client.capture("Ship the onboarding page", "local");
@@ -74,47 +80,53 @@ assert(
 );
 assert(calls[9].method === "DELETE", "removal is a DELETE");
 
-await client.purge();
+const purged = await client.purge();
 assert((calls[10].body as { confirm: boolean }).confirm === true, "purge confirms");
+assert(calls[10].url === "http://localhost:8787/v1/me/purge", "purge proposes first");
+assert(
+  calls[11].url === "http://localhost:8787/v1/actions/act_x/decide",
+  "purge is approved through the gate"
+);
+assert(purged.total === 1, "the purge result travels back");
 
 await client.me();
-assert(calls[11].url === "http://localhost:8787/v1/me", "me path");
+assert(calls[12].url === "http://localhost:8787/v1/me", "me path");
 
 await client.commitments({ status: "planned", limit: 5 });
 assert(
-  calls[12].url === "http://localhost:8787/v1/commitments?status=planned&limit=5",
-  `commitment filters travel, got ${calls[12].url}`
+  calls[13].url === "http://localhost:8787/v1/commitments?status=planned&limit=5",
+  `commitment filters travel, got ${calls[13].url}`
 );
 
 await client.actions();
-assert(calls[13].url === "http://localhost:8787/v1/actions", "all actions omit the filter");
+assert(calls[14].url === "http://localhost:8787/v1/actions", "all actions omit the filter");
 
 await client.convertThought("tht_1");
 assert(
-  calls[14].url === "http://localhost:8787/v1/thoughts/tht_1/convert-to-commitment",
+  calls[15].url === "http://localhost:8787/v1/thoughts/tht_1/convert-to-commitment",
   "convert path"
 );
 await client.updateCommitment("cmt_1", { status: "planned" });
-assert(calls[15].url === "http://localhost:8787/v1/commitments/cmt_1", "commitment patch path");
-assert(calls[15].method === "PATCH", "commitment update is a PATCH");
+assert(calls[16].url === "http://localhost:8787/v1/commitments/cmt_1", "commitment patch path");
+assert(calls[16].method === "PATCH", "commitment update is a PATCH");
 await client.createProject({ name: "Orvia" });
-assert(calls[16].url === "http://localhost:8787/v1/projects", "project create path");
+assert(calls[17].url === "http://localhost:8787/v1/projects", "project create path");
 await client.resolveClarification("clr_1", { option_id: "today_daytime" });
 assert(
-  calls[17].url === "http://localhost:8787/v1/clarifications/clr_1/resolve",
+  calls[18].url === "http://localhost:8787/v1/clarifications/clr_1/resolve",
   "clarification path"
 );
 await client.moveClassification("cmt_1", "launch");
 assert(
-  calls[18].url === "http://localhost:8787/v1/commitments/cmt_1/classification",
+  calls[19].url === "http://localhost:8787/v1/commitments/cmt_1/classification",
   "classification path"
 );
 assert(
-  (calls[18].body as { group_key: string }).group_key === "launch",
+  (calls[19].body as { group_key: string }).group_key === "launch",
   "the group travels"
 );
 await client.deleteMemory("mem_1");
-assert(calls[19].method === "DELETE", "memory deletion is a DELETE");
+assert(calls[20].method === "DELETE", "memory deletion is a DELETE");
 
 // --- errors -----------------------------------------------------------------
 

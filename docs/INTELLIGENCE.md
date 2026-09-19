@@ -206,6 +206,11 @@ earned.*
   notification), high waits for one approval, critical needs two, and an
   unclassified action waits. `action_proposals` holds the trail; a revocation is
   a status change, and every step writes an `action_log` entry.
+- **Durable execution.** An approved action carries an executable descriptor, an
+  idempotency key and an execution status; a registered executor runs it under a
+  lease, the outcome is recorded, and a succeeded action never runs twice
+  (`executeApprovedAction`). Deletion is the first real one: `POST /v1/me/purge`
+  proposes `user_data_purge` and approval runs it.
 - **A trust score and autonomy levels 0–4.** Trust is the Laplace-smoothed
   approval rate of the decisions the user made in the last 90 days; automatic
   runs do not count, so trust grows from decisions. The level follows thresholds

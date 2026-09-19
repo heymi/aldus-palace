@@ -290,11 +290,19 @@ CREATE TABLE IF NOT EXISTS action_proposals (
   decided_by TEXT,
   decided_at TEXT,
   confirmations INTEGER NOT NULL DEFAULT 0,
+  action_version INTEGER NOT NULL DEFAULT 1,
+  idempotency_key TEXT,
+  execution_status TEXT NOT NULL DEFAULT 'pending',
+  execution_leased_until TEXT,
+  executed_at TEXT,
+  result TEXT,
+  error TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   CHECK (risk IN ('low', 'medium', 'high', 'critical')),
   CHECK (status IN ('approved', 'notified', 'proposed', 'pending_second', 'rejected', 'revoked')),
-  CHECK (actor IN ('agent', 'user'))
+  CHECK (actor IN ('agent', 'user')),
+  CHECK (execution_status IN ('pending', 'running', 'succeeded', 'failed', 'skipped'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_action_proposals_user_status

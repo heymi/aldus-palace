@@ -1,10 +1,13 @@
 import {
   assessActionRisk,
   decideAction,
+  executeApprovedAction,
   listActionProposals,
   proposeAction,
   revokeAction,
   runGatedAction,
+  type ActionExecutorContext,
+  type ActionExecutorRegistry,
 } from "../src/services/actionGate.js";
 import { createTestDb, finish } from "./support/db.js";
 
@@ -143,5 +146,114 @@ assert(
   types.filter((type) => type === "action_approved").length >= 3,
   "each approval writes its own log entry"
 );
+
+// --- durable execution ------------------------------------------------------
+
+let attempts = 0;
+const executors: ActionExecutorRegistry = {
+  memory_deleted: async (context: ActionExecutorContext) => {
+    attempts += 1;
+    return { archived: context.payload.memory_id ?? "mem_1" };
+  },
+};
+
+const toRun = await proposeAction(db, "u1", {
+  action_type: "memory_deleted",
+  payload: { memory_id: "mem_run" },
+});
+assert(toRun.status === "proposed", "a high-risk action waits");
+const beforeApproval = await executeApprovedAction(
+  db,
+  "u1",
+  String(toRun.proposal.id),
+  executors
+);
+assert(
+  !beforeApproval.ok && beforeApproval.error === "not_approved",
+  "a proposal cannot run before it is approved"
+);
+
+await decideAction(db, "u1", String(toRun.proposal.id), "approve");
+const firstRun = await executeApprovedAction(db, "u1", String(toRun.proposal.id), executors);
+assert(firstRun.ok && firstRun.executed, "an approved action runs");
+assert(firstRun.ok && firstRun.status === "succeeded", "a successful run is recorded");
+assert(attempts === 1, "the executor ran once");
+
+const secondRun = await executeApprovedAction(db, "u1", String(toRun.proposal.id), executors);
+assert(
+  secondRun.ok && !secondRun.executed && secondRun.reason === "already_succeeded",
+  "a succeeded action is not run again"
+);
+assert(attempts === 1, "the action is idempotent");
+
+const noExecutor = await proposeAction(db, "u1", { action_type: "commitment_deleted" });
+await decideAction(db, "u1", String(noExecutor.proposal.id), "approve");
+const noExecutorRun = await executeApprovedAction(db, "u1", String(noExecutor.proposal.id), {});
+assert(!noExecutorRun.ok && noExecutorRun.error === "no_executor", "an action without an executor waits");
+
+let failFirst = true;
+const flaky: ActionExecutorRegistry = {
+  memory_deleted: async () => {
+    if (failFirst) {
+      failFirst = false;
+      throw new Error("boom");
+    }
+    return { ok: true };
+  },
+};
+const flakyProposal = await proposeAction(db, "u1", { action_type: "memory_deleted" });
+await decideAction(db, "u1", String(flakyProposal.proposal.id), "approve");
+const failedRun = await executeApprovedAction(
+  db,
+  "u1",
+  String(flakyProposal.proposal.id),
+  flaky
+);
+assert(
+  failedRun.ok && failedRun.status === "failed" && failedRun.reason === "boom",
+  "a failure is recorded"
+);
+const retried = await executeApprovedAction(db, "u1", String(flakyProposal.proposal.id), flaky);
+assert(retried.ok && retried.status === "succeeded", "a failed action can be retried");
+
+const guardedProposal = await proposeAction(db, "u1", { action_type: "memory_deleted" });
+await decideAction(db, "u1", String(guardedProposal.proposal.id), "approve");
+let executorRan = false;
+const skipped = await executeApprovedAction(
+  db,
+  "u1",
+  String(guardedProposal.proposal.id),
+  {
+    memory_deleted: async () => {
+      executorRan = true;
+      return 1;
+    },
+  },
+  { canExecute: async () => false }
+);
+assert(
+  skipped.ok && skipped.status === "skipped" && skipped.reason === "permission_revoked",
+  "a revoked permission skips execution"
+);
+assert(!executorRan, "the executor did not run");
+
+const leased = await proposeAction(db, "u1", { action_type: "memory_deleted" });
+await decideAction(db, "u1", String(leased.proposal.id), "approve");
+await db
+  .prepare(
+    `UPDATE action_proposals SET execution_status = 'running', execution_leased_until = ?
+     WHERE id = ?`
+  )
+  .run(new Date(Date.now() + 60_000).toISOString(), leased.proposal.id);
+const blocked = await executeApprovedAction(db, "u1", String(leased.proposal.id), executors);
+assert(!blocked.ok && blocked.error === "in_progress", "a live lease blocks another worker");
+
+const executionLogs = (await db
+  .prepare(`SELECT action_type FROM action_logs WHERE user_id = 'u1'`)
+  .all()) as Array<{ action_type: string }>;
+const executionTypes = executionLogs.map((row) => row.action_type);
+assert(executionTypes.includes("action_executed"), "execution is logged");
+assert(executionTypes.includes("action_execution_failed"), "a failure is logged");
+assert(executionTypes.includes("action_execution_skipped"), "a skip is logged");
 
 finish("action gate tests passed.");

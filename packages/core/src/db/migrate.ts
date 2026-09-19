@@ -214,6 +214,29 @@ const permissionGrants: Migration = {
   },
 };
 
+const actionExecution: Migration = {
+  version: "2026-09-19-action-execution",
+  async up(db) {
+    await addColumnIfMissing(
+      db,
+      "action_proposals",
+      "action_version",
+      "INTEGER NOT NULL DEFAULT 1"
+    );
+    await addColumnIfMissing(db, "action_proposals", "idempotency_key", "TEXT");
+    await addColumnIfMissing(
+      db,
+      "action_proposals",
+      "execution_status",
+      "TEXT NOT NULL DEFAULT 'pending'"
+    );
+    await addColumnIfMissing(db, "action_proposals", "execution_leased_until", "TEXT");
+    await addColumnIfMissing(db, "action_proposals", "executed_at", "TEXT");
+    await addColumnIfMissing(db, "action_proposals", "result", "TEXT");
+    await addColumnIfMissing(db, "action_proposals", "error", "TEXT");
+  },
+};
+
 export const MIGRATIONS: Migration[] = [
   workClassificationV1,
   progressiveCaptureColumns,
@@ -223,6 +246,7 @@ export const MIGRATIONS: Migration[] = [
   workMigration,
   commitmentDependencies,
   permissionGrants,
+  actionExecution,
 ];
 
 /**

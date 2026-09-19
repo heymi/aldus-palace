@@ -1526,6 +1526,46 @@
         }
       }
     },
+    "/v1/actions/{id}/execute": {
+      "post": {
+        "summary": "Run an approved action whose executor is registered",
+        "tags": [
+          "Actions"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/actions/{id}/revoke": {
       "post": {
         "summary": "Revoke a proposal or an approval",
@@ -2097,7 +2137,7 @@
     },
     "/v1/me/purge": {
       "post": {
-        "summary": "Delete every row the user owns (requires confirm)",
+        "summary": "Propose deletion of every row the user owns (runs on approval)",
         "tags": [
           "Privacy"
         ],
@@ -2128,7 +2168,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PurgeResult"
+                  "$ref": "#/components/schemas/ActionProposal"
                 }
               }
             }
@@ -3178,6 +3218,40 @@
           "level",
           "ceiling",
           "effective_level"
+        ]
+      },
+      "ExecutionResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "executed": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "succeeded",
+              "failed",
+              "skipped"
+            ]
+          },
+          "result": {
+            "description": "What the executor returned."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "status"
         ]
       },
       "ActionProposal": {

@@ -93,4 +93,40 @@ assert(types.includes("action_proposed"), "the proposal is in the action log");
 assert(types.includes("action_approved"), "the approval is in the action log");
 assert(types.includes("action_revoked"), "the revocation is in the action log");
 
+// Deletion goes through the gate: propose, then approve runs the executor.
+const refusedPurge = await app.request("/v1/me/purge", {
+  method: "POST",
+  headers,
+  body: JSON.stringify({}),
+});
+assert(refusedPurge.status === 400, "a purge without confirmation is refused");
+
+const purge = await app.request("/v1/me/purge", {
+  method: "POST",
+  headers,
+  body: JSON.stringify({ confirm: true }),
+});
+assert(purge.status === 202, `expected 202 for the proposal, got ${purge.status}`);
+const purgeBody = (await purge.json()) as {
+  proposal: { id: string; action_type: string; status: string };
+};
+assert(purgeBody.proposal.action_type === "user_data_purge", "the purge is proposed");
+assert(purgeBody.proposal.status === "proposed", "deletion waits for approval");
+
+const approvePurge = await app.request(
+  `/v1/actions/${purgeBody.proposal.id}/decide`,
+  { method: "POST", headers, body: JSON.stringify({ decision: "approve" }) }
+);
+assert(approvePurge.status === 200, `expected 200, got ${approvePurge.status}`);
+const approveBody = (await approvePurge.json()) as {
+  execution?: { status: string; result?: { total: number } };
+};
+assert(approveBody.execution?.status === "succeeded", "approval runs the purge");
+assert((approveBody.execution?.result?.total ?? 0) > 0, "the purge deleted rows");
+
+const afterPurge = await app.request("/v1/today", { headers });
+assert(afterPurge.status === 200, "a fresh user is available after the purge");
+const afterBody = (await afterPurge.json()) as { unscheduled_total: number };
+assert(afterBody.unscheduled_total === 0, "nothing survives the purge");
+
 finish("action gate API test passed.");
