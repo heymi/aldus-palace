@@ -171,6 +171,32 @@ function build(locale: ActionLocale): Record<string, MsgFn> {
       if (zh) return `回溯关联：想法 ${t} · 要做 ${c}`;
       return `Relinked: thoughts ${t} · commitments ${c}`;
     },
+    action_proposed: (p) => {
+      const action = p?.action_type ? String(p.action_type) : "";
+      const risk = p?.risk ? String(p.risk) : "";
+      if (zh) return risk ? `待确认动作：${action}（${risk}）` : `待确认动作：${action}`;
+      return risk ? `Action needs a decision: ${action} (${risk})` : `Action needs a decision: ${action}`;
+    },
+    action_notified: (p) => {
+      const action = p?.action_type ? String(p.action_type) : "";
+      if (zh) return `已执行并记录：${action}`;
+      return `Ran and recorded: ${action}`;
+    },
+    action_approved: (p) => {
+      const action = p?.action_type ? String(p.action_type) : "";
+      if (zh) return `已批准动作：${action}`;
+      return `Approved action: ${action}`;
+    },
+    action_rejected: (p) => {
+      const action = p?.action_type ? String(p.action_type) : "";
+      if (zh) return `已拒绝动作：${action}`;
+      return `Rejected action: ${action}`;
+    },
+    action_revoked: (p) => {
+      const action = p?.action_type ? String(p.action_type) : "";
+      if (zh) return `已撤销动作：${action}`;
+      return `Revoked action: ${action}`;
+    },
   };
 }
 

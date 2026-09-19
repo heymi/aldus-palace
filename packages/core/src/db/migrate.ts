@@ -126,10 +126,39 @@ const memoryEvolution: Migration = {
   },
 };
 
+const actionGate: Migration = {
+  version: "2026-09-19-action-gate",
+  async up(db) {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS action_proposals (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id),
+        action_type TEXT NOT NULL,
+        payload TEXT NOT NULL DEFAULT '{}',
+        risk TEXT NOT NULL,
+        status TEXT NOT NULL,
+        actor TEXT NOT NULL,
+        reason TEXT,
+        decided_by TEXT,
+        decided_at TEXT,
+        confirmations INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        CHECK (risk IN ('low', 'medium', 'high', 'critical')),
+        CHECK (status IN ('approved', 'notified', 'proposed', 'pending_second', 'rejected', 'revoked')),
+        CHECK (actor IN ('agent', 'user'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_action_proposals_user_status
+        ON action_proposals(user_id, status, created_at);
+    `);
+  },
+};
+
 export const MIGRATIONS: Migration[] = [
   workClassificationV1,
   progressiveCaptureColumns,
   memoryEvolution,
+  actionGate,
 ];
 
 /**

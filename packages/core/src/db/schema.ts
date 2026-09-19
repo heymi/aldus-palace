@@ -259,6 +259,31 @@ CREATE INDEX IF NOT EXISTS idx_memories_user_type_status ON memories(user_id, ty
 CREATE INDEX IF NOT EXISTS idx_events_user_start ON events(user_id, start_at, end_at);
 CREATE INDEX IF NOT EXISTS idx_action_logs_user_created ON action_logs(user_id, created_at);
 
+-- The Action Gate: an agent action is proposed, risk-graded, and either runs
+-- (low, medium) or waits for a decision (high, critical). The row is the
+-- audit trail; revoking it is a status change, never a delete.
+CREATE TABLE IF NOT EXISTS action_proposals (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  action_type TEXT NOT NULL,
+  payload TEXT NOT NULL DEFAULT '{}',
+  risk TEXT NOT NULL,
+  status TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  reason TEXT,
+  decided_by TEXT,
+  decided_at TEXT,
+  confirmations INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  CHECK (risk IN ('low', 'medium', 'high', 'critical')),
+  CHECK (status IN ('approved', 'notified', 'proposed', 'pending_second', 'rejected', 'revoked')),
+  CHECK (actor IN ('agent', 'user'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_action_proposals_user_status
+  ON action_proposals(user_id, status, created_at);
+
 -- Today is a projection over Commitments. This table records assignment
 -- provenance without turning "task" into a primary domain object.
 CREATE TABLE IF NOT EXISTS today_assignments (

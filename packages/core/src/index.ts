@@ -59,6 +59,7 @@ export { ensureDevUser, getUserById } from "./repos/users.js";
 export { newId } from "./lib/id.js";
 
 // Domain services
+export * from "./services/actionGate.js";
 export * from "./services/adaptivePlanning.js";
 export * from "./services/commitmentClassification.js";
 export * from "./services/commitments.js";
