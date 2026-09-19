@@ -1,5 +1,12 @@
 # @aldus-palace/example-http-client
 
+## 0.1.17
+
+### Patch Changes
+
+- Updated dependencies [38175b8]
+  - @aldus-palace/core@0.9.2
+
 ## 0.1.16
 
 ### Patch Changes
