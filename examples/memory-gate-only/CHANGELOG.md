@@ -1,5 +1,12 @@
 # @aldus-palace/example-memory-gate-only
 
+## 0.1.20
+
+### Patch Changes
+
+- Updated dependencies [62a5eac]
+  - @aldus-palace/core@0.12.0
+
 ## 0.1.19
 
 ### Patch Changes
