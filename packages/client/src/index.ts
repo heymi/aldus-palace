@@ -192,6 +192,136 @@ export class AldusClient {
     return this.request(`/v1/inputs/${encodeURIComponent(id)}/enrich`, { method: "POST" });
   }
 
+  processInput(id: string): Promise<CaptureOutcome> {
+    return this.request(`/v1/inputs/${encodeURIComponent(id)}/process`, { method: "POST" });
+  }
+
+  // --- thoughts ---------------------------------------------------------------
+
+  thoughts(): Promise<Record<string, unknown>> {
+    return this.request("/v1/thoughts");
+  }
+
+  thought(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/thoughts/${encodeURIComponent(id)}`);
+  }
+
+  updateThought(id: string, patch: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.request(`/v1/thoughts/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: patch,
+    });
+  }
+
+  deleteThought(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/thoughts/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
+  convertThought(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/thoughts/${encodeURIComponent(id)}/convert-to-commitment`, {
+      method: "POST",
+    });
+  }
+
+  rewriteThoughtSummaries(): Promise<Record<string, unknown>> {
+    return this.request("/v1/thoughts/rewrite-summaries", { method: "POST" });
+  }
+
+  // --- commitments ------------------------------------------------------------
+
+  updateCommitment(
+    id: string,
+    patch: Record<string, unknown>
+  ): Promise<{ commitment: Commitment }> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: patch,
+    });
+  }
+
+  deleteCommitment(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
+  rewriteCommitmentTitles(): Promise<Record<string, unknown>> {
+    return this.request("/v1/commitments/rewrite-titles", { method: "POST" });
+  }
+
+  dedupeCommitments(): Promise<Record<string, unknown>> {
+    return this.request("/v1/commitments/dedupe", { method: "POST" });
+  }
+
+  rebuildClassifications(): Promise<Record<string, unknown>> {
+    return this.request("/v1/commitment-classifications/rebuild", { method: "POST" });
+  }
+
+  moveClassification(id: string, groupKey: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}/classification`, {
+      method: "PATCH",
+      body: { group_key: groupKey },
+    });
+  }
+
+  // --- projects and concepts --------------------------------------------------
+
+  projects(): Promise<Record<string, unknown>> {
+    return this.request("/v1/projects");
+  }
+
+  project(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/projects/${encodeURIComponent(id)}`);
+  }
+
+  createProject(input: { name: string; description?: string }): Promise<Record<string, unknown>> {
+    return this.request("/v1/projects", { method: "POST", body: input });
+  }
+
+  updateProject(
+    id: string,
+    patch: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
+    return this.request(`/v1/projects/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: patch,
+    });
+  }
+
+  deleteProject(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/projects/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
+  relinkProject(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/projects/${encodeURIComponent(id)}/relink`, { method: "POST" });
+  }
+
+  concepts(): Promise<Record<string, unknown>> {
+    return this.request("/v1/concepts");
+  }
+
+  concept(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/concepts/${encodeURIComponent(id)}`);
+  }
+
+  createConcept(name: string, description?: string): Promise<Record<string, unknown>> {
+    return this.request("/v1/concepts", { method: "POST", body: { name, description } });
+  }
+
+  // --- clarifications ---------------------------------------------------------
+
+  clarifications(): Promise<Record<string, unknown>> {
+    return this.request("/v1/clarifications");
+  }
+
+  resolveClarification(
+    id: string,
+    input: { option_id?: string; label?: string }
+  ): Promise<Record<string, unknown>> {
+    return this.request(`/v1/clarifications/${encodeURIComponent(id)}/resolve`, {
+      method: "POST",
+      body: input,
+    });
+  }
+
   // --- planning ---------------------------------------------------------------
 
   today(): Promise<Today> {
@@ -301,6 +431,21 @@ export class AldusClient {
 
   memoryVersions(id: string): Promise<{ versions: Memory[] }> {
     return this.request(`/v1/memories/${encodeURIComponent(id)}/versions`);
+  }
+
+  updateMemory(id: string, patch: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.request(`/v1/memories/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: patch,
+    });
+  }
+
+  deleteMemory(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/memories/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
+  dedupeMemories(): Promise<Record<string, unknown>> {
+    return this.request("/v1/memories/dedupe", { method: "POST" });
   }
 
   // --- the action gate --------------------------------------------------------
