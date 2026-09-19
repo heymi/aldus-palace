@@ -77,6 +77,41 @@ inferred it.
 **It follows you.** One file, one API. Claude, Cursor, your own frontend, a script
 you write.
 
+## Who it's for and when
+
+**Who it's for**
+
+| You are | What you actually get | Start at |
+|---|---|---|
+| A developer building an AI product | A user writes a sentence; the system sorts it into a task, a decision or a preference worth remembering, stores it, and schedules it when needed. You do not design those rules yourself. | [INTEGRATION.md](docs/INTEGRATION.md) |
+| An individual who wants their context to be theirs | Your memory and to-dos sit in one file you own; Claude, Cursor and your terminal all read the same one, every memory shows where it came from, and you can delete any of it. | [Capabilities 5, 6, 9](docs/CAPABILITIES.md) |
+| A team that must audit AI-written data | Every action the system takes for you is recorded, reviewable and revocable; names and amounts are stripped before anything reaches a model; deleting really deletes. | [SECURITY.md](SECURITY.md) · [ADR 0005](docs/adr/0005-action-gate-with-published-risk.md) |
+
+**What developers get out of the box**
+
+| Capability | What it lets you ship |
+|---|---|
+| **Text → typed objects** | A user writes a sentence and the product already has the task, the decision and the preference — dates resolved, duplicates skipped, model failures handled. No form, no classification rules of your own. |
+| **A memory layer** | An assistant that remembers a person over time, where every memory explains itself, can be corrected and can be undone — no "personality from one remark". |
+| **A planning engine** | A "what now" answer instead of a wall of red items: work ordered by dependency, a daily buffer, and slipped work that moves itself. |
+| **Local first + background enrichment** | Instant feedback, then the model catches up; retries, concurrency and crashes never lose or duplicate data. |
+| **The Action Gate + privacy** | Let the agent act: high-risk steps ask first, autonomy grows as trust is earned, every step is revocable; cloud calls are redacted, users can revoke permissions and truly delete. |
+| **Replaceable, offline-testable, four surfaces** | SQLite and an offline model today; Postgres or another model later without touching your code; `pnpm verify` green with no key; library / HTTP / MCP / typed client. |
+
+**When to use it**
+
+| Your situation | What the system does |
+|---|---|
+| "My memory does not follow me between clients." | One file behind MCP, read by Claude, Cursor and your terminal. |
+| "My assistant invented a preference and I cannot delete it." | The gate waits for your confirmation, every memory shows its evidence, and any of them can be archived. |
+| "Twelve red items and I freeze." | One scored "now", missed dates as risks instead of failures, and a quarter of the day left free. |
+| "We must show how an AI-written record came to be." | Every change writes an action log with a reason; memories keep their evidence and versions. |
+| "A risky action needs a human in the loop." | The Action Gate grades every agent action; high risk waits for one approval, critical for two, and the log is revocable. |
+| "Sensitive data cannot go to a model as-is." | The Privacy Gateway redacts by data level; level 4 stays local, permissions are scopes, Memory is private by default. |
+
+**When it is the wrong fit:** not a calendar, not a team task manager, not a note
+editor, not a hosted service — see [USE-CASES.md](docs/USE-CASES.md#anti-patterns).
+
 ## Sentences it understands
 
 A real run of the offline provider. Relative dates resolve at capture time.
@@ -1403,6 +1438,7 @@ it, the doc that explains it and the suite that pins it.
 | Question | File |
 |---|---|
 | What does the product do? | [`README.md`](../README.md) |
+| Who is it for, and when? | [`README.md`](../README.md#who-its-for-and-when) |
 | How is the runtime put together? | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | What are the objects and invariants? | [`DOMAIN-SCHEMA.md`](DOMAIN-SCHEMA.md) |
 | Why is a decision the way it is? | [`adr/`](adr) |

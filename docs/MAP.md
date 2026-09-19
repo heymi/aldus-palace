@@ -26,6 +26,7 @@ it, the doc that explains it and the suite that pins it.
 | Question | File |
 |---|---|
 | What does the product do? | [`README.md`](../README.md) |
+| Who is it for, and when? | [`README.md`](../README.md#who-its-for-and-when) |
 | How is the runtime put together? | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | What are the objects and invariants? | [`DOMAIN-SCHEMA.md`](DOMAIN-SCHEMA.md) |
 | Why is a decision the way it is? | [`adr/`](adr) |
