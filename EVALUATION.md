@@ -55,7 +55,7 @@ If you cannot run the repository, the real output is committed:
 | Finishing early refills the day | `packages/core/test/planningIntelligence.test.ts` | a completion replans and the next candidate is scheduled |
 | A fresh principle outranks an old experience | `packages/core/test/memoryValue.test.ts` | levels, decay and the value score rank retrieval |
 | A cloud call can be redacted before it leaves | `packages/core/test/privacy.test.ts` | names, money and emails become placeholders; level 4 stays local |
-| A cloud provider cannot be built without the guard | `packages/core/test/providers.test.ts` | `createLLMProvider` refuses a cloud kind without a guard |
+| A cloud provider cannot be built without the guard | `packages/core/test/providers.test.ts` | `createLLMProvider` and the provider classes refuse a cloud kind without a guard |
 | An approved action runs once, and deletion runs through the gate | `packages/core/test/actionGate.test.ts`, `apps/server/test/actionGate.test.ts` | the executor runs once; purge proposes and approval deletes |
 | A live model's dates are resolved on the server | `packages/core/test/modelDateNormalization.test.ts` | free text becomes ISO; a past date for a future phrase is dropped |
 | Memory retrieval is full-text, and CJK works | `packages/core/test/retriever.test.ts` | FTS5 with bm25; a Chinese substring is found |

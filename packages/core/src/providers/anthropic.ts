@@ -1,8 +1,15 @@
+import {
+  PRIVACY_GUARDED,
+  PrivacyGuardRequiredError,
+  type MessageGuard,
+} from "./guard.js";
 import type { ChatMessage, LLMProvider } from "./types.js";
 
 export type AnthropicOptions = {
   apiKey: string;
   model: string;
+  /** Redacts outgoing messages before they leave; required for a cloud call. */
+  guard: MessageGuard;
   /** Defaults to https://api.anthropic.com */
   baseUrl?: string;
   /** Defaults to 2023-06-01 */
@@ -29,26 +36,31 @@ export class AnthropicProvider implements LLMProvider {
   private readonly model: string;
   private readonly version: string;
   private readonly maxTokens: number;
+  private readonly guard: MessageGuard;
 
   constructor(options: AnthropicOptions) {
+    if (!options.guard) throw new PrivacyGuardRequiredError("anthropic");
+    this.guard = options.guard;
     this.apiKey = options.apiKey;
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, "");
     this.model = options.model;
     this.version = options.version ?? DEFAULT_VERSION;
     this.maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
     this.name = options.name ?? "anthropic";
+    Object.defineProperty(this, PRIVACY_GUARDED, { value: true });
   }
 
   async complete(
     messages: ChatMessage[],
     options?: { json?: boolean }
   ): Promise<string> {
-    const system = messages
+    const guarded = await this.guard(messages);
+    const system = guarded
       .filter((message) => message.role === "system")
       .map((message) => message.content)
       .join("\n\n");
 
-    const turns = messages
+    const turns = guarded
       .filter((message) => message.role !== "system")
       .map((message) => ({
         role: message.role === "assistant" ? "assistant" : "user",

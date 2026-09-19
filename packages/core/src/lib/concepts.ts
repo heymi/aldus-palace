@@ -181,12 +181,14 @@ export async function retrieveActiveMemoriesForContext(
       },
       { now: new Date(), keywordScore }
     );
-    return { row: r, score };
+    return { row: r, score, matched: keywordScore > 0 };
   });
 
   scored.sort((a, b) => b.score - a.score);
-  const top = scored.filter((s) => s.score > 0).slice(0, limit);
-  // if nothing matched, still return top principles/preferences by recency
+  // A positive floor means `score > 0` is always true, so match on the keyword
+  // hit itself: when nothing matched, return principles and preferences rather
+  // than an arbitrary slice of the store.
+  const top = scored.filter((s) => s.matched).slice(0, limit);
   const picked =
     top.length > 0
       ? top

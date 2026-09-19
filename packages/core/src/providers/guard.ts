@@ -21,6 +21,19 @@ export class PrivacyBlockedError extends Error {
   }
 }
 
+/**
+ * A cloud provider refuses to be constructed without a guard, so the guarantee
+ * holds for direct construction too, not only for `createLLMProvider`.
+ */
+export class PrivacyGuardRequiredError extends Error {
+  constructor(provider: string) {
+    super(
+      `provider "${provider}" requires a privacy guard (build one with createMessageGuard)`
+    );
+    this.name = "PrivacyGuardRequiredError";
+  }
+}
+
 /** Inspect the outgoing messages and return what may be sent. */
 export type MessageGuard = (messages: ChatMessage[]) => Promise<ChatMessage[]>;
 
