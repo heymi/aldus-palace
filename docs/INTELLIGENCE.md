@@ -44,10 +44,10 @@ what happens next, what the system may do on its own, and which model is used.
 
 | Engine | Goal | Shipped today | Designed |
 |---|---|---|---|
-| **Memory** | understand a person over years, not store a chat log | extraction, pollution gate, activation rule, evidence, dedupe, conflict, versioning, retrieval | graded levels, decay, value score, more kinds and signals |
-| **Planning** | keep what matters happening while the environment changes | four kinds of time, priority scoring, slot search, Today, risk, adaptive limits, feedback model | richer constraints, blended priority, schedule optimization, event-driven replanning, buffer, migration |
-| **Trust & autonomy** | widen what the system may do on its own, safely | one fixed rule | risk model, autonomy levels, trust score, permission evolution |
-| **Model orchestration** | use the right model for each job | one provider interface, three implementations | routing by task |
+| **Memory** | understand a person over years, not store a chat log | extraction, pollution gate, activation rule, evidence, dedupe, conflict, versioning, FTS5 retrieval, graded levels, decay, value score | more kinds and signals |
+| **Planning** | keep what matters happening while the environment changes | four kinds of time, priority scoring, slot search, Today, risk, adaptive limits, feedback model, constraints, duration estimate, scored Now, morning plan, buffer, migration | blended priority, rhythm-aware Now, schedule optimization |
+| **Trust & autonomy** | widen what the system may do on its own, safely | the risk table, autonomy levels, trust score, permission evolution, durable execution | a level per call |
+| **Model orchestration** | use the right model for each job | one provider interface, three implementations, the privacy guard at the boundary | routing by task |
 
 ---
 
@@ -98,8 +98,8 @@ what happens next, what the system may do on its own, and which model is used.
   its own lifetime and evidence rules.
 - **Decision memory keeps the *why*** — What, Why, When, Status — not only what
   was chosen.
-- **A three-layer store, a memory graph, retrieval ranking, context assembly and
-  a user memory control centre.**
+- **A three-layer store, a memory graph, richer context assembly and a user
+  memory control centre.**
 
 ---
 
@@ -336,8 +336,8 @@ graded:
 The audit log is viewable and revocable.
 
 **Data lifecycle.** Create → process → store → use → archive → delete. When the
-user deletes, the deletion is real: local database, cloud sync and vector indexes
-are all covered.
+user deletes, the deletion is real: the local database, the full-text memory
+index and every derived row are all covered.
 
 ### Designed
 
@@ -356,8 +356,8 @@ are all covered.
 - [x] **Progressive and fine-grained permissions**, with Memory private by
       default.
 - [x] An **Action Gate** with risk levels, and a viewable, revocable audit log.
-- [x] A **delete policy** that reaches the local database, cloud sync and vector
-      indexes.
+- [x] A **delete policy** that reaches the local database, the full-text memory
+      index and every derived row.
 - [ ] **Local encrypted storage** for Memory (Keychain / Secure Enclave plus an
       encrypted database).
 

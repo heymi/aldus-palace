@@ -28,7 +28,7 @@ POST   /v1/memories/:id/reject
 GET    /v1/memories/:id/versions         the whole history of a belief
 POST   /v1/memories/dedupe
 
-GET    /v1/thoughts · /v1/decisions · /v1/concepts · /v1/projects · /v1/activity
+GET    /v1/thoughts · /v1/concepts · /v1/projects · /v1/activity
 GET    /v1/me · GET /health
 ```
 

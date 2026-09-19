@@ -30,8 +30,9 @@ mechanisms did not exist.
   every row the user owns in one transaction, children first. The purge record is
   written before the logs are removed, so nothing of the user's survives — a
   caller that needs proof records it outside the database.
-- **The pipeline can call the gateway; the provider layer does not yet.** Routing
-  every cloud call through it is the follow-up.
+- **Every cloud call is routed through the gateway.** A cloud provider cannot be
+  built without the guard attached (ADR 0011), so a call cannot leave
+  unredacted.
 
 ## Consequences
 

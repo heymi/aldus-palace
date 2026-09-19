@@ -54,7 +54,7 @@ has to do?* If not, reconsider the design.
 | 3 (normative) | `eval/fixtures/*.json` — behaviour the product promises |
 | 4 | `docs/adr/*` — decisions already made; do not silently reverse them |
 | 5 | `CONTEXT.md` — planning vocabulary |
-| 6 (historical) | `docs/design-archive/*` — original Chinese design docs |
+| 6 (historical) | `docs/internal/design-archive/*` — original Chinese design docs |
 
 Do not expand scope from the design archive. If a vision doc conflicts with the
 schema or an ADR, the schema and the ADR win.
