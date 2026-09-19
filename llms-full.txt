@@ -102,7 +102,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 25 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 26 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -274,7 +274,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Action Gate | an unclassified agent action waits; a critical one needs two approvals; every decision is logged and revocable, and trust is the approval rate of those decisions | `services/actionGate.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 25 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 26 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -283,7 +283,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 25 suites — deterministic, offline, no API key
+pnpm test     # 26 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -301,6 +301,7 @@ API key and no network.
 | MCP | `npm install -g @aldus-palace/mcp` |
 | HTTP | `cp .env.example .env && docker compose up --build` |
 | Library | `npm install @aldus-palace/core` |
+| Client | `npm install @aldus-palace/client` |
 
 ## Documentation
 
@@ -389,7 +390,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 25 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 26 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -1109,6 +1110,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `planningIntelligence` | the Now score, the core/optional/deferred plan, context match |
 | `memoryValue` | levels, decay half-lives, the value score, ranked retrieval |
 | `privacy` | redaction by data level, the gateway, permission scopes, true deletion |
+| `client` (packages/client) | every method's path, method and body, plus error mapping |
 | `enrichmentLease` | concurrent enrichment and supersede semantics |
 | `commitmentOriginalInput` | optimized content vs original input |
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |
@@ -1307,7 +1309,7 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 | Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
-| Replayable offline | 25 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 26 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 
@@ -1350,6 +1352,7 @@ it, the doc that explains it and the suite that pins it.
 | Work streams | `services/workStreams.ts`, `services/commitmentClassification.ts` | [07](capabilities/07-work-streams.md) | `apps/server/test/commitmentClassification.test.ts` |
 | HTTP API | `apps/server/src/` | [08](capabilities/08-http-api.md) | `apps/server/test/` |
 | MCP server | `packages/mcp/src/` | [09](capabilities/09-mcp.md) | `packages/mcp/test/tools.test.ts` |
+| HTTP client | `packages/client/src/` | [client README](../packages/client/README.md) | `packages/client/test/client.test.ts` |
 | Text projections | `packages/core/src/lib/format.ts` | [EVALUATION](../EVALUATION.md) | `packages/core/test/format.test.ts` |
 | Action Gate | `packages/core/src/services/actionGate.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [ADR 0005](adr/0005-action-gate-with-published-risk.md) | `packages/core/test/actionGate.test.ts` |
 | Privacy | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts`, `lib/redaction.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [SECURITY](../SECURITY.md) | `packages/core/test/privacy.test.ts` |

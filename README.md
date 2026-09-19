@@ -93,7 +93,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 25 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 26 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -265,7 +265,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Action Gate | an unclassified agent action waits; a critical one needs two approvals; every decision is logged and revocable, and trust is the approval rate of those decisions | `services/actionGate.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 25 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 26 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -274,7 +274,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 25 suites — deterministic, offline, no API key
+pnpm test     # 26 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -292,6 +292,7 @@ API key and no network.
 | MCP | `npm install -g @aldus-palace/mcp` |
 | HTTP | `cp .env.example .env && docker compose up --build` |
 | Library | `npm install @aldus-palace/core` |
+| Client | `npm install @aldus-palace/client` |
 
 ## Documentation
 

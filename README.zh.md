@@ -78,7 +78,7 @@ claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index
 | **每日视图回答什么** | 列出全部 | 现在做什么、什么有风险、什么未排期；排满的一天会建议休息 |
 | **有几份数据** | 每个应用一份 | 一份记录，MCP、HTTP 与库都能访问：Claude、Cursor、你的前端、脚本 |
 | **记录存在哪** | 厂商云 | 你拥有的 SQLite 文件，或一个 Cloudflare Worker；可复制、可备份、可转交 |
-| **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；25 个套件与 11 个 fixture 每次重放 |
+| **怎么验证** | 用着看 | 确定性 provider 无网络、无 key 跑完整管线；26 个套件与 11 个 fixture 每次重放 |
 
 ## 当前边界
 
@@ -222,7 +222,7 @@ capture -> extraction -> candidate -> evaluation -> conflict check -> storage ->
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm verify   # 25 个套件 + 11 个 fixture + 构建 + 校验，全部离线
+pnpm verify   # 26 个套件 + 11 个 fixture + 构建 + 校验，全部离线
 pnpm demo     # 上面的捕获演示
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -239,6 +239,7 @@ pnpm --filter @aldus-palace/example-today-only start
 | MCP | `npm install -g @aldus-palace/mcp` |
 | HTTP | `cp .env.example .env && docker compose up --build` |
 | Library | `npm install @aldus-palace/core` |
+| Client | `npm install @aldus-palace/client` |
 
 ## 文档
 

@@ -32,7 +32,7 @@ spec/schema.sql is up to date.
 | 主张 | 验证方式 | 预期 |
 |---|---|---|
 | 自由文本变成带类型的对象 | `pnpm demo` | `Captured · 1 commitment`，窗口已解析 |
-| 流水线可离线运行 | `pnpm verify` | 25 个套件与 11 个 fixture 无需 key 通过 |
+| 流水线可离线运行 | `pnpm verify` | 26 个套件与 11 个 fixture 无需 key 通过 |
 | `overdue` 没有可占据的状态 | `rg overdue packages/core/src/db/schema.ts` | 无匹配；状态为 `captured/planned/scheduled/completed/risk/cancelled` |
 | 记忆按唯一公开规则激活 | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | 情绪句不会变成记忆 | `pnpm eval` | fixture `S04` 通过 |

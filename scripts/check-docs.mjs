@@ -69,9 +69,14 @@ for (const file of [...new Set(markdown)]) {
   }
 }
 
+const packageTestFiles = readdirSync(path.join(root, "packages")).flatMap((pkg) => {
+  const dir = path.join(root, "packages", pkg, "test");
+  return existsSync(dir)
+    ? readdirSync(dir).filter((file) => file.endsWith(".test.ts"))
+    : [];
+});
 const suiteFiles = [
-  ...readdirSync(path.join(root, "packages/core/test")).filter((f) => f.endsWith(".test.ts")),
-  ...readdirSync(path.join(root, "packages/mcp/test")).filter((f) => f.endsWith(".test.ts")),
+  ...packageTestFiles,
   ...readdirSync(path.join(root, "apps/server/test")).filter((f) => f.endsWith(".test.ts")),
 ];
 const suites = suiteFiles.length;

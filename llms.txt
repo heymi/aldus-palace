@@ -24,4 +24,5 @@ file that proves it, and lists what is not built yet.
 - [Committed output](examples/output): the real demo, suite, fixture and benchmark output, for readers that cannot run the repository.
 - [Map](docs/MAP.md): capability → code → doc → test.
 - [Glossary](docs/GLOSSARY.md): the shared vocabulary.
+- [HTTP client](packages/client/README.md): a typed client, one method per route.
 - [Chinese README](README.zh.md) · [中文评估指南](EVALUATION.zh.md)

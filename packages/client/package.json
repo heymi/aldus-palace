@@ -1,0 +1,47 @@
+{
+  "name": "@aldus-palace/client",
+  "version": "0.1.0",
+  "description": "Typed HTTP client for the auditable memory layer — one method per route, no runtime dependencies.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heymi/aldus-palace.git",
+    "directory": "packages/client"
+  },
+  "keywords": [
+    "memory",
+    "mcp",
+    "http-client",
+    "auditable",
+    "sqlite"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsx test/client.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

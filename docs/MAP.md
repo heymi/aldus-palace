@@ -14,6 +14,7 @@ it, the doc that explains it and the suite that pins it.
 | Work streams | `services/workStreams.ts`, `services/commitmentClassification.ts` | [07](capabilities/07-work-streams.md) | `apps/server/test/commitmentClassification.test.ts` |
 | HTTP API | `apps/server/src/` | [08](capabilities/08-http-api.md) | `apps/server/test/` |
 | MCP server | `packages/mcp/src/` | [09](capabilities/09-mcp.md) | `packages/mcp/test/tools.test.ts` |
+| HTTP client | `packages/client/src/` | [client README](../packages/client/README.md) | `packages/client/test/client.test.ts` |
 | Text projections | `packages/core/src/lib/format.ts` | [EVALUATION](../EVALUATION.md) | `packages/core/test/format.test.ts` |
 | Action Gate | `packages/core/src/services/actionGate.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [ADR 0005](adr/0005-action-gate-with-published-risk.md) | `packages/core/test/actionGate.test.ts` |
 | Privacy | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts`, `lib/redaction.ts` | [INTELLIGENCE](INTELLIGENCE.md) · [SECURITY](../SECURITY.md) | `packages/core/test/privacy.test.ts` |

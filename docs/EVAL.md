@@ -20,6 +20,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `planningIntelligence` | the Now score, the core/optional/deferred plan, context match |
 | `memoryValue` | levels, decay half-lives, the value score, ranked retrieval |
 | `privacy` | redaction by data level, the gateway, permission scopes, true deletion |
+| `client` (packages/client) | every method's path, method and body, plus error mapping |
 | `enrichmentLease` | concurrent enrichment and supersede semantics |
 | `commitmentOriginalInput` | optimized content vs original input |
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |

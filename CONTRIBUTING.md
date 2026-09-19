@@ -55,10 +55,10 @@ carry rules, and review will ask for them:
 
 ## Published package contents
 
-`packages/core` and `packages/mcp` are published to npm. Because npm only
-auto-includes a `LICENSE` that sits in the package directory, `LICENSE` and
-`NOTICE` are copied into each package. If you change the root license, update
-those copies too.
+`packages/core`, `packages/mcp` and `packages/client` are published to npm.
+Because npm only auto-includes a `LICENSE` that sits in the package directory,
+`LICENSE` and `NOTICE` are copied into each package. If you change the root
+license, update those copies too.
 
 ## Pull requests
 

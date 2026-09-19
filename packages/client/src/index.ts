@@ -1,0 +1,331 @@
+/**
+ * Typed HTTP client for the Aldus Palace server.
+ *
+ * One method per route, no runtime dependencies, and a fetch you can replace in
+ * tests. `createClient({ baseUrl, token })` is all it takes.
+ */
+
+export type ClientOptions = {
+  baseUrl: string;
+  token: string;
+  /** Replaceable for tests; defaults to the global fetch. */
+  fetch?: typeof fetch;
+};
+
+export type CaptureMode = "progressive" | "local" | "sync";
+export type MemoryListState = "candidate" | "active" | "superseded" | "archived" | "all";
+export type ActionStatus =
+  | "approved"
+  | "notified"
+  | "proposed"
+  | "pending_second"
+  | "rejected"
+  | "revoked"
+  | "all";
+export type DataLevel = 0 | 1 | 2 | 3 | 4;
+
+export type ActionCard = {
+  summary: string;
+  thoughts: Array<Record<string, unknown>>;
+  commitments: Array<Record<string, unknown>>;
+  decisions: Array<Record<string, unknown>>;
+  memory_candidates: Array<Record<string, unknown>>;
+  clarifications: Array<Record<string, unknown>>;
+  warnings: string[];
+};
+
+export type CaptureOutcome = {
+  id: string;
+  processing_status: string;
+  stage: string;
+  action_card: ActionCard;
+};
+
+export type Today = {
+  date_key: string;
+  timezone: string;
+  now: Record<string, unknown> | null;
+  timeline: Array<Record<string, unknown>>;
+  risks: Array<Record<string, unknown>>;
+  unscheduled: Array<Record<string, unknown>>;
+  unscheduled_total: number;
+  summary: string;
+  plan?: { core: string[]; optional: string[]; deferred: string[] };
+};
+
+export type MigrationResult = {
+  migrated: Array<{ id: string; title: string; deferral_count: number; reason: string }>;
+  needs_confirmation: Array<{ id: string; title: string; deferral_count: number; reason: string }>;
+};
+
+export type AutonomyState = {
+  score: number;
+  approvals: number;
+  rejections: number;
+  samples: number;
+  level: number;
+  ceiling: number;
+  effective_level: number;
+};
+
+export type ActionProposal = Record<string, unknown>;
+export type Memory = Record<string, unknown>;
+export type Commitment = Record<string, unknown>;
+
+export type CloudPayload = {
+  allowed: boolean;
+  text: string;
+  redactions: string[];
+  reason: "clean" | "redacted" | "level_4_stays_local";
+};
+
+export type PurgeResult = { purged: Record<string, number>; total: number };
+
+export type PermissionState = {
+  scopes: string[];
+  memory_permission?: "private" | "sync" | "ai_assist";
+};
+
+export class AldusApiError extends Error {
+  readonly status: number;
+  readonly body: unknown;
+
+  constructor(status: number, body: unknown) {
+    super(
+      typeof body === "object" && body !== null && "error" in body
+        ? String((body as { error: unknown }).error)
+        : `Aldus Palace request failed (${status})`
+    );
+    this.name = "AldusApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
+export class AldusClient {
+  private readonly baseUrl: string;
+  private readonly token: string;
+  private readonly fetchImpl: typeof fetch;
+
+  constructor(options: ClientOptions) {
+    this.baseUrl = options.baseUrl.replace(/\/$/, "");
+    this.token = options.token;
+    this.fetchImpl = options.fetch ?? fetch;
+  }
+
+  private async request<T>(
+    path: string,
+    init: { method?: string; body?: unknown } = {}
+  ): Promise<T> {
+    const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+      method: init.method ?? "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.token}`,
+      },
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+    });
+    const text = await response.text();
+    let parsed: unknown;
+    try {
+      parsed = text ? JSON.parse(text) : undefined;
+    } catch {
+      parsed = text;
+    }
+    if (!response.ok) throw new AldusApiError(response.status, parsed);
+    return parsed as T;
+  }
+
+  // --- account and permissions ---------------------------------------------
+
+  me(): Promise<Record<string, unknown>> {
+    return this.request("/v1/me");
+  }
+
+  permissions(): Promise<PermissionState> {
+    return this.request("/v1/permissions");
+  }
+
+  grantScope(scope: string): Promise<{ scopes: string[] }> {
+    return this.request("/v1/permissions", { method: "POST", body: { scope } });
+  }
+
+  revokeScope(scope: string): Promise<{ scopes: string[] }> {
+    return this.request(`/v1/permissions/${encodeURIComponent(scope)}`, {
+      method: "DELETE",
+    });
+  }
+
+  redact(text: string, level: DataLevel, contacts?: string[]): Promise<CloudPayload> {
+    return this.request("/v1/privacy/redact", {
+      method: "POST",
+      body: { text, level, contacts },
+    });
+  }
+
+  purge(): Promise<PurgeResult> {
+    return this.request("/v1/me/purge", { method: "POST", body: { confirm: true } });
+  }
+
+  // --- capture and understanding -------------------------------------------
+
+  capture(content: string, mode: CaptureMode = "progressive"): Promise<CaptureOutcome> {
+    return this.request("/v1/inputs", { method: "POST", body: { content, mode, process: true } });
+  }
+
+  input(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/inputs/${encodeURIComponent(id)}`);
+  }
+
+  enrich(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/inputs/${encodeURIComponent(id)}/enrich`, { method: "POST" });
+  }
+
+  // --- planning ---------------------------------------------------------------
+
+  today(): Promise<Today> {
+    return this.request("/v1/today");
+  }
+
+  planToday(planVersion?: string): Promise<Today & { migration: MigrationResult }> {
+    return this.request("/v1/plan/today", {
+      method: "POST",
+      body: planVersion ? { plan_version: planVersion } : {},
+    });
+  }
+
+  migrate(): Promise<MigrationResult> {
+    return this.request("/v1/plan/migrate", { method: "POST" });
+  }
+
+  commitments(status?: string): Promise<Commitment[]> {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    return this.request(`/v1/commitments${query}`);
+  }
+
+  completeCommitment(id: string): Promise<{ commitment: Commitment; replan: unknown }> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}/complete`, {
+      method: "POST",
+    });
+  }
+
+  startCommitment(id: string): Promise<{ commitment: Commitment }> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}/start`, {
+      method: "POST",
+    });
+  }
+
+  cancelCommitment(id: string): Promise<{ commitment: Commitment }> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}/cancel`, {
+      method: "POST",
+    });
+  }
+
+  arrangeToday(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}/arrange-today`, {
+      method: "POST",
+    });
+  }
+
+  removeFromToday(id: string): Promise<Record<string, unknown>> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}/remove-from-today`, {
+      method: "POST",
+    });
+  }
+
+  dependencies(id: string): Promise<{ blocked_by: string[] }> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}/dependencies`);
+  }
+
+  addDependency(id: string, blockedById: string): Promise<{ blocked_by: string[] }> {
+    return this.request(`/v1/commitments/${encodeURIComponent(id)}/dependencies`, {
+      method: "POST",
+      body: { blocked_by_id: blockedById },
+    });
+  }
+
+  removeDependency(id: string, blockedById: string): Promise<{ blocked_by: string[] }> {
+    return this.request(
+      `/v1/commitments/${encodeURIComponent(id)}/dependencies/${encodeURIComponent(blockedById)}`,
+      { method: "DELETE" }
+    );
+  }
+
+  workStreams(options: { limitPerGroup?: number } = {}): Promise<Record<string, unknown>> {
+    const query = options.limitPerGroup ? `?limit=${options.limitPerGroup}` : "";
+    return this.request(`/v1/work-streams${query}`);
+  }
+
+  // --- memory -----------------------------------------------------------------
+
+  memories(state: MemoryListState = "candidate"): Promise<{ items: Memory[] }> {
+    return this.request(`/v1/memories?state=${state}`);
+  }
+
+  confirmMemory(
+    id: string,
+    options: { conceptNames?: string[]; supersedes?: string; reason?: string } = {}
+  ): Promise<{ memory: Memory }> {
+    return this.request(`/v1/memories/${encodeURIComponent(id)}/confirm`, {
+      method: "POST",
+      body: {
+        concept_names: options.conceptNames,
+        supersedes: options.supersedes,
+        reason: options.reason,
+      },
+    });
+  }
+
+  rejectMemory(id: string): Promise<{ success: boolean }> {
+    return this.request(`/v1/memories/${encodeURIComponent(id)}/reject`, {
+      method: "POST",
+    });
+  }
+
+  memoryVersions(id: string): Promise<{ versions: Memory[] }> {
+    return this.request(`/v1/memories/${encodeURIComponent(id)}/versions`);
+  }
+
+  // --- the action gate --------------------------------------------------------
+
+  actions(status: ActionStatus = "all"): Promise<{ items: ActionProposal[] }> {
+    const query = status === "all" ? "" : `?status=${status}`;
+    return this.request(`/v1/actions${query}`);
+  }
+
+  decideAction(
+    id: string,
+    decision: "approve" | "reject",
+    reason?: string
+  ): Promise<{ proposal: ActionProposal }> {
+    return this.request(`/v1/actions/${encodeURIComponent(id)}/decide`, {
+      method: "POST",
+      body: { decision, reason },
+    });
+  }
+
+  revokeAction(id: string, reason?: string): Promise<{ proposal: ActionProposal }> {
+    return this.request(`/v1/actions/${encodeURIComponent(id)}/revoke`, {
+      method: "POST",
+      body: { reason },
+    });
+  }
+
+  autonomy(): Promise<AutonomyState> {
+    return this.request("/v1/autonomy");
+  }
+
+  setAutonomyCeiling(ceiling: 2 | 3 | 4): Promise<AutonomyState> {
+    return this.request("/v1/autonomy", { method: "POST", body: { ceiling } });
+  }
+
+  // --- activity ---------------------------------------------------------------
+
+  activity(): Promise<{ items: Array<Record<string, unknown>> }> {
+    return this.request("/v1/activity");
+  }
+}
+
+export function createClient(options: ClientOptions): AldusClient {
+  return new AldusClient(options);
+}
