@@ -1,5 +1,13 @@
 # @aldus-palace/example-today-only
 
+## 0.1.15
+
+### Patch Changes
+
+- Updated dependencies [8e1c285]
+- Updated dependencies [118f319]
+  - @aldus-palace/core@0.9.0
+
 ## 0.1.14
 
 ### Patch Changes

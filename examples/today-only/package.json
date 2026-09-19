@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/example-today-only",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "private": true,
   "description": "The Today projection on its own: deadlines, windows, AI slots and risk.",
   "license": "Apache-2.0",
