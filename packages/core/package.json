@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/core",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Domain model, agent runtime and provider abstractions for Aldus Palace — a personal cognitive OS.",
   "license": "Apache-2.0",
   "type": "module",

@@ -1,5 +1,16 @@
 # @aldus-palace/mcp
 
+## 0.5.1
+
+### Patch Changes
+
+- README review pass: correct the suite count, make the quick start work from a
+  fresh clone, replace the flagship example with behaviour the offline provider
+  actually produces, and add the flow diagram, scale numbers, requirements, one
+  code block per surface and a "Designed scope" section.
+- Updated dependencies
+  - @aldus-palace/core@0.4.2
+
 ## 0.5.0
 
 ### Minor Changes
