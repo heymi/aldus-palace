@@ -1104,7 +1104,7 @@ export async function processRawInput(
   }
 
   // Merge rule-based + model candidates; prefer rule wording when similar
-  const ruleMems = extractMemoryCandidates(content);
+  const ruleMems = extractMemoryCandidates(content, localeOf(user.language));
   const mergedMems: Array<{
     type: string;
     content: string;

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import {
   actionSummary,
   addDependency,
@@ -54,6 +55,7 @@ import {
   resolveClarificationByOption,
   suggestConceptNamesForMemory,
   type MemoryListState,
+  setUserLanguage,
   writeActionLog,
 } from "@aldus-palace/core";
 import type { AppVariables } from "../middleware/auth.js";
@@ -71,6 +73,30 @@ export function createListRoutes(deps: AppDeps): Hono<{
 
   listRoutes.get("/me", async (c) => {
     return c.json({ user: await requireUser(c, db) });
+  });
+
+  /**
+   * The current user's settings. The language is what the runtime writes in:
+   * capture cards, action summaries and rule-based memory wording.
+   */
+  listRoutes.patch("/me", async (c) => {
+    const user = await requireUser(c, db);
+    const body = z
+      .object({ language: z.enum(["en", "zh-CN"]) })
+      .parse(await c.req.json());
+    const updated = await setUserLanguage(db, user.id, body.language);
+    await writeActionLog(db, {
+      user_id: user.id,
+      actor: "user",
+      action_type: "user_language_changed",
+      summary: actionSummary(
+        "user_language_changed",
+        { language: body.language },
+        localeOf(body.language)
+      ),
+      payload: { language: body.language },
+    });
+    return c.json({ user: updated ?? user });
   });
 
   listRoutes.get("/thoughts", async (c) => {

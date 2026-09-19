@@ -34,6 +34,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `durationEstimate` | stated/history blending, the median, bounds, invalid input |
 | `format` | the locale-aware capture card and Today text projection |
 | `providers` | request shaping for Anthropic and OpenAI-compatible providers |
+| `language` | the dev provider follows the input script; rule memories follow the user's language |
 | `llm-config` | wrangler and code agree on the default model |
 | `mcp tools` (packages/mcp) | the tool surface and profiles run on the offline provider |
 

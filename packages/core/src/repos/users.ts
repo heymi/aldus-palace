@@ -22,6 +22,23 @@ export async function getUserById(db: SqlDatabase, id: string): Promise<User | n
   return row ? mapUser(row) : null;
 }
 
+/**
+ * Set the language the runtime writes in (capture cards, action summaries,
+ * rule-based memory wording). The caller owns validation.
+ */
+export async function setUserLanguage(
+  db: SqlDatabase,
+  id: string,
+  language: string
+): Promise<User | null> {
+  const next = language.trim();
+  if (!next) return getUserById(db, id);
+  await db
+    .prepare("UPDATE users SET language = ?, updated_at = ? WHERE id = ?")
+    .run(next, nowIso(), id);
+  return getUserById(db, id);
+}
+
 export async function ensureDevUser(
   db: SqlDatabase,
   opts: {

@@ -56,6 +56,15 @@ Two sentences show every panel:
 input it came from, in place. The nav counts what is scheduled, remembered and
 waiting.
 
+## Language
+
+The page starts in the browser's language (Chinese for `zh-*`, English
+otherwise) and switches from the EN / 中文 control in the header; the choice is
+kept in `localStorage`. Switching also calls `PATCH /v1/me`, so the text the
+runtime writes — capture cards, action summaries, rule-based memory wording —
+follows the same language. The deterministic provider follows the input script
+on its own, so a Chinese sentence reads back in Chinese even before a switch.
+
 ## Deploy the online demo
 
 The same page runs on Cloudflare Workers with a private Durable Object per

@@ -22,14 +22,18 @@ export type DevProviderOptions = {
  * Handles the patterns the acceptance fixtures cover, in English and Chinese.
  * Connect a model for general understanding.
  */
+/** CJK text: when no locale is configured, the input's script picks the wording. */
+const CJK = /[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff]/;
+
 export class DevLLMProvider implements LLMProvider {
   readonly name = "dev";
-  readonly locale: Locale;
+  /** Locale forced at construction; when unset, each call follows the input. */
+  readonly locale: Locale | undefined;
 
   constructor(options: DevProviderOptions = {}) {
     this.locale =
       options.locale === undefined
-        ? DEFAULT_LOCALE
+        ? undefined
         : typeof options.locale === "string" && options.locale.length > 2
           ? localeOf(options.locale)
           : (options.locale as Locale);
@@ -42,7 +46,8 @@ export class DevLLMProvider implements LLMProvider {
     const match = text.match(/Input:\n([\s\S]+)$/m) || text.match(/Input:\s*([\s\S]+)$/);
     const input = (match?.[1] ?? text).trim();
 
-    return JSON.stringify(extractDev(input, this.locale));
+    const locale = this.locale ?? (CJK.test(input) ? "zh-CN" : DEFAULT_LOCALE);
+    return JSON.stringify(extractDev(input, locale));
   }
 }
 

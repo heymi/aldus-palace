@@ -58,7 +58,7 @@ export {
 
 // Repositories
 export { writeActionLog, listActionLogs } from "./repos/actionLogs.js";
-export { ensureDevUser, getUserById } from "./repos/users.js";
+export { ensureDevUser, getUserById, setUserLanguage } from "./repos/users.js";
 
 // Identifiers
 export { newId } from "./lib/id.js";

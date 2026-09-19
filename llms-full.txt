@@ -135,7 +135,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP, a library and a typed client: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 28 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 29 suites and 11 fixtures replay each run |
 
 ## How you run it
 
@@ -318,7 +318,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Privacy | a cloud call is redacted by data level and level 4 stays local; Memory is private until a scope is granted; deletion empties every table for the user | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 28 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 29 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -327,7 +327,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 28 suites — deterministic, offline, no API key
+pnpm test     # 29 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -445,7 +445,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 28 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 29 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -469,6 +469,7 @@ If you cannot run the repository, the real output is committed:
 | A live model's dates are resolved on the server | `packages/core/test/modelDateNormalization.test.ts` | free text becomes ISO; a past date for a future phrase is dropped |
 | Memory retrieval is full-text, and CJK works | `packages/core/test/retriever.test.ts` | FTS5 with bm25; a Chinese substring is found |
 | Retrieval quality is measured | `pnpm bench:retrieval` | Recall@1/3/5 and MRR on a labeled corpus |
+| The system writes in your language | `packages/core/test/language.test.ts` | the deterministic provider follows the input; memory wording follows the user's language |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
 | Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
@@ -743,7 +744,7 @@ Nine capabilities, three ways in. Use one, or all of them.
 | 5 | [Memory](capabilities/05-memory.md) | a memory store that explains itself, with levels, decay and revisions | `memory` | `/v1/memories*` | `core` |
 | 6 | [Today & planning](capabilities/06-today-and-planning.md) | scheduling heuristics, risk detection, adaptive limits, dependencies, buffer and migration | `today` | `/v1/today` `/v1/plan/today` `/v1/plan/migrate` | `core` |
 | 7 | [Work streams](capabilities/07-work-streams.md) | grouping that is rebuildable and never touches the source of truth | `workstreams` | `GET /v1/work-streams` | `core` |
-| 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 60 routes | `apps/server` |
+| 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 61 routes | `apps/server` |
 | 9 | [MCP server](capabilities/09-mcp.md) | the Model Context Protocol surface and tool selection | — | — | `packages/mcp` |
 
 ## Modules are decoupled in code
@@ -1208,6 +1209,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `durationEstimate` | stated/history blending, the median, bounds, invalid input |
 | `format` | the locale-aware capture card and Today text projection |
 | `providers` | request shaping for Anthropic and OpenAI-compatible providers |
+| `language` | the dev provider follows the input script; rule memories follow the user's language |
 | `llm-config` | wrangler and code agree on the default model |
 | `mcp tools` (packages/mcp) | the tool surface and profiles run on the offline provider |
 
@@ -1397,7 +1399,7 @@ no API key. `pnpm verify` is green in a fresh clone.
 | Memory | a gate, candidates, evidence, versioning, levels and decay | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library · typed client | API | API | in-app | calendar API |
-| Replayable offline | 28 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 29 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 
