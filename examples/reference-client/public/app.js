@@ -130,6 +130,19 @@ function renderAll() {
   renderActions();
 }
 
+/** Align the server's language with the UI before the first capture. */
+async function syncServerLanguage() {
+  try {
+    const me = await api("/v1/me");
+    const current = String(me.user?.language ?? "en");
+    if (current !== serverLanguage(state.lang)) {
+      await api("/v1/me", { method: "PATCH", body: { language: serverLanguage(state.lang) } });
+    }
+  } catch {
+    // older server: the UI language still works, stored text keeps its language
+  }
+}
+
 async function setLang(lang) {
   if (lang === state.lang || !LANGS.includes(lang)) return;
   state.lang = lang;
@@ -518,6 +531,7 @@ $("actions").addEventListener("click", async (event) => {
 });
 
 applyChrome();
+void syncServerLanguage();
 refresh().catch((error) => {
   $("status").textContent = t("status.offline", { message: error.message });
   $("now").innerHTML = `<p class="empty">${esc(t("api.unreachable", { message: error.message }))}</p>`;
