@@ -1,5 +1,12 @@
 # @aldus-palace/example-capture-cli
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [28a9586]
+  - @aldus-palace/core@0.7.0
+
 ## 0.1.6
 
 ### Patch Changes
