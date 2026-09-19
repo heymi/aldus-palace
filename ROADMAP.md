@@ -48,8 +48,10 @@ The shipped planner covers four kinds of time, priority scoring, slot search,
 Today, risk, adaptive limits and a learned behaviour model. The design extends
 it:
 
-- [ ] **A richer constraint model** — hard, soft, preference and dependency
-  relationships, so the plan can respect how work depends on other work.
+- [x] **A constraint model** — hard (deadline), availability (window),
+  preference (learned project weighting) and dependency (blocked-by, with cycle
+  rejection) constraints. Soft constraints that trade off against each other are
+  not modelled yet.
 - [ ] **A blended priority score** — impact, urgency, dependencies, goal
   alignment and risk, alongside the current signals.
 - [x] **Duration estimation from history** — a stated estimate keeps the larger

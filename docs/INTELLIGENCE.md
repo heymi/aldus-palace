@@ -142,6 +142,9 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
 - **Duration estimation** (`estimateDurationMinutes`): a stated estimate keeps
   the larger weight and is calibrated against the median of completed work in
   the same project; two samples or more fill a missing estimate.
+- **Dependency constraints.** A commitment can wait on another; the planner
+  skips it while a blocker is open, a finished blocker releases it, and cycles
+  are refused (`services/dependencies.ts`).
 - **A daily buffer.** Capacity is the 09:00–18:00 window minus 25%; auto-fill
   counts the minutes already on the day and stops before the day is full
   (`planCapacityMinutes`).
@@ -175,8 +178,8 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
 - **A fuller pipeline** — constraint analysis → priority calculation →
   time-window generation → schedule optimization → conflict resolution →
   execution monitoring → replanning, with each stage carrying more of the model.
-- **A richer constraint model** — hard, soft, preference and dependency
-  relationships, so the plan can respect how work depends on other work.
+- **Soft constraints** — preferences that trade off against each other, not only
+  rules that hold or fail.
 - **A blended priority score** — impact, urgency, dependencies, goal alignment
   and risk, alongside the signals above.
 - **Complexity in duration estimation** — read task complexity alongside the

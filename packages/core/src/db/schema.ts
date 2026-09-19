@@ -99,6 +99,20 @@ CREATE TABLE IF NOT EXISTS commitments (
   CHECK (status IN ('captured', 'planned', 'scheduled', 'completed', 'cancelled', 'risk'))
 );
 
+-- Dependency constraints: the commitment waits on blocked_by_id. The planner
+-- never schedules a blocked commitment. Cycles are rejected by the service.
+CREATE TABLE IF NOT EXISTS commitment_dependencies (
+  commitment_id TEXT NOT NULL REFERENCES commitments(id) ON DELETE CASCADE,
+  blocked_by_id TEXT NOT NULL REFERENCES commitments(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (commitment_id, blocked_by_id),
+  CHECK (commitment_id != blocked_by_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_commitment_dependencies_user
+  ON commitment_dependencies(user_id, commitment_id);
+
 -- Replaceable display projection for the Work list. This never changes the
 -- Commitment truth source, Today planning, or long-term Memory.
 CREATE TABLE IF NOT EXISTS commitment_classifications (

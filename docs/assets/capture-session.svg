@@ -26,6 +26,6 @@
     <text x="28" y="326" fill="#6e7681">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</text>
     <text x="28" y="354" fill="#e6edf3">receipt &#183; Captured &#183; 1 commitment</text>
     <text x="28" y="382" fill="#8b949e">no API key &#183; no network &#183; deterministic rules in English and Chinese</text>
-    <text x="28" y="410" fill="#8b949e">21 test suites &#183; 11 acceptance fixtures &#183; replayed offline</text>
+    <text x="28" y="410" fill="#8b949e">22 test suites &#183; 11 acceptance fixtures &#183; replayed offline</text>
   </g>
 </svg>

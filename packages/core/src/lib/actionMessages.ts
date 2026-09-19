@@ -207,6 +207,16 @@ function build(locale: ActionLocale): Record<string, MsgFn> {
       if (zh) return title ? `已顺延：${title}` : "已顺延未开始的事";
       return title ? `Moved forward: ${title}` : "Moved unstarted work forward";
     },
+    dependency_added: (p) => {
+      const blocker = p?.blocked_by ? String(p.blocked_by) : "";
+      if (zh) return blocker ? `新增依赖：需先完成 ${blocker}` : "新增依赖";
+      return blocker ? `Now waits on ${blocker}` : "Added a dependency";
+    },
+    dependency_removed: (p) => {
+      const blocker = p?.blocked_by ? String(p.blocked_by) : "";
+      if (zh) return blocker ? `移除依赖：${blocker}` : "移除依赖";
+      return blocker ? `No longer waits on ${blocker}` : "Removed a dependency";
+    },
     work_needs_confirmation: (p) => {
       const title = p?.title ? String(p.title) : "";
       if (zh) return title ? `多次顺延，需要决定：${title}` : "多次顺延，需要决定";

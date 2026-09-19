@@ -182,6 +182,24 @@ const workMigration: Migration = {
   },
 };
 
+const commitmentDependencies: Migration = {
+  version: "2026-09-19-commitment-dependencies",
+  async up(db) {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS commitment_dependencies (
+        commitment_id TEXT NOT NULL REFERENCES commitments(id) ON DELETE CASCADE,
+        blocked_by_id TEXT NOT NULL REFERENCES commitments(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL REFERENCES users(id),
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (commitment_id, blocked_by_id),
+        CHECK (commitment_id != blocked_by_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_commitment_dependencies_user
+        ON commitment_dependencies(user_id, commitment_id);
+    `);
+  },
+};
+
 export const MIGRATIONS: Migration[] = [
   workClassificationV1,
   progressiveCaptureColumns,
@@ -189,6 +207,7 @@ export const MIGRATIONS: Migration[] = [
   actionGate,
   autonomySettings,
   workMigration,
+  commitmentDependencies,
 ];
 
 /**

@@ -62,6 +62,7 @@ export { newId } from "./lib/id.js";
 export * from "./services/actionGate.js";
 export * from "./services/adaptivePlanning.js";
 export * from "./services/commitmentClassification.js";
+export * from "./services/dependencies.js";
 export * from "./services/commitments.js";
 export * from "./services/enrichmentLease.js";
 export * from "./services/memoryLifecycle.js";

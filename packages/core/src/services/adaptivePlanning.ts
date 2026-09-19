@@ -8,6 +8,7 @@ import { newId } from "../lib/id.js";
 import { planCapacityMinutes } from "../lib/planCapacity.js";
 import { getLocalParts, localDayWindow } from "../lib/time.js";
 import { writeActionLog } from "../repos/actionLogs.js";
+import { blockedCommitmentIds } from "./dependencies.js";
 
 export type ReconcileTodayPlanResult = {
   date_key: string;
@@ -262,6 +263,7 @@ export async function reconcileTodayPlan(
     ) as Array<{ project_id: string | null; title: string; completed_at: string }>;
   const experience = await loadPlanningExperience(db, userId, at);
   const durationHistory = await loadDurationHistory(db, userId, at);
+  const blockedIds = await blockedCommitmentIds(db, userId);
 
   const todayIds = new Set(today.map((row) => row.id));
   const excludedIds = new Set(
@@ -280,6 +282,7 @@ export async function reconcileTodayPlan(
       (row) =>
         !todayIds.has(row.id) &&
         !excludedIds.has(row.id) &&
+        !blockedIds.has(row.id) &&
         isEligibleUnscheduled(row, at)
     )
     .map((row) => ({ row, ...scoreCandidate(row, recent, experience, at) }))

@@ -13,6 +13,7 @@ import { getLocalParts, localDayWindow, zonedLocalToIso } from "../lib/time.js";
 import type { LLMProvider } from "../providers/types.js";
 import { DEFAULT_LOCALE, pick, type Locale } from "../lib/locale.js";
 import { nowIso } from "../db/port.js";
+import { blockedCommitmentIds } from "./dependencies.js";
 
 export type PlanTodayResult = {
   picked: Array<{ id: string; title: string; reason: string; score: number }>;
@@ -237,7 +238,8 @@ export async function planEmptyToday(
     .all(userId) as Array<{ id: string; name: string; description: string | null }>;
   const projectById = new Map(projects.map((p) => [p.id, p]));
 
-  const untimed = open.filter(isUntimed);
+  const blockedIds = await blockedCommitmentIds(db, userId);
+  const untimed = open.filter((row) => isUntimed(row) && !blockedIds.has(String(row.id)));
   const scored = untimed
     .map((c) => {
       const proj = c.project_id

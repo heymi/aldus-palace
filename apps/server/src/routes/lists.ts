@@ -1,11 +1,14 @@
 import { Hono } from "hono";
 import {
   actionSummary,
+  addDependency,
   buildToday,
   decideAction,
   getAutonomyState,
   listActionProposals,
+  listDependencies,
   migrateStaleWork,
+  removeDependency,
   revokeAction,
   setAutonomyCeiling,
   commitmentsAreNearDuplicate,
@@ -394,6 +397,43 @@ export function createListRoutes(deps: AppDeps): Hono<{
       }
       throw error;
     }
+  });
+
+  /** Dependency constraints: what a commitment waits on. */
+  listRoutes.get("/commitments/:id/dependencies", async (c) => {
+    const user = await requireUser(c, db);
+    const blocked_by = await listDependencies(db, user.id, c.req.param("id"));
+    return c.json({ blocked_by });
+  });
+
+  listRoutes.post("/commitments/:id/dependencies", async (c) => {
+    const user = await requireUser(c, db);
+    const body = (await c.req.json().catch(() => ({}))) as { blocked_by_id?: string };
+    if (!body.blocked_by_id) return c.json({ error: "blocked_by_id_required" }, 400);
+    const result = await addDependency(
+      db,
+      user.id,
+      c.req.param("id"),
+      body.blocked_by_id,
+      { locale: localeOf(user.language) }
+    );
+    if (!result.ok) {
+      return c.json({ error: result.error }, result.error === "not_found" ? 404 : 400);
+    }
+    return c.json({ blocked_by: result.blocked_by });
+  });
+
+  listRoutes.delete("/commitments/:id/dependencies/:blockedById", async (c) => {
+    const user = await requireUser(c, db);
+    const result = await removeDependency(
+      db,
+      user.id,
+      c.req.param("id"),
+      c.req.param("blockedById"),
+      { locale: localeOf(user.language) }
+    );
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.json({ blocked_by: result.blocked_by });
   });
 
   /** Today: Now + Timeline + Risks + open unscheduled (Phase 1a) */

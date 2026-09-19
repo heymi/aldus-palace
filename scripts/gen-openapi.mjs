@@ -62,6 +62,18 @@ const meta = {
   "GET /v1/work-streams": { summary: "Commitments grouped into rebuildable work streams", tag: "Work streams", response: "WorkStreams" },
   "POST /v1/commitment-classifications/rebuild": { summary: "Rebuild the work-stream projection", tag: "Work streams" },
   "PATCH /v1/commitments/{id}/classification": { summary: "Move a commitment to another work stream", tag: "Work streams" },
+  "GET /v1/commitments/{id}/dependencies": { summary: "What a commitment waits on", tag: "Commitments", response: "DependencyList" },
+  "POST /v1/commitments/{id}/dependencies": {
+    summary: "Make a commitment wait on another",
+    tag: "Commitments",
+    request: {
+      type: "object",
+      required: ["blocked_by_id"],
+      properties: { blocked_by_id: { type: "string" } },
+    },
+    response: "DependencyList",
+  },
+  "DELETE /v1/commitments/{id}/dependencies/{blockedById}": { summary: "Remove a dependency", tag: "Commitments", response: "DependencyList" },
   "GET /v1/memories": { summary: "List memories by state", tag: "Memory", response: "Memory" },
   "PATCH /v1/memories/{id}": { summary: "Update a memory", tag: "Memory", response: "Memory" },
   "DELETE /v1/memories/{id}": { summary: "Delete a memory", tag: "Memory" },
@@ -295,6 +307,17 @@ const spec = {
           planning: { type: "object", additionalProperties: true },
         },
         required: ["date_key", "summary"],
+      },
+      DependencyList: {
+        type: "object",
+        properties: {
+          blocked_by: {
+            type: "array",
+            items: { type: "string" },
+            description: "Commitment ids that must complete first.",
+          },
+        },
+        required: ["blocked_by"],
       },
       MigrationResult: {
         type: "object",

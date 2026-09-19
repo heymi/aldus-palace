@@ -27,6 +27,7 @@ The shared vocabulary. Planning-specific terms live in
 | **Buffer** | the share of the daytime window the planner keeps free (a quarter by default) |
 | **Deferral** | one automatic move of a slipped, flexible, unstarted commitment; counted on the row |
 | **Migration** | clearing a slipped slot so the planner can place the work again; after three deferrals the item asks for a decision |
+| **Dependency** | a commitment that waits on another; the planner skips it while a blocker is open, and cycles are refused |
 | **Status** | `captured → planned → scheduled → completed`, plus `risk` and `cancelled` |
 
 ## Memory lifecycle
