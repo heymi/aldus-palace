@@ -22,14 +22,14 @@ const db = await openSqliteDatabase(":memory:", { wal: false });
 const user = await ensureDevUser(db, {
   name: "Demo",
   timezone: "Asia/Tokyo",
-  language: "zh-CN",
+  language: "en",
 });
 
 const inputs = [
-  "帮我规划一下下周三的客户拜访，顺便想想怎么提高转化率",
-  "最近觉得 AI 产品都太吵了，干扰太多",
-  "以后产品不要做太复杂，保持克制",
-  "帮我规划一下下周三的客户拜访，顺便想想怎么提高转化率",
+  "Ship the onboarding page next week",
+  "AI products feel noisy lately, too many interruptions",
+  "I prefer simple tools",
+  "Ship the onboarding page next week",
 ];
 
 for (const content of inputs) {
@@ -49,9 +49,16 @@ for (const content of inputs) {
     summary: "example: understanding-only",
   });
 
-  const card = await processRawInput(db, new DevLLMProvider(), user, rawInputId, "local");
+  const card = await processRawInput(
+    db,
+    new DevLLMProvider({ locale: user.language }),
+    user,
+    rawInputId,
+    "local"
+  );
 
   console.log(`\n▸ ${content}`);
+  console.log(`  receipt: ${card.summary}`);
   console.log(`  mode: ${describeMode(card)}`);
   const newCommitments = card.commitments.filter(
     (row) => !(row as { already_linked?: boolean }).already_linked

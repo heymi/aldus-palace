@@ -11,6 +11,7 @@
 import type { SqlDatabase } from "../db/port.js";
 import { getLocalParts, localDayWindow, zonedLocalToIso } from "../lib/time.js";
 import type { LLMProvider } from "../providers/types.js";
+import { DEFAULT_LOCALE, pick, type Locale } from "../lib/locale.js";
 import { nowIso } from "../db/port.js";
 
 export type PlanTodayResult = {
@@ -46,7 +47,8 @@ export function isSmallConcrete(title: string): boolean {
 
 export function scoreForEmptyToday(
   c: Record<string, unknown>,
-  projectName?: string | null
+  projectName?: string | null,
+  locale: Locale = DEFAULT_LOCALE
 ): { score: number; reasons: string[] } {
   const title = String(c.title ?? "");
   const reasons: string[] = [];
@@ -54,25 +56,25 @@ export function scoreForEmptyToday(
 
   if (isBugLike(title)) {
     score += 45;
-    reasons.push("具体缺陷/修复");
+    reasons.push(pick(locale, "a concrete defect to fix", "具体缺陷/修复"));
   }
   if (isSmallConcrete(title)) {
     score += 22;
-    reasons.push("可执行小任务");
+    reasons.push(pick(locale, "a small executable task", "可执行小任务"));
   }
   if (/设计至少|列出\s*\d|研究|草稿|概念|启发|方案\s*\d/i.test(title)) {
     score -= 35;
-    reasons.push("偏规划/研究，今日降权");
+    reasons.push(pick(locale, "planning or research; lower weight today", "偏规划/研究，今日降权"));
   }
   if (title.length > 70) {
     score -= 15;
-    reasons.push("标题过长/偏史诗");
+    reasons.push(pick(locale, "title reads like an epic", "标题过长/偏史诗"));
   }
 
   const imp = Number(c.importance);
   if (!Number.isNaN(imp) && imp > 0) {
     score += Math.round(imp * 18);
-    reasons.push("重要性");
+    reasons.push(pick(locale, "importance", "重要性"));
   }
 
   // Fresher work gets a bump (last 3 days)
@@ -81,22 +83,22 @@ export function scoreForEmptyToday(
       (Date.now() - Date.parse(String(c.created_at))) / (3600 * 1000);
     if (ageH < 72) {
       score += 12;
-      reasons.push("近期新增");
+      reasons.push(pick(locale, "added recently", "近期新增"));
     } else if (ageH > 14 * 24) {
       score -= 8;
-      reasons.push("较陈旧");
+      reasons.push(pick(locale, "older item", "较陈旧"));
     }
   }
 
   if (projectName && title.toLowerCase().includes(projectName.toLowerCase())) {
     score += 6;
-    reasons.push(`归属 ${projectName}`);
+    reasons.push(pick(locale, `belongs to ${projectName}`, `归属 ${projectName}`));
   }
 
   // From thought convert — mild preference (user just elevated it)
   if (c.source_thought_id) {
     score += 5;
-    reasons.push("从想法转入");
+    reasons.push(pick(locale, "came from a thought", "从想法转入"));
   }
 
   return { score, reasons };
@@ -180,9 +182,11 @@ export async function planEmptyToday(
     /** Only plan when timeline would otherwise be empty */
     force?: boolean;
     at?: Date;
+    locale?: Locale;
   }
 ): Promise<PlanTodayResult> {
   const at = opts?.at ?? new Date();
+  const locale = opts?.locale ?? DEFAULT_LOCALE;
   const local = getLocalParts(timezone, at);
   const day = localDayWindow(timezone, local.dateKey, "full");
 
@@ -239,7 +243,7 @@ export async function planEmptyToday(
       const proj = c.project_id
         ? projectById.get(String(c.project_id))
         : undefined;
-      const { score, reasons } = scoreForEmptyToday(c, proj?.name);
+      const { score, reasons } = scoreForEmptyToday(c, proj?.name, locale);
       return {
         id: String(c.id),
         title: String(c.title ?? ""),
@@ -288,7 +292,7 @@ export async function planEmptyToday(
     picked.push({
       id,
       title: meta.title,
-      reason: meta.reasons.slice(0, 3).join(" · ") || "今日可推进",
+      reason: meta.reasons.slice(0, 3).join(" · ") || pick(locale, "ready to move today", "今日可推进"),
       score: meta.score,
     });
   }

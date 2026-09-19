@@ -40,12 +40,13 @@ async function store(
   return id;
 }
 
-// 1. A belief the user already confirmed.
-const original = await store("不做移动端，保持 Mac-only", "active");
-console.log(`▸ confirmed: “不做移动端，保持 Mac-only”  (${original})`);
+// 1. A belief the user already stated.
+const originalContent = "Stay Mac-only, skip Windows";
+const original = await store(originalContent, "active");
+console.log(`▸ active:    “${originalContent}”  (${original})`);
 
 // 2. Later, a capture contradicts it.
-const candidateContent = "开始做 iOS 版，下个季度排期";
+const candidateContent = "Start an iOS version next quarter";
 const candidate = await store(candidateContent, "candidate");
 console.log(`\n▸ new candidate: “${candidateContent}”`);
 

@@ -6,20 +6,20 @@ import {
   commitmentTitleFromThought,
   conceptsForMemory,
   confirmMemory,
-  listMemoriesByState,
-  listMemoryVersions,
-  listWorkStreams,
-  memoryState,
-  type MemoryListState,
   getOrCreateConcept,
   isLowValueSummary,
   linkMemoryToConcepts,
   listActionLogs,
   listCommitmentsPage,
   listConcepts,
+  listMemoriesByState,
+  listMemoryVersions,
+  listWorkStreams,
+  localeOf,
   makeThoughtSummary,
   makeThoughtTitle,
   matchProjectFromContent,
+  memoryState,
   newId,
   normalizeCommitmentKey,
   normalizeMemoryKey,
@@ -33,6 +33,7 @@ import {
   removeFromToday,
   resolveClarificationByOption,
   suggestConceptNamesForMemory,
+  type MemoryListState,
   writeActionLog,
 } from "@aldus-palace/core";
 import type { AppVariables } from "../middleware/auth.js";
@@ -322,7 +323,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "thought_converted",
-      summary: actionSummary("thought_converted", { title }),
+      summary: actionSummary("thought_converted", { title }, localeOf(user.language)),
       entity_type: "commitment",
       entity_id: cmtId,
       payload: { thought_id: id, title },
@@ -392,7 +393,13 @@ export function createListRoutes(deps: AppDeps): Hono<{
   /** Today: Now + Timeline + Risks + open unscheduled (Phase 1a) */
   listRoutes.get("/today", async (c) => {
     const user = await requireUser(c, db);
-    const payload = await buildToday(db, user.id, user.timezone, new Date());
+    const payload = await buildToday(
+      db,
+      user.id,
+      user.timezone,
+      new Date(),
+      localeOf(user.language)
+    );
     return c.json(payload);
   });
 
@@ -443,7 +450,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
         user_id: user.id,
         actor: "user",
         action_type: "user_completed",
-        summary: actionSummary("user_completed"),
+        summary: actionSummary("user_completed", undefined, localeOf(user.language)),
         entity_type: "commitment",
         entity_id: id,
       });
@@ -527,7 +534,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
         user_id: user.id,
         actor: "user",
         action_type: "commitment_cancelled",
-        summary: actionSummary("commitment_cancelled"),
+        summary: actionSummary("commitment_cancelled", undefined, localeOf(user.language)),
         entity_type: "commitment",
         entity_id: id,
       });
@@ -592,7 +599,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
         user_id: user.id,
         actor: "agent",
         action_type: "commitment_titles_rewritten",
-        summary: actionSummary("commitment_titles_rewritten", { count: updated.length }),
+        summary: actionSummary("commitment_titles_rewritten", { count: updated.length }, localeOf(user.language)),
         payload: { updated, count: updated.length },
       });
     }
@@ -712,7 +719,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
         user_id: user.id,
         actor: "agent",
         action_type: "commitments_deduped",
-        summary: actionSummary("commitments_deduped", { count: cancelled.length }),
+        summary: actionSummary("commitments_deduped", { count: cancelled.length }, localeOf(user.language)),
         payload: { cancelled_ids: cancelled, count: cancelled.length },
       });
     }
@@ -744,7 +751,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "user_started",
-      summary: actionSummary("user_started"),
+      summary: actionSummary("user_started", undefined, localeOf(user.language)),
       entity_type: "commitment",
       entity_id: id,
     });
@@ -894,7 +901,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
         user_id: user.id,
         actor: "agent",
         action_type: "memories_deduped",
-        summary: actionSummary("memories_deduped", { count: archived.length }),
+        summary: actionSummary("memories_deduped", { count: archived.length }, localeOf(user.language)),
         payload: { archived_ids: archived, count: archived.length },
       });
     }
@@ -1035,7 +1042,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "project_created",
-      summary: actionSummary("project_created", { name: body.name.trim() }),
+      summary: actionSummary("project_created", { name: body.name.trim() }, localeOf(user.language)),
       entity_type: "project",
       entity_id: id,
     });
@@ -1194,7 +1201,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "thought_updated",
-      summary: actionSummary("thought_updated"),
+      summary: actionSummary("thought_updated", undefined, localeOf(user.language)),
       entity_type: "thought",
       entity_id: id,
     });
@@ -1223,7 +1230,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "thought_deleted",
-      summary: actionSummary("thought_deleted"),
+      summary: actionSummary("thought_deleted", undefined, localeOf(user.language)),
       entity_type: "thought",
       entity_id: id,
       reversible: true,
@@ -1283,7 +1290,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "commitment_updated",
-      summary: actionSummary("commitment_updated"),
+      summary: actionSummary("commitment_updated", undefined, localeOf(user.language)),
       entity_type: "commitment",
       entity_id: id,
     });
@@ -1317,7 +1324,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "commitment_deleted",
-      summary: actionSummary("commitment_deleted"),
+      summary: actionSummary("commitment_deleted", undefined, localeOf(user.language)),
       entity_type: "commitment",
       entity_id: id,
       reversible: true,
@@ -1368,7 +1375,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "memory_updated",
-      summary: actionSummary("memory_updated"),
+      summary: actionSummary("memory_updated", undefined, localeOf(user.language)),
       entity_type: "memory",
       entity_id: id,
     });
@@ -1400,7 +1407,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "memory_deleted",
-      summary: actionSummary("memory_deleted"),
+      summary: actionSummary("memory_deleted", undefined, localeOf(user.language)),
       entity_type: "memory",
       entity_id: id,
       reversible: true,
@@ -1458,7 +1465,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "project_updated",
-      summary: actionSummary("project_updated", { name }),
+      summary: actionSummary("project_updated", { name }, localeOf(user.language)),
       entity_type: "project",
       entity_id: id,
       payload: { name },
@@ -1489,7 +1496,7 @@ export function createListRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "project_deleted",
-      summary: actionSummary("project_deleted", { name }),
+      summary: actionSummary("project_deleted", { name }, localeOf(user.language)),
       entity_type: "project",
       entity_id: id,
       payload: { name },

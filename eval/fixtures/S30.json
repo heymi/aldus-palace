@@ -1,0 +1,9 @@
+{
+  "id": "S30",
+  "input": "Ship the onboarding page next week",
+  "locale": "en",
+  "expect": {
+    "commitments_min": 1,
+    "thoughts_max": 0
+  }
+}

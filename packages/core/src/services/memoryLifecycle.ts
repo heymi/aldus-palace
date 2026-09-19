@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE, type Locale } from "../lib/locale.js";
 /**
  * Memory lifecycle: candidates become active only through explicit confirmation.
  *
@@ -29,6 +30,8 @@ export type ConfirmMemoryResult =
   | { ok: false; error: "not_found" | "not_candidate" };
 
 export type ConfirmMemoryOptions = {
+  /** Language for the action-log entry. */
+  locale?: Locale;
   /** Id of a confirmed memory this one replaces (memory evolution). */
   supersedes?: string;
   reason?: string;
@@ -71,6 +74,7 @@ export async function confirmMemory(
     )
     .run(t, t, memoryId, userId);
 
+  const locale = options.locale ?? DEFAULT_LOCALE;
   const names =
     conceptNames?.length
       ? conceptNames
@@ -81,7 +85,7 @@ export async function confirmMemory(
     user_id: userId,
     actor: "user",
     action_type: "memory_confirmed",
-    summary: actionSummary("memory_confirmed", { concept_count: linked.length }),
+    summary: actionSummary("memory_confirmed", { concept_count: linked.length }, locale),
     entity_type: "memory",
     entity_id: memoryId,
     payload: { concepts: linked, concept_count: linked.length },
@@ -116,7 +120,8 @@ export async function confirmMemory(
 export async function rejectMemory(
   db: SqlDatabase,
   userId: string,
-  memoryId: string
+  memoryId: string,
+  locale: Locale = DEFAULT_LOCALE
 ): Promise<{ ok: boolean; previous_status?: string }> {
   const existing = await getMemory(db, userId, memoryId);
   if (!existing) return { ok: false };
@@ -143,7 +148,7 @@ export async function rejectMemory(
     user_id: userId,
     actor: "user",
     action_type: "memory_archived",
-    summary: actionSummary("memory_archived"),
+    summary: actionSummary("memory_archived", undefined, locale),
     entity_type: "memory",
     entity_id: memoryId,
     payload: { previous_status: previous },

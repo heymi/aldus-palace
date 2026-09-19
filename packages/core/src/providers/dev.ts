@@ -8,13 +8,32 @@ import {
   detectActionableWork,
   suggestWorkTitle,
 } from "../lib/actionableWork.js";
+import { extractMemoryCandidates } from "../lib/memoryExtract.js";
+import { DEFAULT_LOCALE, localeOf, type Locale } from "../lib/locale.js";
+
+export type DevProviderOptions = {
+  /** Language for the records it writes. Defaults to English. */
+  locale?: Locale | string;
+};
 
 /**
- * Deterministic local provider for Phase 0 / eval without API keys.
- * Implements heuristic extraction aligned with acceptance S04–S06, S09, S25.
+ * Deterministic local provider: no network, no key.
+ *
+ * Handles the patterns the acceptance fixtures cover, in English and Chinese.
+ * Connect a model for general understanding.
  */
 export class DevLLMProvider implements LLMProvider {
   readonly name = "dev";
+  readonly locale: Locale;
+
+  constructor(options: DevProviderOptions = {}) {
+    this.locale =
+      options.locale === undefined
+        ? DEFAULT_LOCALE
+        : typeof options.locale === "string" && options.locale.length > 2
+          ? localeOf(options.locale)
+          : (options.locale as Locale);
+  }
 
   async complete(messages: ChatMessage[]): Promise<string> {
     const userMsg = [...messages].reverse().find((m) => m.role === "user");
@@ -23,11 +42,11 @@ export class DevLLMProvider implements LLMProvider {
     const match = text.match(/Input:\n([\s\S]+)$/m) || text.match(/Input:\s*([\s\S]+)$/);
     const input = (match?.[1] ?? text).trim();
 
-    return JSON.stringify(extractDev(input));
+    return JSON.stringify(extractDev(input, this.locale));
   }
 }
 
-export function extractDev(input: string): {
+export function extractDev(input: string, locale: Locale = DEFAULT_LOCALE): {
   object_mode: "thought" | "commitment" | "mixed";
   thoughts: Array<{
     type: string;
@@ -64,39 +83,20 @@ export function extractDev(input: string): {
 
   const lower = input.toLowerCase();
 
-  // Temporary state — do not long-term memory (S30)
-  const tempState =
-    /现在有点累|今天累|下午不想|有点累/.test(input) &&
-    !/以后|总是|一直|偏好|喜欢|不喜欢复杂/.test(input);
-
-  // Explicit preference / principle (S25 S26)
-  if (
-    /不喜欢复杂|界面要简单|不要做太复杂|应该辅助而不是主导|assist,?\s*not\s*dominate/i.test(
-      input
-    )
-  ) {
-    if (/辅助而不是主导|assist/i.test(input)) {
-      memory_candidates.push({
-        type: "principle",
-        content: "AI should assist, not dominate",
-        source: "user_explicit",
-        confidence: 0.85,
-        evidence: input.slice(0, 200),
-      });
-    }
-    if (/不喜欢复杂|不要做太复杂|界面要简单/.test(input)) {
-      memory_candidates.push({
-        type: "preference",
-        content: "喜欢简洁、简单的产品与界面，避免复杂",
-        source: "user_explicit",
-        confidence: 0.88,
-        evidence: input.slice(0, 200),
-      });
-    }
+  // Memory candidates come from one shared extractor so the offline provider and
+  // the capture pipeline cannot drift apart.
+  for (const memory of extractMemoryCandidates(input, locale)) {
+    memory_candidates.push({
+      type: memory.type,
+      content: memory.content,
+      source: memory.source,
+      confidence: memory.confidence,
+      evidence: memory.evidence,
+    });
   }
 
   // Decision candidate (S08)
-  if (/mac\s*only|不要做\s*windows|保持\s*mac/i.test(input)) {
+  if (/mac\s*only|mac-only|不要做\s*windows|保持\s*mac|no windows/i.test(input)) {
     thoughts.push({
       type: "decision_candidate",
       content: input,
@@ -104,15 +104,11 @@ export function extractDev(input: string): {
       status: "captured",
     });
     decisions.push({
-      title: "Keep product Mac-only / avoid Windows (candidate)",
+      title:
+        locale === "zh-CN"
+          ? "倾向保持 Mac-only / 不做 Windows（候选）"
+          : "Keep the product Mac-only, avoid Windows (candidate)",
       reason: input,
-    });
-    memory_candidates.push({
-      type: "decision",
-      content: "倾向保持 Mac-only，不做 Windows",
-      source: "ai_inferred",
-      confidence: 0.7,
-      evidence: input.slice(0, 200),
     });
   }
 
@@ -145,7 +141,7 @@ export function extractDev(input: string): {
       thoughts,
       commitments,
       decisions,
-      memory_candidates: tempState ? [] : memory_candidates,
+      memory_candidates,
       warnings,
     };
   }
@@ -255,7 +251,7 @@ export function extractDev(input: string): {
     thoughts,
     commitments,
     decisions,
-    memory_candidates: tempState ? [] : memory_candidates,
+    memory_candidates,
     warnings,
   };
 }

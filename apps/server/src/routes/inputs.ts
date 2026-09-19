@@ -6,6 +6,7 @@ import {
   getLatestPendingClarification,
   getLocalParts,
   isRealLLMProvider,
+  localeOf,
   looksLikeShortClarificationReply,
   matchClarificationReply,
   newId,
@@ -15,8 +16,8 @@ import {
   recordEnrichmentFailure,
   recordUserTodayArrangement,
   resolveClarificationByOption,
-  writeActionLog,
   type SqlDatabase,
+  writeActionLog,
 } from "@aldus-palace/core";
 import type { AppVariables } from "../middleware/auth.js";
 import { requireUser } from "../middleware/auth.js";
@@ -145,7 +146,7 @@ export function createInputsRoutes(deps: AppDeps): Hono<{
           user_id: user.id,
           actor: "user",
           action_type: "input_captured",
-          summary: actionSummary("input_captured", { kind: "clarification_reply" }),
+          summary: actionSummary("input_captured", { kind: "clarification_reply" }, localeOf(user.language)),
           entity_type: "raw_input",
           entity_id: id,
           payload: { kind: "clarification_reply" },
@@ -203,7 +204,7 @@ export function createInputsRoutes(deps: AppDeps): Hono<{
       user_id: user.id,
       actor: "user",
       action_type: "input_captured",
-      summary: actionSummary("input_captured"),
+      summary: actionSummary("input_captured", undefined, localeOf(user.language)),
       entity_type: "raw_input",
       entity_id: id,
     });

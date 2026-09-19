@@ -57,6 +57,36 @@ assert(
   "unrelated wording on a non-topic pair is not a conflict"
 );
 
+// English has to work as well as Chinese: same rules, English vocabulary.
+assert(
+  ruleConflict(
+    { type: "decision", content: "Start an iOS version next quarter" },
+    { type: "decision", content: "Stay Mac-only, skip Windows" }
+  ) !== null,
+  "an English platform flip is a conflict"
+);
+assert(
+  ruleConflict(
+    { type: "decision", content: "Add Windows support" },
+    { type: "decision", content: "Skip Windows" }
+  ) !== null,
+  "an English negation flip is a conflict"
+);
+assert(
+  ruleConflict(
+    { type: "preference", content: "I prefer more features and a dense UI" },
+    { type: "preference", content: "Prefers simple products and interfaces" }
+  ) !== null,
+  "two positive statements on opposite ends of one dimension are a conflict"
+);
+assert(
+  ruleConflict(
+    { type: "preference", content: "I prefer simple tools" },
+    { type: "preference", content: "Keep the product simple" }
+  ) === null,
+  "agreement in English is not a conflict"
+);
+
 // --- derived state ---------------------------------------------------------
 
 assert(memoryState({ status: "active" }) === "active", "active state");

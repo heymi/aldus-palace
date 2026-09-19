@@ -1,0 +1,10 @@
+{
+  "id": "S31",
+  "input": "I am tired today",
+  "locale": "en",
+  "expect": {
+    "memory_candidates_max": 0,
+    "memory_active_max": 0,
+    "forbidden": ["memory_active"]
+  }
+}

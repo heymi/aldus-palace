@@ -1,4 +1,5 @@
 import type { SqlDatabase } from "../db/port.js";
+import { DEFAULT_LOCALE, pick, type Locale } from "../lib/locale.js";
 import { getLocalParts, localDayWindow } from "../lib/time.js";
 
 export type TodayPayload = {
@@ -63,11 +64,12 @@ function pickNow(
   timeline: TimelineItem[],
   nowMs: number,
   dayStart: string,
-  dayEnd: string
+  dayEnd: string,
+  locale: Locale
 ): Record<string, unknown> | null {
   const started = open.find((c) => c.started_at && c.status !== "completed");
   if (started) {
-    return { ...started, kind_label: "进行中" };
+    return { ...started, kind_label: pick(locale, "In progress", "进行中") };
   }
 
   const covering = timeline.find((c) => {
@@ -79,7 +81,10 @@ function pickNow(
     return a <= nowMs && nowMs <= b;
   });
   if (covering) {
-    return { ...covering, kind_label: covering.kind_label || "AI 建议时段" };
+    return {
+      ...covering,
+      kind_label: covering.kind_label || pick(locale, "Suggested slot", "AI 建议时段"),
+    };
   }
 
   const dueToday = open.find((c) => {
@@ -92,16 +97,19 @@ function pickNow(
     );
   });
   if (dueToday) {
-    return { ...dueToday, kind_label: "今日截止" };
+    return { ...dueToday, kind_label: pick(locale, "Due today", "今日截止") };
   }
 
   const risk = open.find((c) => isRisk(c, nowMs));
   if (risk) {
-    return { ...risk, kind_label: "有风险" };
+    return { ...risk, kind_label: pick(locale, "At risk", "有风险") };
   }
 
   if (timeline.length) {
-    return { ...timeline[0], kind_label: timeline[0].kind_label || "今日安排" };
+    return {
+      ...timeline[0],
+      kind_label: timeline[0].kind_label || pick(locale, "Planned today", "今日安排"),
+    };
   }
 
   // No silent unscheduled NOW
@@ -117,7 +125,8 @@ export async function buildToday(
   db: SqlDatabase,
   userId: string,
   timezone: string,
-  at = new Date()
+  at = new Date(),
+  locale: Locale = DEFAULT_LOCALE
 ): Promise<TodayPayload> {
   const local = getLocalParts(timezone, at);
   const day = localDayWindow(timezone, local.dateKey, "full");
@@ -172,7 +181,7 @@ export async function buildToday(
       return [{
         id: assignment.commitment_id,
         title: String(commitment.title ?? ""),
-        reason: assignment.reason ?? "今日可推进",
+        reason: assignment.reason ?? pick(locale, "Ready to move today", "今日可推进"),
       }];
     }
   );
@@ -219,17 +228,20 @@ export async function buildToday(
   const labelFor = (c: Record<string, unknown>, base: string): string => {
     if (autoIds.has(String(c.id))) {
       const reason = autoPlanned?.find((p) => p.id === c.id)?.reason;
-      return reason ? `今日建议 · ${reason}` : "今日建议";
+      return reason
+      ? pick(locale, `Suggested today · ${reason}`, `今日建议 · ${reason}`)
+      : pick(locale, "Suggested today", "今日建议");
     }
-    if (c.source_thought_id) return `${base} · 从想法转入`;
+    if (c.source_thought_id)
+      return `${base} · ${pick(locale, "from a thought", "从想法转入")}`;
     return base;
   };
 
   const timeline: TimelineItem[] = timelineBase.map((c) => {
-    let kind_label = "今日有安排";
-    if (c.ai_slot_start) kind_label = "AI 建议时段";
-    if (c.deadline) kind_label = "有截止";
-    if (c.started_at) kind_label = "进行中";
+    let kind_label = pick(locale, "Planned today", "今日有安排");
+    if (c.ai_slot_start) kind_label = pick(locale, "Suggested slot", "AI 建议时段");
+    if (c.deadline) kind_label = pick(locale, "Has a deadline", "有截止");
+    if (c.started_at) kind_label = pick(locale, "In progress", "进行中");
     return { ...c, kind_label: labelFor(c, kind_label) } as TimelineItem;
   });
 
@@ -241,7 +253,7 @@ export async function buildToday(
     if (p.dateKey === local.dateKey) {
       timeline.push({
         ...c,
-        kind_label: labelFor(c, "今日截止"),
+        kind_label: labelFor(c, pick(locale, "Due today", "今日截止")),
       } as TimelineItem);
       timelineMap.set(c.id as string, c);
     }
@@ -250,13 +262,14 @@ export async function buildToday(
   const risks = open.filter((c) => isRisk(c, nowMs));
 
   const timelineIds = new Set(timeline.map((t) => t.id as string));
-  const unscheduledAll = open
-    .filter((c) => !timelineIds.has(c.id as string))
+  const unscheduledAll = open.filter((c) => !timelineIds.has(c.id as string))
     .map(
       (c) =>
         ({
           ...c,
-          kind_label: c.source_thought_id ? "从想法转入" : "未排期",
+          kind_label: c.source_thought_id
+        ? pick(locale, "from a thought", "从想法转入")
+        : pick(locale, "Unscheduled", "未排期"),
         }) as TimelineItem
     )
     .sort((a, b) => {
@@ -276,24 +289,41 @@ export async function buildToday(
     (row) => !removedIds.has(String(row.id))
   );
 
-  let now = pickNow(displayOpenAfter, timeline, nowMs, day.start, day.end);
+  let now = pickNow(displayOpenAfter, timeline, nowMs, day.start, day.end, locale);
   // If still no focus but we auto-planned, promote first suggestion to Now
   if (!now && timeline.length) {
-    now = { ...timeline[0], kind_label: timeline[0].kind_label || "今日建议" };
+    now = {
+      ...timeline[0],
+      kind_label: timeline[0].kind_label || pick(locale, "Suggested today", "今日建议"),
+    };
   }
 
-  const fromThought = unscheduledAll.filter((c) => c.source_thought_id).length;
-  const preview = unscheduledAll.slice(0, UNSCHEDULED_PREVIEW);
+  // The focus item already owns the screen; listing it again reads as a bug.
+  const focusId = now ? (now as { id?: unknown }).id : undefined;
+  const notFocus = (c: Record<string, unknown>) => !focusId || c.id !== focusId;
+  const rest = unscheduledAll.filter(notFocus);
+  const fromThought = rest.filter((c) => c.source_thought_id).length;
+  const preview = rest.slice(0, UNSCHEDULED_PREVIEW);
 
   const summaryParts: string[] = [local.dateKey];
-  if (now) summaryParts.push(`焦点：${(now.title as string) ?? ""}`);
-  else summaryParts.push("暂无焦点");
   summaryParts.push(
-    `今日安排 ${timeline.length} · 未排期 ${unscheduledAll.length}` +
-      (fromThought ? `（想法转入 ${fromThought}）` : "")
+    now
+      ? pick(locale, `focus: ${(now.title as string) ?? ""}`, `焦点：${(now.title as string) ?? ""}`)
+      : pick(locale, "no focus yet", "暂无焦点")
+  );
+  summaryParts.push(
+    pick(
+      locale,
+      `${timeline.length} planned · ${rest.length} unscheduled` +
+        (fromThought ? ` (${fromThought} from thoughts)` : ""),
+      `今日安排 ${timeline.length} · 未排期 ${rest.length}` +
+        (fromThought ? `（想法转入 ${fromThought}）` : "")
+    )
   );
   if (autoPlanned?.length) {
-    summaryParts.push(`已智能安排 ${autoPlanned.length} 件`);
+    summaryParts.push(
+    pick(locale, `${autoPlanned.length} filled in`, `已智能安排 ${autoPlanned.length} 件`)
+  );
   }
 
   const profile = await db
@@ -338,7 +368,7 @@ export async function buildToday(
     timeline,
     risks,
     unscheduled: preview,
-    unscheduled_total: unscheduledAll.length,
+    unscheduled_total: rest.length,
     unscheduled_from_thought_total: fromThought,
     summary: summaryParts.join(" · "),
     auto_planned: autoPlanned,

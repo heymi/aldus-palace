@@ -51,6 +51,7 @@ import {
   type MemoryConflict,
 } from "../services/memoryEvolution.js";
 import { isRealLLMProvider } from "../providers/index.js";
+import { pick, plural, localeOf, type Locale } from "../lib/locale.js";
 import {
   boostProjectMemories,
   formatMemoryContextBlock,
@@ -309,7 +310,11 @@ async function resolveProjectId(
   if (explicitName) {
     const id = await findProjectId(db, userId, explicitName);
     if (id) {
-      return { projectId: id, matchReason: `显式 project_name=${explicitName}`, matchName: explicitName };
+      return {
+      projectId: id,
+      matchReason: `explicit project_name=${explicitName}`,
+      matchName: explicitName,
+    };
     }
   }
   const projects = await listUserProjects(db, userId);
@@ -367,18 +372,20 @@ export async function processRawInput(
 
   const content = raw.content as string;
   const t0 = nowIso();
+  // Everything the runtime writes for this user follows their language.
+  const locale: Locale = localeOf(user.language);
 
   // Local phase = deterministic rules (instant). Full = injected provider (DeepSeek…).
   // Clear local derivatives only AFTER LLM parse succeeds (see below).
   const { DevLLMProvider } = await import("../providers/dev.js");
   const runner: LLMProvider =
-    mode === "local" ? new DevLLMProvider() : llm;
+    mode === "local" ? new DevLLMProvider({ locale }) : llm;
 
   await writeActionLog(db, {
     user_id: user.id,
     actor: "agent",
     action_type: "processing_input",
-    summary: actionSummary("processing_input"),
+    summary: actionSummary("processing_input", undefined, locale),
     entity_type: "raw_input",
     entity_id: rawInputId,
     payload: { mode },
@@ -418,12 +425,12 @@ export async function processRawInput(
           `UPDATE projects SET brief = ?, updated_at = ? WHERE id = ?`
         ).run(merged, t0, proj.id);
         proj.brief = merged;
-        earlyWarnings.push(`已更新项目背景：${proj.name}`);
+        earlyWarnings.push(pick(locale, `Updated the project brief: ${proj.name}`, `已更新项目背景：${proj.name}`));
         await writeActionLog(db, {
           user_id: user.id,
           actor: "agent",
           action_type: "project_updated",
-          summary: actionSummary("project_updated", { name: proj.name }),
+          summary: actionSummary("project_updated", { name: proj.name }, locale),
           entity_type: "project",
           entity_id: proj.id,
           payload: { name: proj.name, via: "brief_from_input" },
@@ -542,10 +549,10 @@ export async function processRawInput(
   if (objectMode.mode === "thought" && parsed.commitments.length > 0) {
     parsed.commitments = [];
     parsed.intent = { has_actionable_work: false, work_titles: [] };
-    warnings.push("已按纯想法处理，未建立要做的事");
+    warnings.push(pick(locale, "Treated as a thought; no commitment created", "已按纯想法处理，未建立要做的事"));
   } else if (objectMode.mode === "commitment" && parsed.thoughts.length > 0) {
     parsed.thoughts = [];
-    warnings.push("已按明确行动处理，未重复建立想法");
+    warnings.push(pick(locale, "Treated as work; the thought was not duplicated", "已按明确行动处理，未重复建立想法"));
   }
 
   // Project resolution from full input (existing only; never auto-create)
@@ -555,11 +562,11 @@ export async function processRawInput(
       ? suggestNewProjectName(content, await listUserProjects(db, user.id))
       : null;
   if (contentProject.projectId && contentProject.matchReason) {
-    warnings.push(`已关联项目：${contentProject.matchName}（${contentProject.matchReason}）`);
+    warnings.push(pick(locale, `Linked to project ${contentProject.matchName} (${contentProject.matchReason})`, `已关联项目：${contentProject.matchName}（${contentProject.matchReason}）`));
   }
   if (projectSuggestion) {
     warnings.push(
-      `可新建项目「${projectSuggestion.suggested_name}」：${projectSuggestion.reason}`
+      pick(locale, `New project available: "${projectSuggestion.suggested_name}" — ${projectSuggestion.reason}`, `可新建项目「${projectSuggestion.suggested_name}」：${projectSuggestion.reason}`)
     );
   }
 
@@ -632,7 +639,7 @@ export async function processRawInput(
         aliases: projMeta?.aliases,
       });
       warnings.push(
-        `已纠正「${title}」：受众按目标产品品类重写，避免照搬案例客群`
+        pick(locale, `Rewrote "${title}": the audience follows the target product category`, `已纠正「${title}」：受众按目标产品品类重写，避免照搬案例客群`)
       );
     }
 
@@ -666,7 +673,7 @@ export async function processRawInput(
       user_id: user.id,
       actor: "agent",
       action_type: "thought_created",
-      summary: actionSummary("thought_created", { type }),
+      summary: actionSummary("thought_created", { type }, locale),
       entity_type: "thought",
       entity_id: id,
       payload: { type },
@@ -725,7 +732,7 @@ export async function processRawInput(
         importance: 0.75,
         project_name: undefined,
       });
-      warnings.push(`已补建要做的事（模型未给出 commitment）：${title}`);
+      warnings.push(pick(locale, `Added the commitment the model omitted: ${title}`, `已补建要做的事（模型未给出 commitment）：${title}`));
     }
   }
 
@@ -745,7 +752,7 @@ export async function processRawInput(
       commitmentsAreNearDuplicate(o.title, c.title)
     );
     if (dup) {
-      warnings.push(`跳过重复要做的事（已有）：${dup.title}`);
+      warnings.push(pick(locale, `Already tracked, so this repeat was skipped: ${dup.title}`, `跳过重复要做的事（已有）：${dup.title}`));
       // Still surface existing in action card once
       if (!commitmentsOut.some((x) => x.id === dup.id)) {
         const full = await db
@@ -855,7 +862,7 @@ export async function processRawInput(
       user_id: user.id,
       actor: "agent",
       action_type: "commitment_created",
-      summary: actionSummary("commitment_created", { title: c.title }),
+      summary: actionSummary("commitment_created", { title: c.title }, locale),
       entity_type: "commitment",
       entity_id: id,
       payload: { title: c.title },
@@ -895,7 +902,7 @@ export async function processRawInput(
         user_id: user.id,
         actor: "agent",
         action_type: "clarification_requested",
-        summary: actionSummary("clarification_requested", { token: clar.token }),
+        summary: actionSummary("clarification_requested", { token: clar.token }, locale),
         reason: clar.prompt,
         entity_type: "commitment",
         entity_id: id,
@@ -1074,7 +1081,7 @@ export async function processRawInput(
     );
   if (memSkipped.length) {
     warnings.push(
-      `已过滤 ${memSkipped.length} 条不宜长期记住的候选（创意/低置信/临时）`
+      pick(locale, `Filtered ${memSkipped.length} candidates not worth keeping (one-off, low confidence, temporary)`, `已过滤 ${memSkipped.length} 条不宜长期记住的候选（创意/低置信/临时）`)
     );
   }
   const finalMems = filteredMems.map((m) => ({
@@ -1133,8 +1140,8 @@ export async function processRawInput(
     if (already) {
       warnings.push(
         already.status === "active"
-          ? `已有相似生效记忆，跳过重复候选`
-          : `已有相似待确认记忆，跳过重复`
+          ? pick(locale, "A similar memory is already active; skipped", "已有相似生效记忆，跳过重复候选")
+          : pick(locale, "A similar memory already waits for confirmation; skipped", "已有相似待确认记忆，跳过重复")
       );
       // surface existing candidate on card if still pending
       if (already.status === "candidate") {
@@ -1244,13 +1251,13 @@ export async function processRawInput(
     if (conflict) {
       memoryConflicts.push(conflict);
       warnings.push(
-        `这条记忆与已生效的「${conflict.memory_content}」冲突（${conflict.reason}）：确认时可选择替换`
+        pick(locale, `This contradicts "${conflict.memory_content}" (${conflict.reason}); you can replace it on confirmation`, `这条记忆与已生效的「${conflict.memory_content}」冲突（${conflict.reason}）：确认时可选择替换`)
       );
       await writeActionLog(db, {
         user_id: user.id,
         actor: "agent",
         action_type: "memory_conflict_detected",
-        summary: actionSummary("memory_conflict_detected", { type }),
+        summary: actionSummary("memory_conflict_detected", { type }, locale),
         reason: conflict.reason,
         entity_type: "memory",
         entity_id: id,
@@ -1264,8 +1271,8 @@ export async function processRawInput(
         activation === "active" ? "memory_activated" : "memory_candidate_created",
       summary:
         activation === "active"
-          ? `已记住：${m.content.slice(0, 60)}`
-          : actionSummary("memory_candidate_created", { type }),
+          ? pick(locale, `Remembered: ${m.content.slice(0, 60)}`, `已记住：${m.content.slice(0, 60)}`)
+          : actionSummary("memory_candidate_created", { type }, locale),
       reason: activation === "active" ? activationReason : undefined,
       entity_type: "memory",
       entity_id: id,
@@ -1287,7 +1294,7 @@ export async function processRawInput(
       action_type: "memory_context_injected",
       summary: actionSummary("memory_context_injected", {
         count: activeMemories.length,
-      }),
+      }, locale),
       entity_type: "raw_input",
       entity_id: rawInputId,
       payload: {
@@ -1296,7 +1303,7 @@ export async function processRawInput(
       },
     });
     warnings.push(
-      `已参考 ${activeMemories.length} 条生效记忆（认知上下文）`
+      pick(locale, `Used ${activeMemories.length} active memories as context`, `已参考 ${activeMemories.length} 条生效记忆（认知上下文）`)
     );
   }
 
@@ -1331,7 +1338,7 @@ export async function processRawInput(
       thoughts: thoughtsOut.length,
       commitments: commitmentsOut.length,
       memories: memoriesOut.length,
-    }),
+    }, locale),
     entity_type: "raw_input",
     entity_id: rawInputId,
     payload: {
@@ -1347,14 +1354,41 @@ export async function processRawInput(
   });
 
   const summaryParts: string[] =
-    mode === "local" ? ["已记下"] : ["已理解"];
-  if (thoughtsOut.length) summaryParts.push(`${thoughtsOut.length} 条想法`);
-  if (commitmentsOut.length) summaryParts.push(`${commitmentsOut.length} 件要做`);
+    mode === "local"
+      ? [pick(locale, "Captured", "已记下")]
+      : [pick(locale, "Understood", "已理解")];
+  if (thoughtsOut.length)
+    summaryParts.push(
+      pick(
+        locale,
+        `${thoughtsOut.length} ${plural(locale, thoughtsOut.length, "thought")}`,
+        `${thoughtsOut.length} 条想法`
+      )
+    );
+  if (commitmentsOut.length)
+    summaryParts.push(
+      pick(
+        locale,
+        `${commitmentsOut.length} ${plural(locale, commitmentsOut.length, "commitment")}`,
+        `${commitmentsOut.length} 件要做`
+      )
+    );
   const rememberedCount = memoriesOut.filter((m) => m.status === "active").length;
   const pendingCount = memoriesOut.length - rememberedCount;
-  if (rememberedCount) summaryParts.push(`已记住 ${rememberedCount} 条`);
-  if (pendingCount) summaryParts.push(`待确认 ${pendingCount} 条`);
-  if (clarificationsOut.length) summaryParts.push(`待确认 ${clarificationsOut.length}`);
+  if (rememberedCount)
+    summaryParts.push(
+      pick(locale, `remembered ${rememberedCount}`, `已记住 ${rememberedCount} 条`)
+    );
+  if (pendingCount)
+    summaryParts.push(pick(locale, `${pendingCount} to confirm`, `待确认 ${pendingCount} 条`));
+  if (clarificationsOut.length)
+    summaryParts.push(
+      pick(
+        locale,
+        `${clarificationsOut.length} ${plural(locale, clarificationsOut.length, "question")}`,
+        `待确认 ${clarificationsOut.length}`
+      )
+    );
 
   return {
     summary: summaryParts.join(" · "),

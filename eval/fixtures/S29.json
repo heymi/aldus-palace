@@ -1,0 +1,10 @@
+{
+  "id": "S29",
+  "input": "I prefer simple tools",
+  "locale": "en",
+  "expect": {
+    "memory_candidates_min": 1,
+    "memory_active_min": 1,
+    "memory_types_allowed": ["preference", "principle"]
+  }
+}

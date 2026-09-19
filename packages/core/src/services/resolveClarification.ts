@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE, type Locale } from "../lib/locale.js";
 import type { SqlDatabase } from "../db/port.js";
 import { nowIso } from "../db/port.js";
 import { writeActionLog } from "../repos/actionLogs.js";
@@ -7,7 +8,8 @@ export async function resolveClarificationByOption(
   db: SqlDatabase,
   userId: string,
   clarificationId: string,
-  optionId: string
+  optionId: string,
+  locale: Locale = DEFAULT_LOCALE
 ): Promise<{
   ok: true;
   clarification_id: string;
@@ -55,7 +57,7 @@ export async function resolveClarificationByOption(
     user_id: userId,
     actor: "user",
     action_type: "clarification_resolved",
-    summary: actionSummary("clarification_resolved", { label: chosen.label }),
+    summary: actionSummary("clarification_resolved", { label: chosen.label }, locale),
     entity_type: "clarification",
     entity_id: clarificationId,
     payload: {

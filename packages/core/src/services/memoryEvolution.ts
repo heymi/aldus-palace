@@ -11,6 +11,7 @@ import type { SqlDatabase } from "../db/port.js";
 import { nowIso } from "../db/port.js";
 import { actionSummary } from "../lib/actionMessages.js";
 import { explainActivation } from "../lib/memoryActivation.js";
+import { DEFAULT_LOCALE, type Locale } from "../lib/locale.js";
 import { writeActionLog } from "../repos/actionLogs.js";
 import type { MemoryRow } from "./memoryLifecycle.js";
 
@@ -51,13 +52,34 @@ export type MemoryConflict = {
  * high-precision: a false "these conflict" is more annoying than a missed one,
  * because the user has to arbitrate it.
  */
-const TOPICS: Array<{ key: string; label: string; re: RegExp }> = [
+type Topic = {
+  key: string;
+  label: string;
+  re: RegExp;
+  /**
+   * Opposite ends of one dimension. Some disagreements are two positive
+   * statements pointing at different poles ("more features" vs "keep it
+   * simple"), and looking for a negation misses them.
+   */
+  poles?: { a: RegExp; b: RegExp; label: string };
+};
+
+const TOPICS: Topic[] = [
   {
     key: "platform",
     label: "platform scope",
-    re: /移动端|手机端|ios|安卓|android|windows|mac\s*only|仅\s*mac|不做\s*mac|不做\s*windows/i,
+    re: /移动端|手机端|ios|安卓|android|windows|mac[\s-]*only|仅\s*mac|不做\s*mac|不做\s*windows|mobile app/i,
   },
-  { key: "complexity", label: "product complexity", re: /简洁|简单|复杂|minimal/i },
+  {
+    key: "complexity",
+    label: "product complexity",
+    re: /简洁|简单|复杂|minimal|simple|complex|dense|feature[- ]rich|more features/i,
+    poles: {
+      label: "how much the product should do",
+      a: /简洁|简单|不复杂|minimal|simple|strip|less is more|fewer features/i,
+      b: /功能多|更多功能|复杂|dense|feature[- ]rich|more features|pack it in/i,
+    },
+  },
   { key: "privacy", label: "privacy", re: /隐私|privacy/i },
   { key: "autonomy", label: "AI autonomy", re: /主导|辅助|自主|assist|dominate|autonom/i },
   { key: "notifications", label: "notifications", re: /通知|提醒|推送|notification|push/i },
@@ -70,10 +92,10 @@ const TOPICS: Array<{ key: string; label: string; re: RegExp }> = [
  * affirmative "要" and "don't support" is not read as "support".
  */
 const NEGATION_PHRASE =
-  /(?:不|别|无需|不用|没有|不会|停止|放弃|禁止|拒绝)(?:要|做|再|支持|开始|继续|使用|添加|接受)?|\b(?:don'?t|doesn'?t|won'?t|didn'?t|never|no longer|stop|avoid|not)\b(?:\s+\w+)?/gi;
+  /(?:不|别|无需|不用|没有|不会|停止|放弃|禁止|拒绝)(?:要|做|再|支持|开始|继续|使用|添加|接受)?|\b(?:don'?t|doesn'?t|won'?t|didn'?t|never|no|no longer|stop|skip|drop|avoid|abandon|hold off|not|without)\b(?:\s+\w+)?/gi;
 
 const AFFIRMATION =
-  /\b(start|begin|keep|continue|support|accept|allow|need|want|should|add|expand|introduce)\b|开始|继续|支持|接受|允许|必须|坚持|增加|添加|引入|扩展|加上/i;
+  /\b(start|begin|keep|continue|support|accept|allow|need|want|should|add|expand|introduce|build|ship|move to|switch to|go with|prefer|prefers|like|likes|love|value)\b|开始|继续|支持|接受|允许|必须|坚持|增加|添加|引入|扩展|加上|要做/i;
 
 function polarity(text: string): -1 | 0 | 1 {
   const negated = new RegExp(NEGATION_PHRASE.source, "i").test(text);
@@ -99,6 +121,18 @@ export function ruleConflict(
     (topic) => topic.re.test(candidate.content) && topic.re.test(existing.content)
   );
   if (shared.length === 0) return null;
+
+  // Two positive statements can still disagree: check the dimension's poles.
+  for (const topic of shared) {
+    if (!topic.poles) continue;
+    const candidateA = topic.poles.a.test(candidate.content);
+    const candidateB = topic.poles.b.test(candidate.content);
+    const existingA = topic.poles.a.test(existing.content);
+    const existingB = topic.poles.b.test(existing.content);
+    if ((candidateA && existingB) || (candidateB && existingA)) {
+      return `opposite stance on ${topic.poles.label}`;
+    }
+  }
 
   const a = polarity(candidate.content);
   const b = polarity(existing.content);
@@ -226,7 +260,7 @@ export type SupersedeResult =
 export async function supersedeMemory(
   db: SqlDatabase,
   userId: string,
-  options: { oldId: string; newId: string; reason?: string }
+  options: { oldId: string; newId: string; reason?: string; locale?: Locale }
 ): Promise<SupersedeResult> {
   const { oldId, newId } = options;
   if (oldId === newId) return { ok: false, error: "same_memory" };
@@ -269,7 +303,7 @@ export async function supersedeMemory(
     user_id: userId,
     actor: "user",
     action_type: "memory_superseded",
-    summary: actionSummary("memory_superseded"),
+    summary: actionSummary("memory_superseded", undefined, options.locale ?? DEFAULT_LOCALE),
     reason: reason ?? undefined,
     entity_type: "memory",
     entity_id: newId,

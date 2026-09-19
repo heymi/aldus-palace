@@ -1,5 +1,33 @@
 # @aldus-palace/core
 
+## 0.5.0
+
+### Minor Changes
+
+- The runtime speaks the user's language, and the offline rules work in English.
+
+  **core**
+
+  - `lib/locale.ts`: `localeOf(user.language)` plus `pick` / `plural` helpers.
+    Capture receipts, warnings, memory contents, Today labels and action-log
+    summaries follow `users.language`; machine keys stay stable.
+  - The rule-based extractor now matches English and Chinese (preferences,
+    principles, platform decisions, temporary states, one-off creative work,
+    project briefs), and writes stored content in the user's locale.
+  - `DevLLMProvider` takes a locale and shares one memory extractor with the
+    capture pipeline, so the offline path and the pipeline cannot drift.
+  - Conflict detection covers English: hyphenated topics, negation vocabulary, and
+    a new dimension-pole check that catches two positive statements pointing at
+    opposite ends ("more features" vs "keep it simple").
+  - The Today focus item no longer repeats in the unscheduled preview.
+  - Fixtures: the runner picks a locale from the input, and S29–S31 cover English
+    capture, memory activation and a temporary state. S28 now reflects the shared
+    extractor.
+
+  **mcp**
+
+  - Tool descriptions note that memories carry an activation note.
+
 ## 0.4.2
 
 ### Patch Changes

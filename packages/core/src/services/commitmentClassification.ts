@@ -1,4 +1,5 @@
 import type { LLMProvider } from "../providers/types.js";
+import { DEFAULT_LOCALE, pick, type Locale } from "../lib/locale.js";
 import { isRealLLMProvider } from "../providers/index.js";
 import type { SqlDatabase } from "../db/port.js";
 import { nowIso } from "../db/port.js";
@@ -377,7 +378,8 @@ function classificationExecutionMode(provider: LLMProvider): string {
 export async function rebuildCommitmentClassifications(
   db: SqlDatabase,
   provider: LLMProvider,
-  userId: string
+  userId: string,
+  locale: Locale = DEFAULT_LOCALE
 ): Promise<ClassificationRebuildResult> {
   const snapshot = await loadClassificationSnapshot(db, userId);
   const {
@@ -673,13 +675,18 @@ export async function rebuildCommitmentClassifications(
       user_id: userId,
       actor: "agent",
       action_type: "work_classification_rebuilt",
-      summary: actionSummary("work_classification_rebuilt", {
-        items: commitments.length,
-        groups: groupCount,
-      }),
+      summary: actionSummary(
+        "work_classification_rebuilt",
+        { items: commitments.length, groups: groupCount },
+        locale
+      ),
       reason: usedFallback
-        ? "AI 不可用时使用可重建的项目分组"
-        : `使用 ${memories.length} 条同项目已确认记忆辅助命名与消歧`,
+        ? pick(locale, "Project grouping, rebuilt without a model", "AI 不可用时使用可重建的项目分组")
+        : pick(
+            locale,
+            `Named with ${memories.length} active memories from the same projects`,
+            `使用 ${memories.length} 条同项目已确认记忆辅助命名与消歧`
+          ),
       entity_type: "commitment_classification",
       payload: {
         generation_id: generationId,
@@ -718,7 +725,8 @@ export async function overrideCommitmentClassification(
   db: SqlDatabase,
   userId: string,
   commitmentId: string,
-  groupKey: string
+  groupKey: string,
+  locale: Locale = DEFAULT_LOCALE
 ): Promise<WorkClassificationRow | null> {
   const commitment = await db
     .prepare(
@@ -801,10 +809,16 @@ export async function overrideCommitmentClassification(
       user_id: userId,
       actor: "user",
       action_type: "work_classification_overridden",
-      summary: actionSummary("work_classification_overridden", {
-        label: resolvedTarget.group_label,
-      }),
-      reason: `用户将事项移动到“${resolvedTarget.group_label}”`,
+      summary: actionSummary(
+        "work_classification_overridden",
+        { label: resolvedTarget.group_label },
+        locale
+      ),
+      reason: pick(
+        locale,
+        `Moved to "${resolvedTarget.group_label}"`,
+        `用户将事项移动到“${resolvedTarget.group_label}”`
+      ),
       entity_type: "commitment",
       entity_id: commitmentId,
       payload: { group_key: resolvedTarget.group_key },

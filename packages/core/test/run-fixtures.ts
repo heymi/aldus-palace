@@ -18,6 +18,8 @@ const fixturesDir = path.resolve(__dirname, "../../../eval/fixtures");
 type Fixture = {
   id: string;
   input: string;
+  /** Defaults to the script of the input: CJK → zh-CN, otherwise en. */
+  locale?: "en" | "zh-CN";
   expect: {
     thoughts_min?: number;
     thoughts_max?: number;
@@ -53,7 +55,9 @@ function loadFixtures(): Fixture[] {
 let failed = 0;
 
 for (const fx of loadFixtures()) {
-  const result = extractDev(fx.input);
+  const locale =
+    fx.locale ?? (/[\u4e00-\u9fff]/.test(fx.input) ? "zh-CN" : "en");
+  const result = extractDev(fx.input, locale);
   const errors: string[] = [];
 
   if ((result.thoughts.length ?? 0) < (fx.expect.thoughts_min ?? 0)) {

@@ -1,5 +1,12 @@
 # @aldus-palace/server
 
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @aldus-palace/core@0.5.0
+
 ## 0.1.4
 
 ### Patch Changes

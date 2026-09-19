@@ -4,7 +4,6 @@
   "expect": {
     "memory_candidates_min": 1,
     "memory_active_max": 0,
-    "memory_pending_max": 0,
-    "forbidden": ["memory_active"]
+    "memory_pending_min": 1
   }
 }

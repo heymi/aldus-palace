@@ -88,8 +88,8 @@ or note?".
 - **No external actions.** The runtime records intent and plans. It sends no mail,
   posts nothing and pays nobody.
 - **Offline mode recognises a narrow set of phrasings.** The deterministic
-  provider handles commands, stated rules and a few date forms, in Chinese and
-  English. Connect a model for general understanding; the receipts show which
+  provider handles commands, stated rules and a few date forms, in English and
+  Chinese. Connect a model for general understanding; the receipts show which
   provider produced them.
 
 ## Build with it
@@ -116,8 +116,8 @@ await db.prepare(`INSERT INTO raw_inputs
   .run(id, user.id, text, nowIso(), nowIso());
 
 const card = await processRawInput(db, new DevLLMProvider(), user, id, "local");
-console.log(card.summary);        // 已记下 · 1 件要做
-console.log(card.commitments);    // one commitment, with window_start / window_end set
+console.log(card.summary);        // Captured · 1 commitment
+console.log(card.commitments);    // one commitment, window_start / window_end resolved
 ```
 
 **MCP** — inside Claude, Cursor or any MCP client
