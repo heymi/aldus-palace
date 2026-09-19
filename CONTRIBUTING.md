@@ -36,6 +36,23 @@ Every pull request runs, with **no secrets**:
 4. `pnpm build`
 5. `pnpm spec:check` — `spec/schema.sql` matches the canonical schema
 
+## Writing style
+
+The introduction of a document sells the work; the rest explains it. Both halves
+carry rules, and review will ask for them:
+
+- **No adverbs.** No `very`, `really`, `just`, `simply`, `truly`, `automatically`,
+  `seamlessly`, `instantly`, `always`, `never`. Use a stronger verb or a number.
+- **No opening adverbials.** Start with the subject: "The runtime validates each
+  answer", not "In practice, the runtime validates each answer".
+- **No "not X, but Y".** State what the system does. A reader who wants the
+  contrast can draw it.
+- **A claim carries proof.** Every promise points at a file, a test, or a number.
+- **Jargon stays below the fold.** README introductions must read for someone who
+  has never seen this codebase; schemas, leases and ports belong in the technical
+  section.
+- **Scenes beat adjectives.** Show the input and the result.
+
 ## Published package contents
 
 `packages/core` and `packages/mcp` are published to npm. Because npm only
