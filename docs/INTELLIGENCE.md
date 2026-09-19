@@ -139,6 +139,9 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
 - **Time-window generation and conflict avoidance** (`findSlot`): walk 15-minute
   steps from now to the end of the day, skipping AI slots and fixed external
   events, and take the next window that fits.
+- **Duration estimation** (`estimateDurationMinutes`): a stated estimate keeps
+  the larger weight and is calibrated against the median of completed work in
+  the same project; two samples or more fill a missing estimate.
 - **Scheduling** writes `ai_slot_start/end`, a `today_assignments` row carrying a
   human-readable reason, and an `action_log` entry.
 - **Execution monitoring** (`observePlanningOutcome`): record what the user did
@@ -169,8 +172,8 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
   relationships, so the plan can respect how work depends on other work.
 - **A blended priority score** — impact, urgency, dependencies, goal alignment
   and risk, alongside the signals above.
-- **Duration estimation from history** — blend the user's estimate with similar
-  completed work and complexity.
+- **Complexity in duration estimation** — read task complexity alongside the
+  history, not only the stated estimate and the project median.
 - **Schedule optimization with context-switch cost** — maximize important work
   completed, minimize switching, fit the user's rhythm and lower stress.
 - **An explicit morning plan** — classify the day into core, optional and

@@ -1,5 +1,6 @@
 import type { SqlDatabase } from "../db/port.js";
 import { nowIso } from "../db/port.js";
+import { estimateDurationMinutes } from "../lib/durationEstimate.js";
 import { newId } from "../lib/id.js";
 import { getLocalParts, localDayWindow } from "../lib/time.js";
 import { writeActionLog } from "../repos/actionLogs.js";
@@ -253,6 +254,7 @@ export async function reconcileTodayPlan(
       new Date(at.getTime() - 7 * 24 * 3600 * 1000).toISOString()
     ) as Array<{ project_id: string | null; title: string; completed_at: string }>;
   const experience = await loadPlanningExperience(db, userId, at);
+  const durationHistory = await loadDurationHistory(db, userId, at);
 
   const todayIds = new Set(today.map((row) => row.id));
   const excludedIds = new Set(
@@ -312,8 +314,18 @@ export async function reconcileTodayPlan(
   const persist = await db.transaction(async () => {
     for (const meta of pickedMeta) {
       if (picked.length >= needed) break;
-      const duration = positiveNumber(meta.row.duration_minutes) ?? 45;
-      const slot = findSlot(at.getTime(), Date.parse(day.end), duration, occupied);
+      const estimate = estimateDurationMinutes({
+        stated: positiveNumber(meta.row.duration_minutes),
+        history: meta.row.project_id
+          ? durationHistory.get(String(meta.row.project_id))
+          : undefined,
+      });
+      if (estimate.source === "history" || estimate.source === "blended") {
+        meta.reasons.push(
+          estimate.source === "blended" ? "时长按历史校准" : "时长按历史估算"
+        );
+      }
+      const slot = findSlot(at.getTime(), Date.parse(day.end), estimate.minutes, occupied);
       if (!slot) continue;
       occupied.push(slot);
       occupied.sort((a, b) => a.start - b.start);
@@ -1298,6 +1310,34 @@ async function loadPlanningExperience(
     prefersSelfDefined: selfDefinedCount >= 3,
     prefersShortNextStep: stoppedCount >= 3,
   };
+}
+
+/** Completed durations per project over the last 90 days, for slot sizing. */
+async function loadDurationHistory(
+  db: SqlDatabase,
+  userId: string,
+  at: Date
+): Promise<Map<string, number[]>> {
+  const rows = (await db
+    .prepare(
+      `SELECT project_id, duration_minutes FROM commitments
+       WHERE user_id = ? AND status = 'completed' AND duration_minutes IS NOT NULL
+         AND completed_at >= ? AND completed_at <= ?`
+    )
+    .all(
+      userId,
+      new Date(at.getTime() - 90 * 24 * 3600 * 1000).toISOString(),
+      at.toISOString()
+    )) as Array<{ project_id: string | null; duration_minutes: number }>;
+
+  const history = new Map<string, number[]>();
+  for (const row of rows) {
+    if (!row.project_id) continue;
+    const list = history.get(row.project_id) ?? [];
+    list.push(Number(row.duration_minutes));
+    history.set(row.project_id, list);
+  }
+  return history;
 }
 
 function createdAtWithin(

@@ -13,7 +13,7 @@ today marked against what does not — is in
 - [x] Reference server: local SQLite **and** Cloudflare Durable Object adapters
 - [x] Two-tier tests: deterministic suites + acceptance fixtures (offline)
 - [x] `spec/schema.sql` generated from the canonical schema
-- [x] SwiftUI reference client (best effort)
+- [x] Two published packages (`@aldus-palace/core`, `@aldus-palace/mcp`)
 ## v0.2 — ecosystem (current)
 
 - [x] Anthropic provider (Messages API) alongside DeepSeek / OpenAI-compatible
@@ -52,8 +52,9 @@ it:
   relationships, so the plan can respect how work depends on other work.
 - [ ] **A blended priority score** — impact, urgency, dependencies, goal
   alignment and risk, alongside the current signals.
-- [ ] **Duration estimation from history** — blend the user's estimate with
-  similar completed work and complexity.
+- [x] **Duration estimation from history** — a stated estimate keeps the larger
+  weight and is calibrated against the median of completed work in the same
+  project (`lib/durationEstimate.ts`). Complexity is not read yet.
 - [ ] **Schedule optimization with context-switch cost** — maximize important
   work completed, minimize switching, fit the user's rhythm and lower stress.
 - [ ] **An explicit morning plan** — classify the day into core, optional and
@@ -98,6 +99,7 @@ current posture. The privacy architecture takes shape in these pieces:
 
 ## Later
 
+- [ ] A SwiftUI reference client (`clients/` is a placeholder today)
 - [ ] Postgres adapter behind the existing async port (the port was designed for it)
 - [ ] Cognitive-map exploration UI
 - [ ] Planning engine beyond Today (horizon, dependencies, energy patterns)

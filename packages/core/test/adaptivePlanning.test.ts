@@ -43,7 +43,7 @@ async function addCommitment(
     windowStart?: string;
     windowEnd?: string;
     deadline?: string;
-    duration?: number;
+    duration?: number | null;
   }
 ) {
   const created = "2026-07-18T04:00:00.000Z";
@@ -58,7 +58,7 @@ async function addCommitment(
     input.title,
     input.projectId ?? null,
     input.status ?? "captured",
-    input.duration ?? 45,
+    input.duration === undefined ? 45 : input.duration,
     input.slotStart ?? null,
     input.slotEnd ?? null,
     input.windowStart ?? null,
@@ -886,4 +886,44 @@ await learnsRepeatedProjectSwitchWithinFifteenDays();
 await learnsSameProjectAndStoppedOutcomesWithinFifteenDays();
 await planningForeignKeysAllowInputDerivativeReplacement();
 await readingTodayDoesNotWrite();
+await sizesSlotsFromProjectHistory();
 finish("adaptive planning tests passed.");
+
+async function sizesSlotsFromProjectHistory() {
+  const db = await makeDb();
+  for (const [index, id] of ["done-a", "done-b", "done-c"].entries()) {
+    await addCommitment(db, {
+      id,
+      title: `完成 Related ${index}`,
+      projectId: "p-related",
+      status: "completed",
+      completedAt: `2026-07-1${7 + index}T03:30:00.000Z`,
+      duration: 30,
+    });
+  }
+  await addCommitment(db, {
+    id: "no-duration",
+    title: "调整 Related 空状态",
+    projectId: "p-related",
+    duration: null,
+  });
+
+  const result = await reconcileTodayPlan(db, "u1", "Asia/Shanghai", {
+    at: new Date("2026-07-19T04:00:00.000Z"),
+    planVersion: "2026-07-19:history",
+  });
+  const picked = result.picked.find((item) => item.id === "no-duration");
+  assert(picked !== undefined, "the untimed commitment is picked");
+  assert(
+    picked!.reason.includes("时长按历史估算"),
+    `the reason names the history estimate, got: ${picked!.reason}`
+  );
+  const row = (await db
+    .prepare(
+      `SELECT ai_slot_start, ai_slot_end FROM commitments WHERE id = 'no-duration'`
+    )
+    .get()) as { ai_slot_start: string; ai_slot_end: string };
+  const minutes =
+    (Date.parse(row.ai_slot_end) - Date.parse(row.ai_slot_start)) / 60000;
+  assert(minutes === 30, `the slot follows the history median, got ${minutes}`);
+}
