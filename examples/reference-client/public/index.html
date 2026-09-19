@@ -7,58 +7,47 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <a class="skip" href="#capture">Skip to capture</a>
+    <a class="skip" href="#capture" data-i18n="skip"></a>
 
     <header class="masthead">
       <div class="masthead-row">
         <h1>Aldus</h1>
-        <p class="status" id="status">connecting…</p>
+        <div class="masthead-tools">
+          <p class="status" id="status"></p>
+          <div class="lang" id="lang-switch" role="group" aria-label="Language"></div>
+        </div>
       </div>
-      <p class="deck">
-        A trustworthy context layer. Write a sentence and watch what it becomes,
-        what it remembers, and what it asks before it acts.
-      </p>
+      <p class="deck" data-i18n="masthead.deck"></p>
     </header>
 
     <nav class="tabs" aria-label="Sections">
-      <a href="#capture">Capture</a>
-      <a href="#today">Today <span class="tally" id="today-tally"></span></a>
-      <a href="#memory">Memory <span class="tally" id="memory-tally"></span></a>
+      <a href="#capture" data-i18n="nav.capture"></a>
+      <a href="#today"><span data-i18n="nav.today"></span> <span class="tally" id="today-tally"></span></a>
+      <a href="#memory"><span data-i18n="nav.memory"></span> <span class="tally" id="memory-tally"></span></a>
       <a href="#decisions">
-        Decisions <span class="tally tally-accent" id="decision-tally" hidden></span>
+        <span data-i18n="nav.decisions"></span>
+        <span class="tally tally-accent" id="decision-tally" hidden></span>
       </a>
     </nav>
 
     <main>
       <section id="capture" class="capture" aria-labelledby="capture-title">
-        <h2 id="capture-title" class="hero">What is on your mind?</h2>
-        <p class="capture-sub">
-          One sentence. Time-bound work lands in Today; anything durable is
-          remembered under Memory.
-        </p>
+        <h2 id="capture-title" class="hero" data-i18n="capture.hero"></h2>
+        <p class="capture-sub" data-i18n="capture.sub"></p>
         <form id="capture-form">
           <textarea
             id="input"
             rows="2"
-            placeholder="Ship the onboarding page today"
+            data-i18n-placeholder="capture.placeholder"
             aria-label="A sentence to capture"
           ></textarea>
           <div class="row">
-            <button type="submit" class="primary" id="file-button">File it</button>
-            <span class="hint" id="capture-hint">⌘↵ to file · no key needed</span>
+            <button type="submit" class="primary" id="file-button" data-i18n="capture.button"></button>
+            <span class="hint" id="capture-hint"></span>
           </div>
         </form>
         <div class="chips" id="examples">
-          <span class="chips-label">Try</span>
-          <button type="button" class="chip" data-example="Ship the onboarding page today.">
-            Ship the onboarding page today.
-          </button>
-          <button type="button" class="chip" data-example="I prefer simple tools and fewer settings.">
-            I prefer simple tools and fewer settings.
-          </button>
-          <button type="button" class="chip" data-example="AI should assist, not dominate.">
-            AI should assist, not dominate.
-          </button>
+          <span class="chips-label" id="chips-label"></span>
         </div>
         <div id="receipt" class="receipt" hidden aria-live="polite"></div>
       </section>
@@ -66,7 +55,7 @@
       <div class="work">
         <section id="today" class="panel" aria-labelledby="today-title">
           <header class="panel-head">
-            <h2 id="today-title">Today</h2>
+            <h2 id="today-title" data-i18n="today.title"></h2>
             <span class="panel-note" id="today-note"></span>
           </header>
           <div id="now"></div>
@@ -74,10 +63,10 @@
 
         <section id="memory" class="panel" aria-labelledby="memory-title">
           <header class="panel-head">
-            <h2 id="memory-title">Memory</h2>
+            <h2 id="memory-title" data-i18n="memory.title"></h2>
             <label class="toggle">
               <input type="checkbox" id="show-candidates" />
-              <span>candidates</span>
+              <span data-i18n="memory.candidates"></span>
             </label>
           </header>
           <div id="memory-list"></div>
@@ -86,7 +75,7 @@
 
       <section id="decisions" class="panel" aria-labelledby="decisions-title">
         <header class="panel-head">
-          <h2 id="decisions-title">Needs a decision</h2>
+          <h2 id="decisions-title" data-i18n="decisions.title"></h2>
           <span class="panel-note" id="decisions-note"></span>
         </header>
         <div id="actions"></div>
@@ -94,10 +83,7 @@
     </main>
 
     <footer>
-      <p>
-        Local-first. This page talks to <code>/api</code>; the token stays on the
-        host, not in the browser.
-      </p>
+      <p id="footer-text"></p>
     </footer>
 
     <script type="module" src="/app.js"></script>

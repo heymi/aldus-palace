@@ -108,6 +108,12 @@ body {
   color: var(--ink-2);
 }
 
+.masthead-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
 .status {
   margin: 0;
   font-family: var(--mono);
@@ -116,6 +122,35 @@ body {
   color: var(--ink-3);
   text-align: right;
   white-space: nowrap;
+}
+
+.lang {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+}
+
+.lang button {
+  padding: 0.28rem 0.55rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.lang button:hover {
+  background: var(--paper-2);
+}
+
+.lang button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lang button[aria-pressed="true"]:hover {
+  background: var(--accent);
 }
 
 /* --- section nav --------------------------------------------------------- */

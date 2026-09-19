@@ -251,6 +251,11 @@ function build(locale: ActionLocale): Record<string, MsgFn> {
       return `Redacted before the cloud call (level ${level}${kinds ? ` · ${kinds}` : ""})`;
     },
     user_data_purged: () => (zh ? "已彻底删除全部数据" : "Purged all data"),
+    user_language_changed: (p) => {
+      const language = p?.language ? String(p.language) : "";
+      if (zh) return language ? `已将语言切换为 ${language}` : "已切换语言";
+      return language ? `Changed the language to ${language}` : "Changed the language";
+    },
     work_needs_confirmation: (p) => {
       const title = p?.title ? String(p.title) : "";
       if (zh) return title ? `多次顺延，需要决定：${title}` : "多次顺延，需要决定";

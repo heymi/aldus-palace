@@ -153,6 +153,11 @@ export class AldusClient {
     return this.request("/v1/me");
   }
 
+  /** The language the runtime writes in (capture cards, memory wording). */
+  updateMe(patch: { language: "en" | "zh-CN" }): Promise<{ user: Record<string, unknown> }> {
+    return this.request("/v1/me", { method: "PATCH", body: patch });
+  }
+
   permissions(): Promise<PermissionState> {
     return this.request("/v1/permissions");
   }
@@ -183,13 +188,20 @@ export class AldusClient {
       "/v1/me/purge",
       { method: "POST", body: { confirm: true } }
     );
-    const decided = await this.request<{
-      proposal: ActionProposal;
-      execution?: { ok: boolean; status: string; result?: PurgeResult };
-    }>(`/v1/actions/${encodeURIComponent(proposed.proposal.id)}/decide`, {
-      method: "POST",
-      body: { decision: "approve" },
-    });
+    const decide = (id: string) =>
+      this.request<{
+        proposal: ActionProposal;
+        execution?: { ok: boolean; status: string; result?: PurgeResult };
+      }>(`/v1/actions/${encodeURIComponent(id)}/decide`, {
+        method: "POST",
+        body: { decision: "approve" },
+      });
+    // Permanent deletion is critical: the first approval asks again.
+    const first = await decide(proposed.proposal.id);
+    const decided =
+      first.proposal?.status === "pending_second"
+        ? await decide(proposed.proposal.id)
+        : first;
     const result = decided.execution?.result;
     if (!result) throw new Error("purge_did_not_execute");
     return result;

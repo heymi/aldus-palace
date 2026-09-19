@@ -40,6 +40,15 @@ const meta = {
   "POST /v1/inputs/{id}/process": { summary: "Process a raw input that is still pending", tag: "Inputs", response: "CaptureOutcome" },
   "GET /v1/inputs/{id}": { summary: "Read a raw input and its derived objects", tag: "Inputs" },
   "GET /v1/me": { summary: "The current user", tag: "Account" },
+  "PATCH /v1/me": {
+    summary: "Update the current user (language)",
+    tag: "Account",
+    request: {
+      type: "object",
+      required: ["language"],
+      properties: { language: { type: "string", enum: ["en", "zh-CN"] } },
+    },
+  },
   "GET /v1/thoughts": { summary: "List thoughts", tag: "Thoughts", response: "Thought" },
   "POST /v1/thoughts/rewrite-summaries": { summary: "Rewrite thought titles", tag: "Thoughts" },
   "GET /v1/thoughts/{id}": { summary: "Read a thought", tag: "Thoughts", response: "Thought" },

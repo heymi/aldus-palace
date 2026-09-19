@@ -128,6 +128,11 @@ assert(
 await client.deleteMemory("mem_1");
 assert(calls[20].method === "DELETE", "memory deletion is a DELETE");
 
+await client.updateMe({ language: "zh-CN" });
+assert(calls[21].url === "http://localhost:8787/v1/me", "me update path");
+assert(calls[21].method === "PATCH", "me update is a PATCH");
+assert((calls[21].body as { language: string }).language === "zh-CN", "the language travels");
+
 // --- errors -----------------------------------------------------------------
 
 const failing = fakeFetch({ status: 404, body: { error: "not_found" } });
