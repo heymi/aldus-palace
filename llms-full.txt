@@ -2,7 +2,7 @@
 
 GENERATED FILE — do not edit.
 Regenerate: pnpm gen:llms
-Source: README.md, EVALUATION.md, docs/ARCHITECTURE.md, docs/DOMAIN-SCHEMA.md, docs/CAPABILITIES.md, docs/INTELLIGENCE.md, docs/EVAL.md, docs/POSITIONING.md, docs/MAP.md, docs/GLOSSARY.md, docs/BENCHMARKS.md, docs/BENCHMARKS-LLM.md, ROADMAP.md
+Source: README.md, EVALUATION.md, docs/ARCHITECTURE.md, docs/DOMAIN-SCHEMA.md, docs/CAPABILITIES.md, docs/INTELLIGENCE.md, docs/EVAL.md, docs/POSITIONING.md, docs/MAP.md, docs/GLOSSARY.md, docs/RETRIEVER.md, docs/BENCHMARKS.md, docs/BENCHMARKS-LLM.md, ROADMAP.md
 
 
 <!-- README.md -->
@@ -135,7 +135,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP, a library and a typed client: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 27 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 28 suites and 11 fixtures replay each run |
 
 ## How you run it
 
@@ -318,7 +318,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Privacy | a cloud call is redacted by data level and level 4 stays local; Memory is private until a scope is granted; deletion empties every table for the user | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 27 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 28 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -327,7 +327,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 27 suites — deterministic, offline, no API key
+pnpm test     # 28 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -418,7 +418,7 @@ pnpm demo       # the offline capture demo
 A passing `pnpm verify` ends with fragments like:
 
 ```
-packages/core test: All 22 suites passed.
+packages/core test: All 23 suites passed.
 packages/mcp test: mcp tool tests passed.
 apps/server test: All 3 suites passed.
 All fixtures passed.
@@ -437,7 +437,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 27 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 28 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -1382,7 +1382,7 @@ no API key. `pnpm verify` is green in a fresh clone.
 | Memory | a gate, candidates, evidence, versioning, levels and decay | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library · typed client | API | API | in-app | calendar API |
-| Replayable offline | 27 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 28 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 
@@ -1440,6 +1440,7 @@ it, the doc that explains it and the suite that pins it.
 | What is planned, and what is not? | [`ROADMAP.md`](../ROADMAP.md) |
 | How do I verify a claim? | [`EVALUATION.md`](../EVALUATION.md) |
 | What does a word mean here? | [`GLOSSARY.md`](GLOSSARY.md) |
+| How does retrieval scale? | [`RETRIEVER.md`](RETRIEVER.md) |
 
 ## The runtime loop
 
@@ -1532,6 +1533,76 @@ The shared vocabulary. Planning-specific terms live in
 |---|---|
 | **Shipped today** | runs in the current `0.x` release |
 | **Designed** | the direction the system is being built toward; tracked in [`ROADMAP.md`](../ROADMAP.md) |
+
+
+<!-- docs/RETRIEVER.md -->
+
+# Retriever
+
+How the runtime finds the memories that matter, and the design for scaling it
+from dozens to thousands.
+
+## The question
+
+Memory value already ships: levels, decay and a value score weigh what to keep
+(`lib/memoryValue.ts`). Retrieval is the other half, and today it is keyword
+overlap plus a heuristic score over the most recent rows. That is right for a
+small store. A Retriever should hold up as the store grows, without giving up
+local-first or the two runtimes.
+
+## Spike findings (2026-09-19)
+
+| Question | Result |
+|---|---|
+| FTS5 on the local adapter (`better-sqlite3`, SQLite 3.53.2) | works, with `bm25()` ranking |
+| FTS5 on Cloudflare Durable Object SQLite | supported; Cloudflare lists the FTS5 module (including `fts5vocab`) among the supported extensions |
+| CJK tokenization | `unicode61` keeps a CJK run as one token, and `trigram` misses two-character queries; separating CJK characters and matching a quoted phrase works for any length (`lib/search.ts`) |
+| SQL triggers for CJK | a trigger cannot segment; the index stores text the runtime already segmented |
+| Vector search (`sqlite-vec` or similar) | **not portable**: a native extension, absent from the Durable Object supported set and not bundled with `better-sqlite3` |
+| Same schema on both runtimes | FTS5 keeps the "one schema, two runtimes" promise |
+
+The decision follows from the spike: **full-text search is the default, and
+embeddings are an optional adapter.**
+
+## Design
+
+```
+query ──► Retriever port
+               ├─ default: FTS5 (portable on both runtimes)
+               │     bm25 + level + decay + value + importance
+               └─ optional: embeddings + reranker (opt-in, never required)
+```
+
+- **A port, not a concrete dependency.** `Retriever` takes the storage port and
+  returns ranked memory ids; callers (context assembly, the memory list) do not
+  know how the ranking happened.
+- **Segmented text the runtime writes.** `lib/search.ts` turns CJK into single
+  characters (`segmentForSearch`) and a user query into an FTS5 phrase
+  (`toMatchQuery`). A `search_text` column on `memories` holds the segmented
+  form, written by the memory write path; triggers copy it into
+  `memory_search(memory_id UNINDEXED, search_text)`, because a trigger cannot
+  segment. A backfill runs on first use for rows written before the column
+  existed.
+- **The score blends both worlds.** `bm25` orders the match; the existing
+  `memoryRetrievalScore` (level, decay, value, importance) breaks ties and keeps
+  a fresh principle ahead of an old experience on the same topic.
+- **A fallback stays in code.** If a runtime ever lacks FTS5, retrieval falls
+  back to the current keyword scoring, so nothing breaks.
+- **Embeddings are optional.** They sit behind the same port as a second
+  implementation, and the default path never needs a model or a vector store.
+
+## Slices
+
+1. **FTS5 retriever.** Migration for `memory_search` plus triggers and a
+   backfill; the `Retriever` port and its FTS5 implementation; wire it into
+   `retrieveActiveMemoriesForContext`; a deterministic suite.
+2. **Ranking and measurement.** Blend `bm25` with `memoryRetrievalScore`, and add
+   `Recall@K` to the rule benchmark and the LLM benchmark.
+3. **Optional embeddings.** A second `Retriever` behind the port, opt-in, with no
+   change to the default behaviour.
+
+Slice 1 is the next visible capability; 2 and 3 are recorded in
+[`ROADMAP.md`](../ROADMAP.md).
 
 
 <!-- docs/BENCHMARKS.md -->
@@ -1692,6 +1763,19 @@ it:
   (`lib/planCapacity.ts`).
 - [x] **Task migration** — flexible, unstarted work moves forward, and repeated
   deferrals surface for a decision (`services/workMigration.ts`).
+
+## Retrieval
+
+The design is in [`docs/RETRIEVER.md`](docs/RETRIEVER.md); FTS5 is confirmed on
+both runtimes, and vector search is not portable.
+
+- [ ] **An FTS5 retriever** — the `Retriever` port and its FTS5 implementation,
+  a `search_text` column the runtime segments (`lib/search.ts`), triggers and a
+  backfill, wired into context retrieval.
+- [ ] **Ranking and measurement** — blend `bm25` with the value score, and add
+  `Recall@K` to the benchmarks.
+- [ ] **Optional embeddings** — a second `Retriever` behind the port, opt-in,
+  with no change to the default behaviour.
 
 ## Autonomy and models
 

@@ -74,6 +74,19 @@ it:
 - [x] **Task migration** — flexible, unstarted work moves forward, and repeated
   deferrals surface for a decision (`services/workMigration.ts`).
 
+## Retrieval
+
+The design is in [`docs/RETRIEVER.md`](docs/RETRIEVER.md); FTS5 is confirmed on
+both runtimes, and vector search is not portable.
+
+- [ ] **An FTS5 retriever** — the `Retriever` port and its FTS5 implementation,
+  a `search_text` column the runtime segments (`lib/search.ts`), triggers and a
+  backfill, wired into context retrieval.
+- [ ] **Ranking and measurement** — blend `bm25` with the value score, and add
+  `Recall@K` to the benchmarks.
+- [ ] **Optional embeddings** — a second `Retriever` behind the port, opt-in,
+  with no change to the default behaviour.
+
 ## Autonomy and models
 
 - [x] **An Action Gate.** A published risk table grades every proposed agent

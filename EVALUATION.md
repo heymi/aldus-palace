@@ -17,7 +17,7 @@ pnpm demo       # the offline capture demo
 A passing `pnpm verify` ends with fragments like:
 
 ```
-packages/core test: All 22 suites passed.
+packages/core test: All 23 suites passed.
 packages/mcp test: mcp tool tests passed.
 apps/server test: All 3 suites passed.
 All fixtures passed.
@@ -36,7 +36,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 27 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 28 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
