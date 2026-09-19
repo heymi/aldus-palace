@@ -16,6 +16,9 @@ import { writeActionLog } from "../repos/actionLogs.js";
  * join table without a user column is reached through the memories it links.
  */
 export const PURGE_TABLES: Array<{ table: string; where: string }> = [
+  // FTS5 virtual tables have no foreign key and no user column: reach the search
+  // index through the memories it was built from, before those rows go.
+  { table: "memory_search", where: "memory_id IN (SELECT id FROM memories WHERE user_id = ?)" },
   { table: "memory_concepts", where: "memory_id IN (SELECT id FROM memories WHERE user_id = ?)" },
   { table: "concept_links", where: "user_id = ?" },
   { table: "commitment_classifications", where: "user_id = ?" },

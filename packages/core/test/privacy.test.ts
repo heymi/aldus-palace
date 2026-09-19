@@ -17,6 +17,7 @@ import {
   resolvePrivacyLevel,
 } from "../src/services/privacyGateway.js";
 import { PURGE_TABLES, purgeUserData } from "../src/services/dataLifecycle.js";
+import { indexMemory } from "../src/lib/retriever.js";
 import {
   PrivacyBlockedError,
   isPrivacyGuarded,
@@ -266,6 +267,20 @@ await db
      VALUES ('r1', 'u1', 'text', 'text', 'processed', ?, ?)`
   )
   .run(now, now);
+// A memory and its FTS row: the virtual table has no foreign key, so the purge
+// must reach it through memory_id or the content survives deletion.
+await db
+  .prepare(
+    `INSERT INTO memories
+     (id, user_id, type, content, status, source, confidence, importance, created_at, updated_at)
+     VALUES ('m1', 'u1', 'preference', 'Secret preference', 'active', 'user_explicit', 0.9, 0.8, ?, ?)`
+  )
+  .run(now, now);
+await indexMemory(db, "m1", "Secret preference");
+const indexedBefore = (await db
+  .prepare(`SELECT COUNT(*) AS count FROM memory_search WHERE memory_id = 'm1'`)
+  .get()) as { count: number };
+assert(Number(indexedBefore.count) === 1, "the memory is in the search index before the purge");
 
 const purged = await purgeUserData(db, "u1", { confirm: true });
 assert(purged.ok, "the purge runs with confirmation");

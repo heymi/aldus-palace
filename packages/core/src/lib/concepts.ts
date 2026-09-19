@@ -100,10 +100,16 @@ export async function retrieveActiveMemoriesForContext(
   limit = 12
 ): Promise<Array<Record<string, unknown> & { concepts: Array<{ id: string; name: string }> }>> {
   // Full-text first: FTS5 (bm25) orders the matches, then level, decay and value
-  // re-rank them. See docs/RETRIEVER.md.
-  const ftsIds = await retrieveMemoryIds(db, userId, input, {
-    limit: Math.max(limit, 12) * 2,
-  });
+  // re-rank them. See docs/RETRIEVER.md. A malformed query must not fail the
+  // capture: fall through to the keyword pass instead.
+  let ftsIds: string[] = [];
+  try {
+    ftsIds = await retrieveMemoryIds(db, userId, input, {
+      limit: Math.max(limit, 12) * 2,
+    });
+  } catch {
+    ftsIds = [];
+  }
   if (ftsIds.length) {
     const placeholders = ftsIds.map(() => "?").join(",");
     const hits = (await db
