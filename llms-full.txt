@@ -1000,7 +1000,8 @@ earned.*
   idempotency key and an execution status; a registered executor runs it under a
   lease, the outcome is recorded, and a succeeded action never runs twice
   (`executeApprovedAction`). Deletion is the first real one: `POST /v1/me/purge`
-  proposes `user_data_purge` and approval runs it.
+  proposes `user_data_purge` — permanent, so it is critical and takes two
+  approvals, which then run it.
 - **A trust score and autonomy levels 0–4.** Trust is the Laplace-smoothed
   approval rate of the decisions the user made in the last 90 days; automatic
   runs do not count, so trust grows from decisions. The level follows thresholds
