@@ -22,7 +22,8 @@ function providerReturning(extraction: unknown): LLMProvider {
 async function store(
   input: string,
   extraction: unknown,
-  timezone = "UTC"
+  timezone = "UTC",
+  title?: string
 ): Promise<Record<string, unknown> | undefined> {
   const db = await createTestDb();
   const user = await ensureDevUser(db, { name: "T", timezone, language: "en" });
@@ -38,9 +39,13 @@ async function store(
   await processRawInput(db, providerReturning(extraction), user, id, "full");
   const row = (await db
     .prepare(
-      `SELECT * FROM commitments WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`
+      title
+        ? `SELECT * FROM commitments WHERE user_id = ? AND title = ? ORDER BY created_at DESC LIMIT 1`
+        : `SELECT * FROM commitments WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`
     )
-    .get(user.id)) as Record<string, unknown> | undefined;
+    .get(...(title ? [user.id, title] : [user.id]))) as
+    | Record<string, unknown>
+    | undefined;
   db.close();
   return row;
 }
@@ -109,6 +114,39 @@ assert(
   getLocalParts("UTC", new Date(String(iso!.deadline))).dateKey ===
     addDaysToDateKey(today, 3),
   "a clear future date is kept"
+);
+
+// A date-only value is the user's local day, not UTC midnight.
+const dateKey = addDaysToDateKey(today, 3);
+const localDay = await store(
+  `Ship the onboarding page on ${dateKey}`,
+  {
+    object_mode: "commitment",
+    commitments: [{ title: "Ship the onboarding page", deadline: dateKey }],
+  },
+  "America/Los_Angeles"
+);
+assert(
+  getLocalParts("America/Los_Angeles", new Date(String(localDay!.deadline))).dateKey ===
+    dateKey,
+  `a date-only deadline stays on the local day, got ${String(localDay!.deadline)}`
+);
+
+// A future word in another clause does not drop a real past date in this one.
+const pastClause = await store(
+  "上周归档完成，下周交报告",
+  {
+    object_mode: "commitment",
+    commitments: [
+      { title: "归档完成", optimized_content: "上周归档完成", deadline: "2020-01-01" },
+    ],
+  },
+  "UTC",
+  "归档完成"
+);
+assert(
+  String(pastClause!.deadline) === new Date("2020-01-01").toISOString(),
+  `a past date in a past clause is kept, got ${String(pastClause!.deadline)}`
 );
 
 finish("model date normalization tests passed.");

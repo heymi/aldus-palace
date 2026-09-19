@@ -23,24 +23,48 @@ const FUTURE_DATE_MARKER =
   /下周|下个月|明天|后天|周[一二三四五六日]|这周|next (week|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|tomorrow|today/i;
 
 /**
+ * The text a past-date check looks at.
+ *
+ * A future word governs the clause it sits in, not every clause of the input:
+ * "Archive last week; report next week" must not turn a real past date into a
+ * dropped one. The commitment's own text is the first scope; for a single-clause
+ * input the whole sentence is.
+ */
+function dateSuppressionScope(
+  content: string,
+  commitment: { title?: string | null; optimized_content?: string | null; goal?: string | null }
+): string {
+  const own = [commitment.title, commitment.optimized_content, commitment.goal]
+    .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
+    .join(" ");
+  if (FUTURE_DATE_MARKER.test(own)) return own;
+  const clauses = content.split(/[，,。；;！？!?\n]+/).filter((part) => part.trim());
+  return clauses.length <= 1 ? content : own || content;
+}
+
+/**
  * Normalise a date a model returned.
  *
  * The model sometimes returns free text ("next week", "Friday") or a date in
  * the past for a phrase that points at the future. Parse what parses, re-resolve
  * free text with the server rules, and drop a past date when the words point at
- * the future so the caller resolves it instead.
+ * the future so the caller resolves it instead. A date-only value is read as a
+ * local day, not UTC midnight, so it does not shift a day for the user.
  */
 function normalizeModelDate(
   value: string | null | undefined,
   timezone: string,
-  content: string,
+  scope: string,
   at: Date
 ): string | null {
   const trimmed = typeof value === "string" ? value.trim() : "";
   if (!trimmed) return null;
-  const ms = Date.parse(trimmed);
+  const dateOnly = trimmed.match(/^(\d{4}-\d{2}-\d{2})$/);
+  const ms = dateOnly
+    ? Date.parse(zonedLocalToIso(`${dateOnly[1]}T00:00:00`, timezone))
+    : Date.parse(trimmed);
   if (Number.isFinite(ms)) {
-    if (ms < at.getTime() - 24 * 3600 * 1000 && FUTURE_DATE_MARKER.test(content)) {
+    if (ms < at.getTime() - 24 * 3600 * 1000 && FUTURE_DATE_MARKER.test(scope)) {
       return null;
     }
     return new Date(ms).toISOString();
@@ -86,6 +110,7 @@ import {
   type MemoryConflict,
 } from "../services/memoryEvolution.js";
 import { indexMemory, removeMemoryFromIndex } from "../lib/retriever.js";
+import { zonedLocalToIso } from "../lib/time.js";
 import { isRealLLMProvider } from "../providers/index.js";
 import { pick, plural, localeOf, type Locale } from "../lib/locale.js";
 import {
@@ -825,9 +850,10 @@ export async function processRawInput(
 
     const id = newId("cmt");
     const modelAt = new Date();
-    let deadline = normalizeModelDate(c.deadline, user.timezone, content, modelAt);
-    let window_start = normalizeModelDate(c.window_start, user.timezone, content, modelAt);
-    let window_end = normalizeModelDate(c.window_end, user.timezone, content, modelAt);
+    const dateScope = dateSuppressionScope(content, c);
+    let deadline = normalizeModelDate(c.deadline, user.timezone, dateScope, modelAt);
+    let window_start = normalizeModelDate(c.window_start, user.timezone, dateScope, modelAt);
+    let window_end = normalizeModelDate(c.window_end, user.timezone, dateScope, modelAt);
 
     // Server-side relative day overrides ambiguous auto dates
     if (relative.status === "needs_confirmation") {
