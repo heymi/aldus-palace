@@ -188,6 +188,9 @@ CREATE TABLE IF NOT EXISTS memories (
   supersede_reason TEXT,
   conflicts_with_id TEXT REFERENCES memories(id),
   conflict_reason TEXT,
+  -- Segmented text (lib/search.ts) written by the runtime for full-text
+  -- retrieval; see docs/RETRIEVER.md.
+  search_text TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   CHECK (type IN ('preference', 'project_context', 'principle', 'decision', 'experience')),
@@ -226,6 +229,15 @@ CREATE TABLE IF NOT EXISTS concept_links (
   strength REAL DEFAULT 0.5,
   evidence TEXT,
   created_at TEXT NOT NULL
+);
+
+-- Full-text search over memories. The runtime writes the segmented form into
+-- memories.search_text and keeps this table in step (services/retriever.ts);
+-- a query joins back to memories, so a stale row can never surface.
+CREATE VIRTUAL TABLE IF NOT EXISTS memory_search USING fts5(
+  memory_id UNINDEXED,
+  search_text,
+  tokenize = 'unicode61'
 );
 
 CREATE INDEX IF NOT EXISTS idx_concepts_user_name ON concepts(user_id, normalized_name);

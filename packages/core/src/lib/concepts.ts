@@ -2,6 +2,7 @@ import type { SqlDatabase } from "../db/port.js";
 import { nowIso } from "../db/port.js";
 import { newId } from "./id.js";
 import { memoryRetrievalScore } from "./memoryValue.js";
+import { retrieveMemoryIds } from "./retriever.js";
 
 export function normalizeConceptName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, " ");
@@ -91,13 +92,58 @@ export async function listConcepts(
     .all(userId) as Array<Record<string, unknown>>;
 }
 
-/** Active memories relevant to current input text (keyword overlap + recency). */
+/** Active memories relevant to current input text (full-text + value). */
 export async function retrieveActiveMemoriesForContext(
   db: SqlDatabase,
   userId: string,
   input: string,
   limit = 12
 ): Promise<Array<Record<string, unknown> & { concepts: Array<{ id: string; name: string }> }>> {
+  // Full-text first: FTS5 (bm25) orders the matches, then level, decay and value
+  // re-rank them. See docs/RETRIEVER.md.
+  const ftsIds = await retrieveMemoryIds(db, userId, input, {
+    limit: Math.max(limit, 12) * 2,
+  });
+  if (ftsIds.length) {
+    const placeholders = ftsIds.map(() => "?").join(",");
+    const hits = (await db
+      .prepare(
+        `SELECT * FROM memories
+         WHERE user_id = ? AND status = 'active' AND id IN (${placeholders})`
+      )
+      .all(userId, ...ftsIds)) as Array<Record<string, unknown>>;
+    const byId = new Map(hits.map((row) => [row.id as string, row]));
+    const ranked = ftsIds
+      .map((id, index) => ({ row: byId.get(id), index }))
+      .filter(
+        (entry): entry is { row: Record<string, unknown>; index: number } =>
+          entry.row !== undefined
+      )
+      .map(({ row, index }) => ({
+        row,
+        score: memoryRetrievalScore(
+          {
+            type: String(row.type ?? ""),
+            updated_at: row.updated_at as string | null,
+            importance: row.importance as number | null,
+            source: row.source as string | null,
+            project_id: row.project_id as string | null,
+          },
+          // bm25 already ordered them; keep the order as the keyword signal.
+          { now: new Date(), keywordScore: Math.max(0.5, 10 - index) }
+        ),
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+    return Promise.all(
+      ranked.map(async ({ row }) => ({
+        ...row,
+        concepts: await conceptsForMemory(db, row.id as string),
+      }))
+    );
+  }
+
+  // Fallback: no full-text hit. Keyword overlap over the most recent rows.
   const rows = await db
     .prepare(
       `SELECT * FROM memories WHERE user_id = ? AND status = 'active'

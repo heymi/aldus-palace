@@ -1,12 +1,18 @@
 /**
- * FTS5 portability guard for the Retriever design (docs/RETRIEVER.md).
+ * The FTS5 retriever (docs/RETRIEVER.md).
  *
- * Proves the adapter supports FTS5, that unigram segmentation makes CJK
- * substring search work, and that bm25 ranks a stronger match first. SQL
- * triggers cannot segment CJK, so the runtime writes segmented text into the
- * index; the mechanics below mirror what the migration and indexer will do.
+ * Uses the real schema: `memory_search` ships with it, and the runtime keeps it
+ * in step through `indexMemory` / `ensureMemoryIndex`. Proves CJK substring
+ * search, re-index on edit, removal, and bm25 ordering.
  */
 
+import { nowIso } from "../src/db/port.js";
+import {
+  ensureMemoryIndex,
+  indexMemory,
+  removeMemoryFromIndex,
+  retrieveMemoryIds,
+} from "../src/lib/retriever.js";
 import { segmentForSearch, toMatchQuery } from "../src/lib/search.js";
 import { createTestDb, finish } from "./support/db.js";
 
@@ -20,65 +26,85 @@ assert(
   segmentForSearch("保持克制") === "保 持 克 制",
   `CJK is split into characters, got ${segmentForSearch("保持克制")}`
 );
-assert(
-  segmentForSearch("simple  tools") === "simple tools",
-  "spacing is collapsed"
-);
+assert(segmentForSearch("simple  tools") === "simple tools", "spacing is collapsed");
 assert(toMatchQuery("克制") === '"克 制"', "a CJK query is a character phrase");
 assert(toMatchQuery("simple tools") === "simple* AND tools*", "a Latin query is prefix terms");
-assert(toMatchQuery('say "hi"') === 'say* AND hi*', "quotes are stripped");
+assert(toMatchQuery('say "hi"') === "say* AND hi*", "quotes are stripped");
 
-// --- FTS5 mechanics ---------------------------------------------------------
+// --- the retriever over the real schema -------------------------------------
 
 const db = await createTestDb();
-await db.exec(`
-  CREATE VIRTUAL TABLE memory_search USING fts5(
-    memory_id UNINDEXED,
-    content,
-    tokenize = 'unicode61'
-  );
-`);
+const now = nowIso();
+await db
+  .prepare(
+    `INSERT INTO users (id, name, timezone, language, created_at, updated_at)
+     VALUES ('u1', 'Tester', 'UTC', 'en', ?, ?)`
+  )
+  .run(now, now);
 
-async function index(id: string, content: string): Promise<void> {
+async function addMemory(id: string, content: string): Promise<void> {
   await db
-    .prepare(`INSERT INTO memory_search(memory_id, content) VALUES (?, ?)`)
-    .run(id, segmentForSearch(content));
-}
-
-async function matches(query: string): Promise<string[]> {
-  const rows = (await db
     .prepare(
-      `SELECT memory_id FROM memory_search WHERE memory_search MATCH ?
-       ORDER BY bm25(memory_search)`
+      `INSERT INTO memories
+       (id, user_id, type, content, status, source, confidence, importance, created_at, updated_at)
+       VALUES (?, 'u1', 'preference', ?, 'active', 'user_explicit', 0.9, 0.8, ?, ?)`
     )
-    .all(toMatchQuery(query))) as Array<{ memory_id: string }>;
-  return rows.map((row) => row.memory_id);
+    .run(id, content, now, now);
 }
 
-await index("m-en", "Prefers simplicity and minimal tools");
-await index("m-zh", "保持克制，产品不要做太复杂");
+await addMemory("m-en", "Prefers simplicity and minimal tools");
+await addMemory("m-zh", "保持克制，产品不要做太复杂");
 
-assert((await matches("simplicity")).includes("m-en"), "FTS5 finds an English term");
-assert((await matches("simpl")).includes("m-en"), "a prefix query matches");
-assert((await matches("克制")).includes("m-zh"), "FTS5 finds a Chinese substring");
-assert((await matches("复杂")).includes("m-zh"), "FTS5 finds a second Chinese substring");
-assert(!(await matches("无关")).includes("m-zh"), "an absent term does not match");
+// Rows written without an index are backfilled on the first search.
+assert((await ensureMemoryIndex(db, "u1")) === 2, "both rows are backfilled");
 
-// Re-indexing replaces the row (the runtime does this on an update).
-await db.prepare(`DELETE FROM memory_search WHERE memory_id = 'm-en'`).run();
-await index("m-en", "Prefers dense interfaces");
-assert(!(await matches("simplicity")).includes("m-en"), "an update removes the old term");
-assert((await matches("dense")).includes("m-en"), "an update adds the new term");
-await db.prepare(`DELETE FROM memory_search WHERE memory_id = 'm-en'`).run();
-assert(!(await matches("dense")).includes("m-en"), "a delete removes the row");
+assert(
+  (await retrieveMemoryIds(db, "u1", "simplicity")).includes("m-en"),
+  "an English term is found"
+);
+assert(
+  (await retrieveMemoryIds(db, "u1", "simpl")).includes("m-en"),
+  "a prefix query matches"
+);
+assert(
+  (await retrieveMemoryIds(db, "u1", "克制")).includes("m-zh"),
+  "a Chinese substring is found"
+);
+assert(
+  (await retrieveMemoryIds(db, "u1", "复杂")).includes("m-zh"),
+  "a second Chinese substring is found"
+);
+assert(
+  !(await retrieveMemoryIds(db, "u1", "无关")).includes("m-zh"),
+  "an absent term does not match"
+);
 
-// bm25 ranks a stronger match first (lower is better).
-await index("m-once", "simple");
-await index("m-twice", "simple simple tools");
-const ranked = await matches("simple");
+// An edit re-indexes; the old term leaves and the new one arrives.
+await indexMemory(db, "m-en", "Prefers dense interfaces");
+assert(
+  !(await retrieveMemoryIds(db, "u1", "simplicity")).includes("m-en"),
+  "an edit removes the old term"
+);
+assert(
+  (await retrieveMemoryIds(db, "u1", "dense")).includes("m-en"),
+  "an edit adds the new term"
+);
+
+// Removal drops the search row, and a deleted memory never surfaces.
+await removeMemoryFromIndex(db, "m-en");
+assert(
+  !(await retrieveMemoryIds(db, "u1", "dense")).includes("m-en"),
+  "a removed row is not found"
+);
+
+// bm25 ranks a stronger match first.
+await addMemory("m-once", "simple");
+await addMemory("m-twice", "simple simple tools");
+await ensureMemoryIndex(db, "u1");
+const ranked = await retrieveMemoryIds(db, "u1", "simple");
 assert(
   ranked.indexOf("m-twice") < ranked.indexOf("m-once"),
   `bm25 ranks the stronger match first, got ${JSON.stringify(ranked)}`
 );
 
-finish("retriever FTS5 tests passed.");
+finish("retriever tests passed.");

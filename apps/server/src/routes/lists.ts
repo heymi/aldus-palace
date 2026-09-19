@@ -8,6 +8,7 @@ import {
   decideAction,
   executeApprovedAction,
   getAutonomyState,
+  indexMemory,
   proposeAction,
   ensureDefaultScopes,
   grantScope,
@@ -1624,6 +1625,8 @@ export function createListRoutes(deps: AppDeps): Hono<{
         `UPDATE memories SET content = ?, type = ?, updated_at = ? WHERE id = ?`
       )
       .run(content, type, t, id);
+    // Keep full-text retrieval in step with the edit.
+    await indexMemory(db, id, content);
 
     await writeActionLog(db, {
       user_id: user.id,

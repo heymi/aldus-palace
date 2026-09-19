@@ -58,6 +58,7 @@ If you cannot run the repository, the real output is committed:
 | A cloud provider cannot be built without the guard | `packages/core/test/providers.test.ts` | `createLLMProvider` refuses a cloud kind without a guard |
 | An approved action runs once, and deletion runs through the gate | `packages/core/test/actionGate.test.ts`, `apps/server/test/actionGate.test.ts` | the executor runs once; purge proposes and approval deletes |
 | A live model's dates are resolved on the server | `packages/core/test/modelDateNormalization.test.ts` | free text becomes ISO; a past date for a future phrase is dropped |
+| Memory retrieval is full-text, and CJK works | `packages/core/test/retriever.test.ts` | FTS5 with bm25; a Chinese substring is found |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
 | Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |

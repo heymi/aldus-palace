@@ -74,6 +74,7 @@ export * from "./services/enrichmentLease.js";
 export * from "./services/memoryLifecycle.js";
 export * from "./services/memoryEvolution.js";
 export * from "./services/permissions.js";
+export * from "./lib/retriever.js";
 export * from "./services/privacyGateway.js";
 export * from "./services/planToday.js";
 export * from "./services/replan.js";
