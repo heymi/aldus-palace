@@ -22,6 +22,7 @@ const sources = [
   "docs/POSITIONING.md",
   "docs/MAP.md",
   "docs/GLOSSARY.md",
+  "docs/RETRIEVER.md",
   "docs/BENCHMARKS.md",
   "docs/BENCHMARKS-LLM.md",
   "ROADMAP.md",

@@ -33,6 +33,7 @@ it, the doc that explains it and the suite that pins it.
 | What is planned, and what is not? | [`ROADMAP.md`](../ROADMAP.md) |
 | How do I verify a claim? | [`EVALUATION.md`](../EVALUATION.md) |
 | What does a word mean here? | [`GLOSSARY.md`](GLOSSARY.md) |
+| How does retrieval scale? | [`RETRIEVER.md`](RETRIEVER.md) |
 
 ## The runtime loop
 

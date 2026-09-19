@@ -98,6 +98,7 @@ export * from "./lib/nowScore.js";
 export * from "./lib/planCapacity.js";
 export * from "./lib/projectMatch.js";
 export * from "./lib/redaction.js";
+export * from "./lib/search.js";
 export * from "./lib/relativeDay.js";
 export * from "./lib/thoughtTitle.js";
 export * from "./lib/time.js";
