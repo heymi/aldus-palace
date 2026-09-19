@@ -27,7 +27,8 @@
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
     "cf:types": "pnpm --filter @aldus-palace/server cf:types",
-    "bench:llm": "pnpm --filter @aldus-palace/core bench:llm"
+    "bench:llm": "pnpm --filter @aldus-palace/core bench:llm",
+    "bench:retrieval": "pnpm --filter @aldus-palace/core bench:retrieval"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

@@ -25,19 +25,31 @@ export function segmentForSearch(text: string): string {
 /**
  * Turn a user query into an FTS5 MATCH expression.
  *
- * A query with CJK becomes a quoted phrase of single characters, so the
- * characters must appear in order. A Latin query becomes prefix terms joined by
- * AND, which favours recall. Quotes are stripped so the expression stays valid.
+ * Each word becomes a term: a CJK word becomes a quoted phrase of single
+ * characters (so the characters must appear in order), and a Latin word becomes
+ * a prefix term. The terms are OR-joined, so a memory that matches any of them
+ * is a candidate; bm25 ranks the ones that match more, and the value score
+ * re-ranks after it. Quotes are stripped so the expression stays valid.
  */
 export function toMatchQuery(query: string): string {
   const cleaned = query.replace(/"/g, " ").trim();
   if (!cleaned) return "";
-  if (hasCjk(cleaned)) {
-    return `"${segmentForSearch(cleaned).split(/\s+/).join(" ")}"`;
-  }
-  return cleaned
-    .split(/\s+/)
+  const groups = cleaned
+    .split(/[\s,，。！？、；;:：]+/)
     .filter(Boolean)
-    .map((term) => `${term}*`)
-    .join(" AND ");
+    .map((word) => {
+      if (hasCjk(word)) {
+        return `"${segmentForSearch(word).split(/\s+/).join(" ")}"`;
+      }
+      // Break a Latin word on characters FTS5 reads as syntax (a hyphen reads
+      // as a column filter: "Mac-only" would look for a column named only).
+      return word
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}_]+/gu, " ")
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((term) => `${term}*`)
+        .join(" OR ");
+    });
+  return [...new Set(groups)].join(" OR ");
 }

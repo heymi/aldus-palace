@@ -27,6 +27,21 @@ A case that fails exits non-zero, so a rule regression fails `pnpm verify`.
 Add an entry to the matching corpus in `packages/core/bench/run.ts`. Each case is
 a promise that must hold; a regression is a red run.
 
+## Retrieval
+
+`pnpm bench:retrieval` runs a labeled corpus of twelve memories and ten queries
+(English and Chinese) through the FTS5 retriever:
+
+| Metric | Result |
+|---|---|
+| Recall@1 | 1.000 |
+| Recall@3 | 1.000 |
+| Recall@5 | 1.000 |
+| MRR | 1.000 |
+
+The corpus is small and authored alongside the retriever, so treat it as
+regression evidence, not a leaderboard result.
+
 ## Live model
 
 [`BENCHMARKS-LLM.md`](BENCHMARKS-LLM.md) runs the same pipeline through a live
