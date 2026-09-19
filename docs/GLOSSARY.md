@@ -24,6 +24,9 @@ The shared vocabulary. Planning-specific terms live in
 | **Suggested slot** | an agent proposal in `ai_slot_start` / `ai_slot_end`; not a promise |
 | **Unscheduled** | open work with no time attached; still visible |
 | **Risk** | the state that replaces `overdue`: a date that needs attention and can be moved |
+| **Buffer** | the share of the daytime window the planner keeps free (a quarter by default) |
+| **Deferral** | one automatic move of a slipped, flexible, unstarted commitment; counted on the row |
+| **Migration** | clearing a slipped slot so the planner can place the work again; after three deferrals the item asks for a decision |
 | **Status** | `captured → planned → scheduled → completed`, plus `risk` and `cancelled` |
 
 ## Memory lifecycle

@@ -93,7 +93,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 20 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 21 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -192,7 +192,7 @@ context        active memories and projects feed the next capture
 | Engine | Shipped today | Designed next |
 |---|---|---|
 | **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, retrieval into the next capture | graded levels, decay by kind, the value score, more kinds and extraction signals, a memory graph |
-| **Planning** | four kinds of time, concrete constraint handling (deadline, window, learned project preference), priority scoring, slot search that avoids conflicts, duration estimation from project history, Today, risk, adaptive limits, a learned behaviour model, light triage | richer constraints, a blended priority score, schedule optimization with context-switch cost, buffer, migration |
+| **Planning** | four kinds of time, concrete constraint handling, priority scoring, slot search that avoids conflicts, duration estimation from project history, a daily buffer, migration for slipped flexible work, Today, risk, adaptive limits, a learned behaviour model | richer constraints, a blended priority score, schedule optimization with context-switch cost, a morning core/optional/deferred plan, a scored Now |
 | **Trust & autonomy** | an Action Gate (low and medium run, high waits, critical needs two), a trust score with levels 0–4, and permission evolution capped by a user ceiling | proactive rules |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
@@ -257,14 +257,14 @@ personality from one remark. Replace the old record and the history disappears.
 | Understanding | the model proposes; the server decides (mode, duplicates, dates, fallback) | `agent/understand.ts` |
 | Progressive capture | a lease and a generation id make "local first, model second" idempotent | `services/enrichmentLease.ts` |
 | Memory | a confident memory takes effect, explains itself, and versions instead of deleting | `lib/memoryActivation.ts`, `services/memoryEvolution.ts` |
-| Today & planning | a day with no plan gets suggestions; a full day gets a rest suggestion | `services/today.ts` |
+| Today & planning | a day with no plan gets suggestions; a full day gets a rest suggestion; a quarter of the day stays free, and slipped flexible work moves forward | `services/today.ts`, `services/workMigration.ts` |
 | Work streams | grouping is a rebuildable projection; the records stay as they are | `services/workStreams.ts` |
 | HTTP API | one schema, two runtimes: a local SQLite file and a Cloudflare Durable Object | `apps/server` |
 | MCP server | runs with no server process, against the same local file | `packages/mcp` |
 | Action Gate | an unclassified agent action waits; a critical one needs two approvals; every decision is logged and revocable, and trust is the approval rate of those decisions | `services/actionGate.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 20 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 21 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -273,7 +273,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 20 suites — deterministic, offline, no API key
+pnpm test     # 21 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start

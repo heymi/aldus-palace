@@ -14,7 +14,8 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `thoughtTitle` | summary quality gates, transfer grounding |
 | `projectMatch` | project matching by name/alias/description |
 | `inputObjectClassification` | thought vs commitment vs mixed |
-| `adaptivePlanning` | Today planning, adaptive caps, feedback episodes |
+| `adaptivePlanning` | Today planning, adaptive caps, feedback episodes, the daily buffer |
+| `workMigration` | slipped flexible work, deferral counting, the confirmation threshold |
 | `enrichmentLease` | concurrent enrichment and supersede semantics |
 | `commitmentOriginalInput` | optimized content vs original input |
 | `commitmentClassification` | work-stream projection, `/v1` API, lease races |

@@ -142,6 +142,13 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
 - **Duration estimation** (`estimateDurationMinutes`): a stated estimate keeps
   the larger weight and is calibrated against the median of completed work in
   the same project; two samples or more fill a missing estimate.
+- **A daily buffer.** Capacity is the 09:00–18:00 window minus 25%; auto-fill
+  counts the minutes already on the day and stops before the day is full
+  (`planCapacityMinutes`).
+- **Migration for slipped flexible work.** An open, unstarted commitment with no
+  deadline whose slot or window ended moves forward: the slot is cleared and the
+  deferral is counted. At three deferrals it surfaces for a decision instead
+  (`services/workMigration.ts`).
 - **Scheduling** writes `ai_slot_start/end`, a `today_assignments` row carrying a
   human-readable reason, and an `action_log` entry.
 - **Execution monitoring** (`observePlanningOutcome`): record what the user did
@@ -181,9 +188,10 @@ by hand, this plans from goals, constraints and resources, and keeps adjusting.*
 - **A scored Now** — priority × available time × energy match × context match.
 - **Event-driven replanning** — react to a postponed meeting, a new task,
   finishing early, or a change in state.
-- **Buffer management** — keep a share of the day free.
-- **Task migration** — flexible, unstarted work can move forward on its own, and
-  repeated deferrals surface for a decision.
+- **Buffer management by user rhythm** — keep a share of the day free that
+  follows energy patterns, not only a fixed ratio.
+- **Migration with a richer rule set** — dependencies and goal alignment decide
+  what moves, not only the slot and the window.
 
 ---
 
