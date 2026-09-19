@@ -7,8 +7,13 @@
 
 ![A capture session](docs/assets/capture-session.svg)
 
-**Write what you need to do. The system decides what it is, when it matters, and
-what to remember about you.**
+**The auditable memory layer for AI apps.** Free text goes in; typed
+commitments, decisions and memories come out — each with the evidence behind it,
+in a SQLite file you own.
+
+**Evaluate it in five minutes:** [`EVALUATION.md`](EVALUATION.md) maps every
+claim to the command that proves it. [中文版 README](README.zh.md) ·
+[中文评估指南](EVALUATION.zh.md).
 
 ---
 
@@ -88,7 +93,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 16 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 17 suites and 11 fixtures replay each run |
 
 ## Current scope
 
@@ -187,7 +192,7 @@ context        active memories and projects feed the next capture
 | Engine | Shipped today | Designed next |
 |---|---|---|
 | **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, retrieval into the next capture | graded levels, decay by kind, the value score, more kinds and extraction signals, a memory graph |
-| **Planning** | four kinds of time, concrete constraint handling (deadline, window, learned project preference), priority scoring, slot search that avoids conflicts, Today, risk, adaptive limits, a learned behaviour model, light triage | richer constraints, a blended priority score, duration estimation, schedule optimization with context-switch cost, buffer, migration |
+| **Planning** | four kinds of time, concrete constraint handling (deadline, window, learned project preference), priority scoring, slot search that avoids conflicts, duration estimation from project history, Today, risk, adaptive limits, a learned behaviour model, light triage | richer constraints, a blended priority score, schedule optimization with context-switch cost, buffer, migration |
 | **Trust & autonomy** | one fixed rule — a capture lands on its own, a stated principle takes effect, the rest waits | an action risk model, autonomy levels 0–4, a trust score, permission evolution |
 | **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
 
@@ -258,7 +263,7 @@ personality from one remark. Replace the old record and the history disappears.
 | MCP server | runs with no server process, against the same local file | `packages/mcp` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 16 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 17 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -267,7 +272,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 16 suites — deterministic, offline, no API key
+pnpm test     # 17 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -296,6 +301,10 @@ API key and no network.
 | [POSITIONING.md](docs/POSITIONING.md) | differentiation, and the current scope |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | the runtime, module boundaries, storage port |
 | [INTELLIGENCE.md](docs/INTELLIGENCE.md) | the four engines and the privacy design, shipped vs planned |
+| [BENCHMARKS.md](docs/BENCHMARKS.md) | measured rule-layer accuracy, with the command to reproduce it |
+| [MAP.md](docs/MAP.md) | capability → code → doc → test |
+| [GLOSSARY.md](docs/GLOSSARY.md) | the shared vocabulary |
+| [EVALUATION.md](EVALUATION.md) | every claim mapped to its proof, and what is not built |
 | [DOMAIN-SCHEMA.md](docs/DOMAIN-SCHEMA.md) | objects, invariants, memory evolution |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | local, edge, embedded, backups |
 | [EVAL.md](docs/EVAL.md) | the acceptance fixtures, and how to add one |

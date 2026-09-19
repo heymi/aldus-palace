@@ -1,7 +1,7 @@
 {
   "name": "@aldus-palace/mcp",
   "version": "0.6.3",
-  "description": "Capture and Today inside Claude, Cursor or any MCP client — against a SQLite file you own, with no server and no API key.",
+  "description": "Auditable memory for Claude, Cursor and any MCP client — capture, Today and memory tools over a SQLite file you own.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {

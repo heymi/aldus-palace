@@ -2,10 +2,10 @@
 
 ## The one-liner
 
-> **Drop in the capabilities you'd otherwise build yourself.**
+> **The auditable memory layer for AI applications.**
 >
-> A self-hosted commitment, memory and planning runtime — usable over MCP, over
-> HTTP, or as a library.
+> A self-hosted runtime that turns free-form input into typed, explainable
+> objects — usable over MCP, over HTTP, or as a library.
 
 ## What it is
 
@@ -107,7 +107,7 @@ no API key. `pnpm test && pnpm eval` is green in a fresh clone.
 | Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
-| Replayable offline | 16 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 17 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 

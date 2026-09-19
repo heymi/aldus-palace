@@ -1,0 +1,27 @@
+# Aldus Palace
+
+> The auditable memory layer for AI applications. Free text goes in; typed
+> commitments, decisions and memories come out, each with the evidence behind it,
+> in a SQLite file you own. Self-hosted, offline-testable, usable over MCP, HTTP
+> or as a library.
+
+Start with the evaluation guide: it maps every public claim to the command or
+file that proves it, and lists what is not built yet.
+
+- [Evaluation guide](EVALUATION.md): claim → proof, and how to verify in five minutes.
+- [README](README.md): what it does, how it compares, current scope.
+- [Architecture](docs/ARCHITECTURE.md): the capture loop, progressive capture, module boundaries.
+- [Domain schema](docs/DOMAIN-SCHEMA.md): objects, invariants, memory evolution.
+- [Capabilities](docs/CAPABILITIES.md): the nine capabilities and their contracts.
+- [Core intelligence design](docs/INTELLIGENCE.md): the four engines, shipped vs designed.
+- [Eval and testing](docs/EVAL.md): the deterministic suites and acceptance fixtures.
+- [Positioning](docs/POSITIONING.md): the one-liner and the current scope.
+- [Roadmap](ROADMAP.md): what is planned and what is explicitly not.
+
+## Optional
+
+- [Benchmarks](docs/BENCHMARKS.md): measured rule-layer accuracy, with the command to reproduce it.
+- [Committed output](examples/output): the real demo, suite, fixture and benchmark output, for readers that cannot run the repository.
+- [Map](docs/MAP.md): capability → code → doc → test.
+- [Glossary](docs/GLOSSARY.md): the shared vocabulary.
+- [Chinese README](README.zh.md) · [中文评估指南](EVALUATION.zh.md)

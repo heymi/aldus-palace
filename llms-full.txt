@@ -1,0 +1,1563 @@
+# Aldus Palace — full documentation
+
+GENERATED FILE — do not edit.
+Regenerate: pnpm gen:llms
+Source: README.md, EVALUATION.md, docs/ARCHITECTURE.md, docs/DOMAIN-SCHEMA.md, docs/CAPABILITIES.md, docs/INTELLIGENCE.md, docs/EVAL.md, docs/POSITIONING.md, docs/MAP.md, docs/GLOSSARY.md, docs/BENCHMARKS.md, ROADMAP.md
+
+
+<!-- README.md -->
+
+# Aldus Palace
+
+[![CI](https://github.com/heymi/aldus-palace/actions/workflows/ci.yml/badge.svg)](https://github.com/heymi/aldus-palace/actions/workflows/ci.yml)
+[![npm core](https://img.shields.io/npm/v/%40aldus-palace%2Fcore?label=core)](https://www.npmjs.com/package/@aldus-palace/core)
+[![npm mcp](https://img.shields.io/npm/v/%40aldus-palace%2Fmcp?label=mcp)](https://www.npmjs.com/package/@aldus-palace/mcp)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
+![A capture session](docs/assets/capture-session.svg)
+
+**The auditable memory layer for AI apps.** Free text goes in; typed
+commitments, decisions and memories come out — each with the evidence behind it,
+in a SQLite file you own.
+
+**Evaluate it in five minutes:** [`EVALUATION.md`](EVALUATION.md) maps every
+claim to the command that proves it. [中文版 README](README.zh.md) ·
+[中文评估指南](EVALUATION.zh.md).
+
+---
+
+A to-do list asks you to file, tag, date and prioritize every item. The list
+grows. The managing becomes the work.
+
+An AI assistant remembers things about you. That memory sits in a closed box. You
+read it through one app, and you move it nowhere.
+
+Aldus Palace holds one place for what you need to do. You write a sentence. The
+system does the filing.
+
+```
+$ pnpm demo
+
+$ input  Ship the onboarding page next week
+Captured · 1 commitment
+  commitment  Ship the onboarding page next week  ·  window 2026-09-19 → 2026-09-26
+
+$ input  I prefer simple tools
+Captured · remembered 1
+  memory      Prefers simple products and interfaces; avoids complexity  ·  active
+```
+
+That output comes from the deterministic provider, offline; dates resolve on the
+day you run it. `pnpm demo` runs the same pipeline with no API key.
+
+**Try it in your assistant.** MCP inside Claude, Cursor or any MCP client:
+
+```bash
+npm install -g @aldus-palace/mcp
+claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index.js"
+```
+
+## What it does
+
+**It reads a sentence and sorts it.** Write "Ship the onboarding page next week"
+and you get one commitment, with the date worked out. No project picker, no
+priority field, no due-date calendar. Paste a paragraph and you get several
+objects: thoughts, commitments, decisions, memory candidates.
+
+**It catches repeats.** Repeat yourself and the system points at the first record.
+
+**It remembers the rules you state.** "I prefer simple tools" lands as a rule the
+system follows from the next capture onward. The memory list archives it.
+
+**It shows its work.** Every memory carries the sentence you said, the
+confidence behind it, and a note that says whether you stated it or the system
+inferred it.
+
+**It follows you.** One file, one API. Claude, Cursor, your own frontend, a script
+you write.
+
+## Sentences it understands
+
+A real run of the offline provider. Relative dates resolve at capture time.
+
+| You write | It files |
+|---|---|
+| Ship the onboarding page next week | commitment · window 2026-09-19 → 2026-09-26 |
+| I prefer simple tools | memory · active, because you stated it |
+| Keep Mac only, no Windows version | thought + decision + memory waiting for confirmation |
+| Fix the notification bug tomorrow, twice | commitment · the repeat points at the first record |
+| 下周把 onboarding 做完 | 要做 · 时间窗 2026-09-19 → 2026-09-26 |
+| 以后产品不要做太复杂，保持克制 | 记忆 · 已生效，因为你亲口说了 |
+| 今晚先不做评审，改排到周五 | 要做 · 截止 2026-09-25 |
+
+## How this compares
+
+| The dimension | What you use today | Aldus Palace |
+|---|---|---|
+| **What you give it** | a form: project, due date, priority, tags | a sentence in your own words; a paragraph yields several records |
+| **Who decides the shape** | you classify, prioritize and schedule | the runtime files the thought, the commitment, the decision and the memory |
+| **How time works** | one due date, and a red label when it passes | four kinds held apart — deadline, availability window, suggested slot, unscheduled — and a missed date becomes a risk you can move |
+| **How memory behaves** | the assistant infers and stores inside that app | confident memories take effect on capture, and each one carries the sentence it came from plus a note saying why it is active |
+| **Where your words live** | summarized into a task or a chat log | kept as you wrote them, with the system's own reading beside them |
+| **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
+| **How many stores you have** | one per app | one record, reached by MCP, HTTP and a library: Claude, Cursor, your own frontend, a script |
+| **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 17 suites and 11 fixtures replay each run |
+
+## Current scope
+
+- **One user.** One person, one database, one bearer token. Run one instance per
+  person.
+- **One writer per SQLite file.** Two processes on the same file fight over the
+  write lock. Point extra clients at the HTTP API.
+- **No client interface.** The surfaces are MCP, HTTP and the library. You bring
+  the screen.
+- **No sync.** The file does not merge with a second copy.
+- **No external actions.** The runtime records intent and plans. It sends no mail,
+  posts nothing and pays nobody.
+- **Offline mode recognises a narrow set of phrasings.** The deterministic
+  provider handles commands, stated rules and a few date forms, in English and
+  Chinese. Connect a model for general understanding; the receipts show which
+  provider produced them.
+
+## Build with it
+
+Three surfaces, one schema, open source under Apache-2.0. Offline mode runs with
+no API key.
+
+**Library**
+
+```ts
+import { DevLLMProvider, ensureDevUser, formatActionCard, initialize, newId,
+         nowIso, processRawInput } from "@aldus-palace/core";
+import { openSqliteDatabase } from "@aldus-palace/core/db/sqlite";
+
+const db = await openSqliteDatabase("./aldus.db");
+await initialize(db);                              // canonical DDL + migrations
+const user = await ensureDevUser(db, { name: "Me", timezone: "UTC", language: "en" });
+
+const id = newId("inp");
+const text = "Ship the onboarding page next week";
+await db.prepare(`INSERT INTO raw_inputs
+  (id, user_id, content, source, processing_status, created_at, updated_at)
+  VALUES (?, ?, ?, 'text', 'pending', ?, ?)`)
+  .run(id, user.id, text, nowIso(), nowIso());
+
+const card = await processRawInput(db, new DevLLMProvider(), user, id, "local");
+console.log(formatActionCard(card));
+// Captured · 1 commitment
+//   commitment  Ship the onboarding page next week  ·  window 2026-09-19 → 2026-09-26
+```
+
+**MCP** — inside Claude, Cursor or any MCP client
+
+```bash
+npm install -g @aldus-palace/mcp
+claude mcp add aldus-palace -- node "$(npm root -g)/@aldus-palace/mcp/dist/index.js"
+```
+
+**HTTP** — self-hosted, SQLite in a volume
+
+```bash
+cp .env.example .env && docker compose up --build
+curl -X POST localhost:8787/v1/inputs \
+  -H 'Authorization: Bearer dev-local-token' -H 'Content-Type: application/json' \
+  -d '{"content":"Ship the onboarding page next week","mode":"sync"}'
+```
+
+---
+
+## Scale
+
+`packages/core` is runtime-agnostic and dependency-light: `zod`, `dayjs` and
+`nanoid`. **Requirements:** Node 20 or newer. `better-sqlite3` ships prebuilds
+for common platforms; other platforms need a C toolchain.
+
+## The system behind it
+
+The runtime runs as a pipeline, and the Core Intelligence Layer organises it into
+four engines. Understanding — the capture front end in `agent/understand.ts` —
+turns a sentence into typed objects; the engines decide what is kept, what
+happens next, what the system may do on its own, and which model is used. A model
+can contribute to understanding and to conflict detection, and every engine has a
+path that runs without one. Each engine ships today and has a designed
+extension — the shipped parts name the file they live in, and the full design is
+mapped in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
+
+```
+user / environment
+      |
+input          raw text, stored as written
+      |
+understanding  intent, typed objects, resolved dates, gates
+      |
+memory         candidates, evidence, confirmation, conflicts, versions
+      |
+planning       four kinds of time, today, risk, adaptive limits
+      |
+context        active memories and projects feed the next capture
+```
+
+| Engine | Shipped today | Designed next |
+|---|---|---|
+| **Memory** | extraction, a pollution gate, an activation gate, evidence on every row, duplicate collapse, conflict detection, versioned supersede, retrieval into the next capture | graded levels, decay by kind, the value score, more kinds and extraction signals, a memory graph |
+| **Planning** | four kinds of time, concrete constraint handling (deadline, window, learned project preference), priority scoring, slot search that avoids conflicts, duration estimation from project history, Today, risk, adaptive limits, a learned behaviour model, light triage | richer constraints, a blended priority score, schedule optimization with context-switch cost, buffer, migration |
+| **Trust & autonomy** | one fixed rule — a capture lands on its own, a stated principle takes effect, the rest waits | an action risk model, autonomy levels 0–4, a trust score, permission evolution |
+| **Model orchestration** | one `LLMProvider` interface and three implementations, configuration resolved by the caller | routing by task — fast classification, reasoning, embeddings, a local model for sensitive input |
+
+The code lives in `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts`, `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts` and `providers/`. The full design, with each engine's shipped and planned parts in depth, is in [`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md).
+
+### The memory pipeline
+
+```
+capture -> extraction -> candidate -> evaluation -> conflict check -> storage -> activation -> retrieval
+```
+
+- **Extraction** reads two signals: durability markers ("from now on", "as a rule") and repeated behaviour. Rules run with no model; a model adds general understanding.
+- **Evaluation** drops what should not be remembered: a temporary state, a one-off creative fragment, a low-confidence guess.
+- **Activation** follows one published rule: `confidence >= 0.8` and `importance >= 0.8`. Everything below that waits as a candidate.
+- **Conflict check** compares a candidate against active memories on the same dimension and reports the contradiction instead of storing both.
+- **Retrieval** injects active memories into the next capture, so understanding improves with use. Each injection lands in the action log.
+
+### Three rules that keep memory honest
+
+1. **A mood does not become a profile entry.** "I'm tired today" is dropped before storage.
+2. **One inference does not make a principle.** A principle the system inferred waits for confirmation, whatever its score.
+3. **Every memory carries evidence.** The sentence it came from, a confidence value, and a note that says whether you stated it or the system inferred it.
+
+### Privacy is the architecture
+
+*The system touches work, decisions, relationships and habits; privacy is the
+shape of it, not a feature on top.*
+
+**Shipped today** — a SQLite file you own (or one Cloudflare Durable Object), a
+single-user runtime, immutable `raw_inputs`, model output validated and gated, an
+`action_log` entry on every mutation, and a memory gate that confident, stated
+memories pass on capture while an inference waits for you. [`SECURITY.md`](SECURITY.md)
+records the posture and the current threat model.
+
+**Designed next** — three principles (you own the context; minimum data exposure;
+local first); five data levels; a local intelligence layer; a Privacy Gateway
+with redaction; local encrypted storage (Keychain / Secure Enclave); progressive,
+fine-grained permissions with Memory private by default; an Action Gate with four
+risk levels and a viewable, revocable audit log; and a delete policy that reaches
+the local database, cloud sync and vector indexes.
+
+## Where the difficulty lives
+
+**Models return text. Code needs records.** A model writes `"0.8"` where you
+asked for a number, invents a date, or stores one task under two titles. The
+runtime validates each answer, skips duplicates and resolves dates on the server.
+A failed answer leaves the previous record in place.
+
+**The slow path breaks products.** A user waits on a model and loses interest. A
+background model meets retries, two clients writing at once, and records stuck
+mid-update after a crash.
+
+**Memory is a liability.** Store the first inference and the user owns a
+personality from one remark. Replace the old record and the history disappears.
+
+## What the code enforces
+
+| Capability | The point | Where |
+|---|---|---|
+| Schema & domain | `overdue` has no state to occupy; a deadline, a window and a slot are three fields | `db/schema.ts` |
+| Providers | a deterministic provider shares the interface with the paid ones, so agent logic runs in CI | `providers/dev.ts` |
+| Understanding | the model proposes; the server decides (mode, duplicates, dates, fallback) | `agent/understand.ts` |
+| Progressive capture | a lease and a generation id make "local first, model second" idempotent | `services/enrichmentLease.ts` |
+| Memory | a confident memory takes effect, explains itself, and versions instead of deleting | `lib/memoryActivation.ts`, `services/memoryEvolution.ts` |
+| Today & planning | a day with no plan gets suggestions; a full day gets a rest suggestion | `services/today.ts` |
+| Work streams | grouping is a rebuildable projection; the records stay as they are | `services/workStreams.ts` |
+| HTTP API | one schema, two runtimes: a local SQLite file and a Cloudflare Durable Object | `apps/server` |
+| MCP server | runs with no server process, against the same local file | `packages/mcp` |
+
+The pipeline runs offline: a deterministic provider implements the same interface
+as the model-backed ones, so 17 test suites and 11 acceptance fixtures replay
+with no key.
+
+## See it run
+
+```bash
+git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
+pnpm install
+
+pnpm test     # 17 suites — deterministic, offline, no API key
+pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
+
+pnpm --filter @aldus-palace/example-understanding-only start
+pnpm --filter @aldus-palace/example-memory-gate-only start
+pnpm --filter @aldus-palace/example-today-only start
+```
+
+Each example prints the records it stored and the reasoning behind them, with no
+API key and no network.
+
+## Install
+
+| Surface | Command |
+|---|---|
+| MCP | `npm install -g @aldus-palace/mcp` |
+| HTTP | `cp .env.example .env && docker compose up --build` |
+| Library | `npm install @aldus-palace/core` |
+
+## Documentation
+
+| Doc | Contents |
+|---|---|
+| [INTEGRATION.md](docs/INTEGRATION.md) | the three levels, with copy-paste configs |
+| [CAPABILITIES.md](docs/CAPABILITIES.md) | the nine capabilities and their contracts |
+| [USE-CASES.md](docs/USE-CASES.md) | five things people build with this |
+| [POSITIONING.md](docs/POSITIONING.md) | differentiation, and the current scope |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | the runtime, module boundaries, storage port |
+| [INTELLIGENCE.md](docs/INTELLIGENCE.md) | the four engines and the privacy design, shipped vs planned |
+| [BENCHMARKS.md](docs/BENCHMARKS.md) | measured rule-layer accuracy, with the command to reproduce it |
+| [MAP.md](docs/MAP.md) | capability → code → doc → test |
+| [GLOSSARY.md](docs/GLOSSARY.md) | the shared vocabulary |
+| [EVALUATION.md](EVALUATION.md) | every claim mapped to its proof, and what is not built |
+| [DOMAIN-SCHEMA.md](docs/DOMAIN-SCHEMA.md) | objects, invariants, memory evolution |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | local, edge, embedded, backups |
+| [EVAL.md](docs/EVAL.md) | the acceptance fixtures, and how to add one |
+| [PROGRESSIVE-CAPTURE.md](docs/PROGRESSIVE-CAPTURE.md) | the enrichment lease, written to be copied |
+| [adr/](docs/adr) | decisions already made, and why |
+
+## Repository layout
+
+```
+packages/core          domain, agent runtime, storage port, migrations, providers
+packages/mcp           MCP server (stdio) — profiles, local and HTTP backends
+apps/server            Hono reference server (local SQLite and Cloudflare Durable Object)
+examples/              five runnable examples, one per capability group
+spec/schema.sql        generated, readable schema (CI-checked)
+eval/fixtures          acceptance scenarios
+docs/                  everything above
+```
+
+## Status
+
+`0.x` — usable and tested; the API may change between minor versions. See
+[SECURITY.md](SECURITY.md) before exposing an instance.
+
+## Contributing
+
+Fixtures, docs and focused fixes are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Commits carry a DCO sign-off (`git commit -s`).
+
+## License
+
+[Apache-2.0](LICENSE).
+
+
+<!-- EVALUATION.md -->
+
+# Evaluate this project
+
+A checklist for a person or an agent. Every public claim maps to a command or a
+file, and the parts that are not built yet are listed at the end.
+
+> 中文版见 [`EVALUATION.zh.md`](EVALUATION.zh.md)。
+
+## Five minutes, no API key
+
+```bash
+git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
+pnpm install
+pnpm verify     # typecheck · suites · fixtures · build · schema check
+pnpm demo       # the offline capture demo
+```
+
+A passing `pnpm verify` ends with fragments like:
+
+```
+packages/core test: All 14 suites passed.
+packages/mcp test: mcp tool tests passed.
+apps/server test: All 2 suites passed.
+All fixtures passed.
+spec/schema.sql is up to date.
+```
+
+`pnpm demo` prints the card shown at the top of the README. Nothing needs a key,
+a network or a running server.
+
+If you cannot run the repository, the real output is committed:
+[`examples/output/`](examples/output) (demo, suites, fixtures, benchmark) and
+[`docs/assets/demo.cast`](docs/assets/demo.cast) (asciinema).
+
+## Claim → proof
+
+| Claim | Prove it | Expect |
+|---|---|---|
+| Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
+| The pipeline runs offline | `pnpm verify` | 17 suites and 11 fixtures pass with no key |
+| `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
+| Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
+| A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
+| A repeat points at the first record | `pnpm demo` | `Already tracked, so this repeat was skipped` |
+| Dates resolve on the server | `pnpm --filter @aldus-palace/example-capture-cli start "Ship the onboarding page next week"` | a window, not the literal phrase |
+| Every memory carries evidence | `packages/core/test/memoryEvolution.test.ts` | evidence and activation notes asserted |
+| A contradiction is flagged, not stored twice | `packages/core/test/memoryEvolution.test.ts` | supersede and the version chain |
+| Background enrichment survives retries | `packages/core/test/enrichmentLease.test.ts` | lease and generation assertions |
+| The model proposes, the server decides | `packages/core/test/inputObjectClassification.test.ts` | one object mode per capture |
+| A missing duration is estimated from history | `packages/core/test/adaptivePlanning.test.ts` | the slot follows the project median |
+| The schema is the single source of truth | `pnpm spec:check` | `spec/schema.sql` matches `db/schema.ts` |
+| One record, three surfaces | `packages/mcp`, `apps/server`, `packages/core` | the same schema and migrations everywhere |
+| MCP tools return a readable card | `pnpm --filter @aldus-palace/mcp test` | card text asserted, payload in `structuredContent` |
+
+## What is not built
+
+The README marks shipped and designed parts per engine; the full intent lives in
+[`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md). These are design, not code:
+
+- The planning engine's constraint model, context-switch cost, daily buffer and
+  task migration ([`ROADMAP.md`](ROADMAP.md), "Planning, deepened").
+- Graded memory levels, decay and the full value score.
+- The trust and autonomy engine, and the Action Gate.
+- The privacy architecture: local encryption, fine-grained permissions, the
+  Privacy Gateway.
+- Postgres adapter and the SwiftUI client (`clients/` is a placeholder).
+
+## Layout for agents
+
+| File | Purpose |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | the development contract |
+| [`CLAUDE.md`](CLAUDE.md) | Claude Code entry, imports AGENTS.md |
+| [`.cursor/rules/aldus.mdc`](.cursor/rules/aldus.mdc) | Cursor rules |
+| [`llms.txt`](llms.txt) | curated index for LLM tools |
+| [`llms-full.txt`](llms-full.txt) | the key docs concatenated |
+| [`docs/MAP.md`](docs/MAP.md) | capability → code → doc → test |
+| [`docs/GLOSSARY.md`](docs/GLOSSARY.md) | the shared vocabulary |
+
+
+<!-- docs/ARCHITECTURE.md -->
+
+# Architecture
+
+## The loop
+
+```
+raw input ──► understanding ──► structured objects ──► ActionCard
+                                        │
+                                        ├─► Today (planning projection)
+                                        ├─► Work streams (rebuildable projection)
+                                        └─► Memory candidates (require confirmation)
+```
+
+Every step is a pure function over the storage port plus an `LLMProvider`, so the
+whole loop is testable offline.
+
+## Progressive capture
+
+The most distinctive part of the runtime. A single capture produces **two
+passes**:
+
+1. **Local pass** (`mode: "local"`) — deterministic rules write Thoughts,
+   Commitments, Decisions and Memory candidates immediately. The client can
+   render a real ActionCard within milliseconds.
+2. **AI pass** (`mode: "full"`) — the model re-parses the *original* input and
+   replaces the local derivatives.
+
+The hand-off is coordinated by an **enrichment lease**:
+
+| Column | Purpose |
+|---|---|
+| `processing_generation_id` | identifies the current writer; a stale worker cannot overwrite a newer one |
+| `processing_lease_until` | a crashed worker's lease expires and becomes reclaimable |
+| `result_generation_id` | records which generation produced the stored result |
+
+`claimEnrichment` returns `null` when another generation holds a live lease, so
+concurrent enrich calls are safe by construction. See
+[ADR 0003](adr/0003-progressive-capture-with-enrichment-leases.md) and
+`packages/core/src/services/enrichmentLease.ts`.
+
+## Module boundaries
+
+```
+packages/core/src
+├── domain/types.ts      object types + enums (no I/O)
+├── db/port.ts           the storage port (async, no globals)
+├── db/schema.ts         canonical DDL (single source of truth)
+├── db/migrate.ts        applySchema / migrate / initialize (forward-only)
+├── providers/           LLMProvider implementations + config resolution
+├── lib/                 pure helpers (time, titles, matching, memory filters)
+├── services/            domain services (planning, classification, today, work
+│                        streams, memory lifecycle & evolution, enrichment leases)
+├── repos/               thin data access (users, action log)
+└── agent/understand.ts  the Understanding Agent: input → objects → ActionCard
+```
+
+`packages/core` never imports Express/Hono/Workers APIs and never reads
+`process.env`. Configuration and I/O are owned by the caller.
+
+### The storage port
+
+```ts
+interface SqlDatabase {
+  prepare(query: string): SqlStatement;       // all/get/run → Promise
+  exec(query: string): Promise<void>;
+  transaction<T>(cb: () => Promise<T>): () => Promise<T>;
+}
+```
+
+It is deliberately **async** so an asynchronous driver (Postgres) can implement
+it later without a breaking change. Both bundled adapters wrap synchronous
+engines and therefore resolve immediately:
+
+- `apps/server/src/db/local.ts` — `better-sqlite3`
+- `apps/server/src/db/durableObject.ts` — Cloudflare Durable Object SQLite
+
+## Services are independent
+
+Every service in `packages/core/src/services` depends only on the storage port,
+the domain types and pure helpers — **there are no dependencies between the
+services themselves**:
+
+```
+services/*  ←  domain/types · db/port · lib/* · repos/actionLogs
+```
+
+That is what makes "use just one capability" true rather than aspirational, and
+it is what keeps the module boundaries honest as the project grows.
+
+## Agent responsibilities
+
+`understand.ts` is the only place that talks to a model, and it treats the model
+as a *proposer*, not an authority:
+
+1. Build context: registered projects (name + description + aliases + brief) and
+   confirmed memories.
+2. Ask for strict JSON and validate it with `zod`. Malformed numbers are coerced;
+   malformed structure falls back to the local rule engine.
+3. Enforce invariants the model cannot be trusted with:
+   - one object mode per capture (thought / commitment / mixed)
+   - near-duplicate commitments are skipped
+   - relative dates (`明天`, “next Friday”) are resolved server-side, and
+     ambiguous early-morning phrases produce a clarification instead of a guess
+   - memories are *candidates* until the user confirms them
+4. Write an `action_log` entry for every mutation so behaviour stays explainable.
+
+## Runtime targets
+
+| Target | Entry point | Storage |
+|---|---|---|
+| Node | `apps/server/src/index.ts` | local SQLite file |
+| Cloudflare Workers | `apps/server/src/worker.ts` | one named Durable Object (SQLite) |
+
+Both call the same `createApp({ db, llm, config })` factory, so the HTTP surface
+is identical. The Worker migrates inside `blockConcurrencyWhile` on first use.
+The single Durable Object is intentional for a single-user product and is not
+horizontally partitioned — see [SECURITY.md](../SECURITY.md).
+
+
+<!-- docs/DOMAIN-SCHEMA.md -->
+
+# Domain schema
+
+The canonical DDL lives in [`packages/core/src/db/schema.ts`](../packages/core/src/db/schema.ts);
+[`spec/schema.sql`](../spec/schema.sql) is generated from it (`pnpm gen:spec`).
+
+## Objects
+
+| Object | Table | Role |
+|---|---|---|
+| RawInput | `raw_inputs` | immutable audit record of what the user actually said |
+| Thought | `thoughts` | an idea, insight, observation, research note or decision candidate |
+| Commitment | `commitments` | something the user intends to get done |
+| Decision | `decisions` | a choice, with a reason, that can be superseded or retracted |
+| Memory | `memories` | durable personal context — **candidate until confirmed** |
+| Concept | `concepts` | a reusable cognitive node (e.g. “simplicity”, “privacy”) |
+| Project | `projects` | context container with a free-form `brief` used for grounding |
+| Event | `events` | fixed external calendar entries and AI work blocks (read-mostly) |
+| ActionLog | `action_logs` | every user/agent mutation, with a reason |
+
+### Projections (never truth sources)
+
+| Table | Rebuildable from |
+|---|---|
+| `today_assignments` | commitments + planning decisions |
+| `commitment_classifications` | commitments + projects + active memories |
+| `planning_day_states`, `planning_profiles`, `planning_feedback_episodes` | planner behaviour over time |
+
+Deleting a projection must never change what the user committed to — see
+[ADR 0002](adr/0002-keep-work-classification-as-rebuildable-projection.md).
+
+## Key invariants
+
+1. **`raw_inputs` is sacred.** Model output only ever writes fields *derived*
+   from it; the original text is never rewritten.
+2. **Memory needs confirmation.** New memories are inserted as `candidate`;
+   only `active` memories are injected into the understanding context.
+   `evidence` and `confidence` are required, and near-duplicates are rejected.
+3. **Commitments are deduplicated.** Re-capturing a near-identical intention
+   skips the insert and surfaces the existing commitment instead.
+4. **Dates are resolved server-side.** `deadline`, `window_start`/`window_end`
+   and `ai_slot_start`/`ai_slot_end` are distinct fields: a deadline is not a
+   schedule, and an AI suggestion is not a calendar event.
+5. **Time is stored as ISO-8601 UTC**, with the user's timezone applied when
+   computing “today”.
+6. **Statuses are constrained** by `CHECK` in the schema and mirrored in
+   `domain/types.ts`:
+
+| Field | Values |
+|---|---|
+| `thoughts.status` | `captured`, `exploring`, `converted`, `archived` |
+| `thoughts.type` | `idea`, `insight`, `observation`, `research`, `decision_candidate` |
+| `commitments.status` | `captured`, `planned`, `scheduled`, `completed`, `cancelled`, `risk` |
+| `memories.status` | `candidate`, `active`, `archived` (plus the derived `superseded`) |
+| `memories.type` | `preference`, `project_context`, `principle`, `decision`, `experience` |
+| `raw_inputs.processing_status` | `pending`, `local`, `enriching`, `processed`, `failed` |
+| `memories.source` | `user_explicit`, `ai_inferred`, `decision_promote` |
+
+## Memory evolution
+
+A memory is never overwritten. These columns carry the history:
+
+| Column | Meaning |
+|---|---|
+| `supersedes_id` | the older memory this one replaced |
+| `superseded_by_id` | the newer memory that replaced this one |
+| `supersede_reason` | why the user accepted the replacement |
+| `conflicts_with_id` | the confirmed memory this candidate disagrees with |
+| `conflict_reason` | the detected contradiction |
+
+`memoryState()` derives one of `candidate` / `active` / `superseded` / `archived`
+from `status` plus `superseded_by_id`, so the `CHECK` constraint stays intact and
+existing databases need no table rebuild.
+
+`activation` distinguishes how a memory became active without another column:
+`confirmed_at` set means the user confirmed it, `confirmed_at` null means the
+capture activated it (`confidence >= 0.8` and `importance >= 0.8`). See
+`lib/memoryActivation.ts`.
+
+## Migrations
+
+`migrate()` is forward-only and records every version in `schema_migrations`.
+Never edit a shipped migration — add a new one. The migration set is part of the
+public contract, because it runs against databases other people already own.
+
+```ts
+await applySchema(db);          // idempotent DDL
+await migrate(db);              // pending migrations only
+await initialize(db);           // both, in order — what servers call
+```
+
+
+<!-- docs/CAPABILITIES.md -->
+
+# Capabilities
+
+Nine capabilities, three ways in. Use one, or all of them.
+
+| # | Capability | You don't have to build | MCP profile | HTTP | Library |
+|---|---|---|---|---|---|
+| 1 | [Schema & domain](capabilities/01-schema-and-domain.md) | the object model for human intent, its constraints and migrations | — | — | `core/domain` `core/db/*` |
+| 2 | [Providers](capabilities/02-providers.md) | model abstraction + a deterministic provider so agents are testable | — | — | `core/providers` |
+| 3 | [Understanding Agent](capabilities/03-understanding.md) | prompt engineering, output validation, fallbacks, dedupe, date resolution | `capture` | `POST /v1/inputs` | `core` |
+| 4 | [Progressive capture](capabilities/04-progressive-capture.md) | concurrency, retry and crash-safety around background LLM enrichment | `capture` | `POST /v1/inputs/:id/enrich` | `core` |
+| 5 | [Memory](capabilities/05-memory.md) | a confident memory store that explains itself, revisions included | `memory` | `/v1/memories*` | `core` |
+| 6 | [Today & planning](capabilities/06-today-and-planning.md) | scheduling heuristics, risk detection, adaptive daily limits | `today` | `/v1/today` `/v1/plan/today` | `core` |
+| 7 | [Work streams](capabilities/07-work-streams.md) | grouping that is rebuildable and never touches the source of truth | `workstreams` | `GET /v1/work-streams` | `core` |
+| 8 | [HTTP API](capabilities/08-http-api.md) | the REST layer, storage adapters and deployment | — | all 40+ routes | `apps/server` |
+| 9 | [MCP server](capabilities/09-mcp.md) | the Model Context Protocol surface and tool selection | — | — | `packages/mcp` |
+
+## Modules are decoupled in code
+
+Every capability service depends only on the storage port, the domain types and
+pure helpers — **there are zero dependencies between the services themselves**:
+
+```
+services/*  ←  domain/types · db/port · lib/* · repos/actionLogs
+```
+
+That is what makes "use just this one" real, and it is enforced by the module
+graph rather than by convention.
+
+## One shared contract
+
+Capabilities 1–7 read and write the same schema. "Bring one module" therefore
+means **bring our migrations**:
+
+```ts
+import { initialize } from "@aldus-palace/core";
+await initialize(db);   // canonical DDL + forward-only migrations
+```
+
+Migrations are forward-only and versioned in `schema_migrations`, so a database
+created by an older release upgrades on startup. `spec/schema.sql` is generated
+from the canonical schema and checked in CI (`pnpm spec:check`).
+
+## Three ways in
+
+| Level | You write | Best for |
+|---|---|---|
+| **MCP** | a JSON config block | using it inside Claude, Cursor or any MCP client |
+| **HTTP** | `fetch` / `curl` / any language | your own frontend, mobile app or service |
+| **Library** | TypeScript | embedding the runtime in your product |
+
+Start at [`INTEGRATION.md`](INTEGRATION.md).
+
+
+<!-- docs/INTELLIGENCE.md -->
+
+# Core intelligence & privacy design
+
+> **This is design, not a promise about the current release.** It records the
+> system Aldus Palace is being built toward. Every section is split into what
+> **ships today** and what is **designed**, so the two cannot be confused.
+
+Aldus Palace is not a chat model with a database behind it. It is a system that
+runs continuously: it reads input, decides what to remember, decides what it may
+do, arranges real work, and calls a model only where a model helps.
+
+## How to read this
+
+| Marker | Meaning |
+|---|---|
+| **Shipped today** | runs in the current `0.x` release; the file that implements it is named |
+| **Designed** | the direction the system is being built toward; tracked in [`ROADMAP.md`](../ROADMAP.md) |
+
+Where this document disagrees with the code, `spec/schema.sql` or an
+[ADR](adr), the code and the ADR win — the same rule as the
+[design archive](internal/design-archive/README.md). The archive holds the
+original Chinese essays these sections condense.
+
+## The loop that ships
+
+```
+user / environment
+      |
+input          raw text, stored as written
+      |
+understanding  intent, typed objects, resolved dates, gates
+      |
+memory         candidates, evidence, confirmation, conflicts, versions
+      |
+planning       four kinds of time, today, risk, adaptive limits
+      |
+context        active memories and projects feed the next capture
+```
+
+The **Core Intelligence Layer** organises the middle of that loop into four
+engines. Understanding — the capture front end in
+[`agent/understand.ts`](../packages/core/src/agent/understand.ts) — is what
+turns a sentence into typed objects today; the engines below decide what is kept,
+what happens next, what the system may do on its own, and which model is used.
+
+| Engine | Goal | Shipped today | Designed |
+|---|---|---|---|
+| **Memory** | understand a person over years, not store a chat log | extraction, pollution gate, activation rule, evidence, dedupe, conflict, versioning, retrieval | graded levels, decay, value score, more kinds and signals |
+| **Planning** | keep what matters happening while the environment changes | four kinds of time, priority scoring, slot search, Today, risk, adaptive limits, feedback model | richer constraints, blended priority, schedule optimization, event-driven replanning, buffer, migration |
+| **Trust & autonomy** | widen what the system may do on its own, safely | one fixed rule | risk model, autonomy levels, trust score, permission evolution |
+| **Model orchestration** | use the right model for each job | one provider interface, three implementations | routing by task |
+
+---
+
+## Memory Intelligence Engine
+
+*The goal is to understand one person over years — not to archive a chat log.*
+
+### Shipped today
+
+- **Extraction** reads durability markers ("from now on", "as a rule") and
+  repeated behaviour. Rules run with no model; a model adds general
+  understanding.
+- **Evaluation** drops what should not be remembered: a temporary state, a
+  one-off creative fragment, a low-confidence guess.
+- **Activation** follows one published rule — `confidence >= 0.8` and
+  `importance >= 0.8` — everything below waits as a candidate.
+- **Evidence on every row**: the excerpt it came from, a confidence value and the
+  input id.
+- **Duplicates collapse** to a normalised key (for example
+  `preference|prefer_simplicity`).
+- **Conflict detection** compares a candidate against active memories on the same
+  dimension and reports the contradiction instead of storing both.
+- **Versioning** marks a replaced belief `superseded` with a reason, and keeps it
+  readable. Nothing is deleted.
+- **Retrieval** injects active memories into the next capture, and every
+  injection lands in the action log.
+- **Five kinds** ship: preference, project context, principle, decision,
+  experience.
+
+`lib/memoryExtract.ts` · `lib/memoryActivation.ts` ·
+`services/memoryLifecycle.ts` · `services/memoryEvolution.ts`
+
+### Designed
+
+- **A graded model.** Five levels, where a higher level carries more weight in
+  future decisions:
+
+  | Level | Name | What it holds |
+  |---|---|---|
+  | 0 | Raw experience | what happened |
+  | 1 | Observation | a pattern noticed once |
+  | 2 | Preference | a recurring choice |
+  | 3 | Principle | a value that shapes decisions |
+  | 4 | Identity model | who the person is |
+
+- **The full formation pipeline** — user experience → extraction → candidate →
+  evaluation → conflict check → storage → activation → retrieval. Most stages
+  ship; the candidate lifecycle is the part that keeps growing.
+- **Four extraction signals** — a long-term phrase, repeated behaviour, impact on
+  future decisions, and reach across projects. The first two ship; impact and
+  scope extend the same extractor.
+- **A value score** — explicitness + frequency + impact + scope + future
+  relevance — gating on the total, with importance following the memory kind and
+  confidence following the extraction rule.
+- **Pollution prevention** — three rules: a mood is not a trait, one inference is
+  not a principle, every memory carries evidence.
+- **Decay by kind** — identity holds, principle fades slowly, preference over
+  months, habit over weeks, a current state over days.
+- **More kinds** — goal, relationship, knowledge, habit and episode, each with
+  its own lifetime and evidence rules.
+- **Decision memory keeps the *why*** — What, Why, When, Status — not only what
+  was chosen.
+- **A three-layer store, a memory graph, retrieval ranking, context assembly and
+  a user memory control centre.**
+
+---
+
+## Planning Intelligence Engine
+
+*This is the core that turns understanding into things happening: it decides when
+and in what order work occurs in the real world. The goal is not a pretty
+calendar — it is important work done with the least cognitive load while the
+environment changes. Where a traditional calendar holds fixed blocks you adjust
+by hand, this plans from goals, constraints and resources, and keeps adjusting.*
+
+### Shipped today
+
+- **Inputs are Commitments, not Tasks.** Planning reads commitments, the calendar
+  (`events` of kind `fixed_external`) and a learned behaviour model.
+- **Four kinds of time held apart** — deadline, availability window, suggested
+  slot, unscheduled. There is no `overdue` state to occupy.
+- **Constraints, concretely** — a deadline is a hard boundary and sets the risk
+  tiers; an availability window bounds when work is eligible; a project
+  preference is learned from behaviour.
+- **Priority scoring** (`scoreCandidate`): risk and a deadline within 24 h or
+  72 h form tiers; then recent-project continuity, an actionable title, a short
+  duration, importance, title overlap with recent completions, learned project
+  weights, and recent self-defined / short-next-step preferences.
+- **Time-window generation and conflict avoidance** (`findSlot`): walk 15-minute
+  steps from now to the end of the day, skipping AI slots and fixed external
+  events, and take the next window that fits.
+- **Duration estimation** (`estimateDurationMinutes`): a stated estimate keeps
+  the larger weight and is calibrated against the median of completed work in
+  the same project; two samples or more fill a missing estimate.
+- **Scheduling** writes `ai_slot_start/end`, a `today_assignments` row carrying a
+  human-readable reason, and an `action_log` entry.
+- **Execution monitoring** (`observePlanningOutcome`): record what the user did
+  next — started, completed, scheduled today, created a commitment — as a
+  feedback episode (project switch, same-project switch, self-defined task,
+  stopped working).
+- **Replanning** is a reconcile pass keyed on a plan version, triggered by the
+  plan endpoint and when a new commitment is arranged for today; it can add up to
+  three items to an empty or light day, and stall detection pauses auto-fill.
+- **The day view**: Now (exactly one thing), timeline, risks (what replaces
+  overdue), unscheduled, and a rest suggestion when the day is full.
+- **Adaptive limits**: automatic additions stop at 5, or 10 after a deliberate
+  add; a stalled queue of 1–3 items with no completion for 24 h pauses auto-fill.
+- **Light triage**: an empty day is filled preferring concrete bugs and small
+  executable work, and deprioritizing research or long epics.
+- **A learned behaviour model** over a rolling 15-day window, kept as reversible
+  planning state — never memory, and never overriding a deadline you set
+  ([ADR 0001](adr/0001-keep-adaptive-planning-state-outside-memory.md)).
+
+`services/today.ts` · `services/planToday.ts` · `services/adaptivePlanning.ts`
+
+### Designed
+
+- **A fuller pipeline** — constraint analysis → priority calculation →
+  time-window generation → schedule optimization → conflict resolution →
+  execution monitoring → replanning, with each stage carrying more of the model.
+- **A richer constraint model** — hard, soft, preference and dependency
+  relationships, so the plan can respect how work depends on other work.
+- **A blended priority score** — impact, urgency, dependencies, goal alignment
+  and risk, alongside the signals above.
+- **Complexity in duration estimation** — read task complexity alongside the
+  history, not only the stated estimate and the project median.
+- **Schedule optimization with context-switch cost** — maximize important work
+  completed, minimize switching, fit the user's rhythm and lower stress.
+- **An explicit morning plan** — classify the day into core, optional and
+  deferred.
+- **A scored Now** — priority × available time × energy match × context match.
+- **Event-driven replanning** — react to a postponed meeting, a new task,
+  finishing early, or a change in state.
+- **Buffer management** — keep a share of the day free.
+- **Task migration** — flexible, unstarted work can move forward on its own, and
+  repeated deferrals surface for a decision.
+
+---
+
+## Trust & Autonomy Engine
+
+*Widen what the system may do on its own — safely, and only as far as it has
+earned.*
+
+### Shipped today
+
+- **One fixed rule.** A capture lands on its own; a principle the user states
+  takes effect; everything else waits for the user. The runtime writes an
+  `action_log` entry for every mutation.
+
+### Designed
+
+- **An action risk model** — risk, reversibility and visibility of each proposed
+  action.
+- **Autonomy levels 0–4** — from "propose only" to "act and report".
+- **A trust score** accumulated from outcomes, not assumed.
+- **Permission evolution** — authority grows with demonstrated reliability.
+- **Proactive rules**, judged on evidence, pattern and value.
+
+---
+
+## Model Orchestration Engine
+
+*Use the right model for each job, instead of one model for every call.*
+
+### Shipped today
+
+- **One `LLMProvider` interface** and three implementations — dev
+  (deterministic, offline), OpenAI-compatible and Anthropic. Configuration is
+  resolved by the caller (`resolveProviderConfig`) and passed in explicitly; the
+  runtime reads no environment variables.
+
+`providers/`
+
+### Designed
+
+- **Routing by task**: a fast model for classification, a reasoning model for
+  planning and conflict, an embedding model for memory retrieval, and a local
+  model for sensitive input.
+
+---
+
+## Privacy & Security Architecture
+
+*The system touches a person's work, decisions, relationships and habits. Privacy
+is the shape of it, not a feature on top.*
+
+### Shipped today
+
+- A **SQLite file you own**, or one Cloudflare Durable Object — no vendor cloud.
+- **Single-user** runtime: one static bearer token guards the API.
+- `raw_inputs` is **immutable**; the AI pass writes only derived fields.
+- Model output is **validated and gated** before it reaches storage.
+- Every mutation writes an **`action_log`** entry.
+- A memory becomes active only through the **published gate**
+  (`confidence >= 0.8` and `importance >= 0.8`); an inferred principle waits for
+  the user.
+
+`SECURITY.md` records the current posture and the threat model; the design below
+adds at-rest encryption and the rest of the architecture.
+
+### Designed
+
+**Three principles**
+
+1. **User owns the context.** Memory, Thoughts, Decisions and project context
+   belong to the user, not the platform.
+2. **Minimum Data Exposure.** Send only what the task needs; never the whole
+   database.
+3. **Local First.** What can be processed locally is processed locally.
+
+**Five data levels**
+
+| Level | Data | Handling |
+|---|---|---|
+| 0 | public data | no protection needed |
+| 1 | personal preferences | ordinary |
+| 2 | work context | high |
+| 3 | sensitive work data | very high |
+| 4 | private cognitive data — unshared ideas, decision process, business plans, long-term Memory | highest |
+
+**Local intelligence layer, cloud AI layer**
+
+- *Local*: input parsing, simple classification, Memory indexing, sensitive
+  detection, calendar reads, basic planning.
+- *Cloud*: deep reasoning, long-text analysis, complex planning, high-quality
+  generation.
+
+**Privacy Gateway.** Every cloud call passes through:
+`user input → sensitive detection → redaction → permission check → cloud AI`.
+The real mapping stays local.
+
+> "Discuss Orvia funding with Zhang tomorrow" leaves as
+> "discuss [business matter] with [contact] tomorrow".
+
+**Memory storage.** Memory is the most sensitive data, so the design stores it
+encrypted on device — Keychain plus an encrypted database on macOS, Secure Enclave
+plus encrypted storage on iOS. The cloud receives temporary context by default,
+never the full Memory.
+
+**Permissions are progressive and fine-grained.** Calendar first, then mail, then
+advanced files. A permission is split by scope (read / create / modify events).
+Memory is private by default, with optional Sync or AI Assist.
+
+**The Action Gate.** Every action follows
+`propose → risk assessment → permission check → execute → record`, with risk
+graded:
+
+| Risk | Behaviour |
+|---|---|
+| low | automatic |
+| medium | notify |
+| high | confirm |
+| critical | confirm again |
+
+The audit log is viewable and revocable.
+
+**Data lifecycle.** Create → process → store → use → archive → delete. When the
+user deletes, the deletion is real: local database, cloud sync and vector indexes
+are all covered.
+
+---
+
+## Action items
+
+These are the concrete pieces the privacy design adds on top of today's runtime:
+
+- [ ] A **Local Intelligence Layer** — input parsing, sensitive detection, Memory
+      indexing, basic planning.
+- [ ] A **Privacy Gateway** and redaction flow, so the cloud receives only
+      temporary context.
+- [ ] **Local encrypted storage** for Memory (Keychain / Secure Enclave plus an
+      encrypted database).
+- [ ] **Progressive and fine-grained permissions**, with Memory private by
+      default.
+- [ ] An **Action Gate** with risk levels, and a viewable, revocable audit log.
+- [ ] A **delete policy** that reaches the local database, cloud sync and vector
+      indexes.
+
+---
+
+## Sources
+
+The design above condenses four essays in the
+[design archive](internal/design-archive/README.md):
+
+| Archive document | Subject |
+|---|---|
+| [`13__Core_Intelligence_Specification…`](internal/design-archive/13__Core_Intelligence_Specification_核心智能系统设计_.md) | the four engines |
+| [`7__Memory_System_Technical_Design…`](internal/design-archive/7__Memory_System_Technical_Design_长期记忆系统技术设计_.md) | memory types, scoring, decay |
+| [`8__AI_Planning_Engine_Technical_Design…`](internal/design-archive/8__AI_Planning_Engine_Technical_Design_智能规划引擎设计_.md) | constraints, priority, replanning |
+| [`9__Security___Privacy_Architecture…`](internal/design-archive/9__Security___Privacy_Architecture_安全与隐私架构设计_.md) | principles, gateway, action gate |
+
+See also [`ARCHITECTURE.md`](ARCHITECTURE.md) for what runs today and
+[`ROADMAP.md`](../ROADMAP.md) for the status of each designed part.
+
+
+<!-- docs/EVAL.md -->
+
+# Eval and testing
+
+Two tiers, deliberately separated.
+
+## 1. Deterministic suites — `pnpm test`
+
+Assertion scripts under `packages/core/test` and `apps/server/test`, executed
+offline by `tsx`. They cover the parts where a regression would be silent:
+
+| Suite | Locks down |
+|---|---|
+| `relativeDay` | relative date resolution and its timezone edge cases |
+| `clarificationReply` | short replies to time clarifications |
+| `thoughtTitle` | summary quality gates, transfer grounding |
+| `projectMatch` | project matching by name/alias/description |
+| `inputObjectClassification` | thought vs commitment vs mixed |
+| `adaptivePlanning` | Today planning, adaptive caps, feedback episodes |
+| `enrichmentLease` | concurrent enrichment and supersede semantics |
+| `commitmentOriginalInput` | optimized content vs original input |
+| `commitmentClassification` | work-stream projection, `/v1` API, lease races |
+| `memoryEvolution` | rule-based conflict detection, supersede, version chains |
+| `actionableWork` | English imperatives, Chinese build verbs, non-work cases |
+| `providers` | request shaping for Anthropic and OpenAI-compatible providers |
+| `llm-config` | wrangler and code agree on the default model |
+
+```bash
+pnpm test                       # both packages
+pnpm --filter @aldus-palace/core test
+```
+
+No API key, no network, no shared state: `createTestDb()` gives every suite its
+own in-memory database, migrated exactly like production.
+
+## 2. Acceptance fixtures — `pnpm eval`
+
+`eval/fixtures/*.json` are user-visible behavioural requirements. Each fixture is
+an input plus the properties the result must have:
+
+```json
+{
+  "id": "S04",
+  "input": "最近觉得 AI 产品都太吵了，干扰太多",
+  "expect": {
+    "thoughts_min": 1,
+    "commitments_max": 0,
+    "thought_types_allowed": ["idea", "insight", "observation", "research", "decision_candidate"],
+    "forbidden": ["thought_type:principle", "recurrence"]
+  }
+}
+```
+
+Supported expectations: `thoughts_min`/`thoughts_max`,
+`commitments_min`/`commitments_max`, `memory_candidates_min`,
+`memory_active_max`, `thought_types_allowed`, `memory_types_allowed`,
+`must_include_thought`, and `forbidden` markers
+(`thought_type:*`, `commitment:*`, `recurrence`, …).
+
+They run against the **deterministic** provider, so results are stable and the
+suite is safe to require on every pull request.
+
+```bash
+pnpm eval
+# PASS S04 … PASS S25
+# All fixtures passed.
+```
+
+### Adding a fixture
+
+Contributing a fixture is the best first contribution — it is data, not code:
+
+1. Pick the next `S<n>` id (`S26`, `S27`, …).
+2. Copy the shape above; write the input in any language.
+3. State only properties that must hold, never the exact model output.
+4. Run `pnpm eval` and open a PR explaining the user behaviour you are pinning.
+
+If a fixture documents behaviour that the current rules get wrong, open the PR
+with the fixture and mark it `xfail` in the description — that is a valuable bug
+report.
+
+## The offline provider's reach
+
+`LLM_PROVIDER=dev` recognises a defined set of patterns: commands ("Ship the
+onboarding page next week"), stated rules ("I prefer simple tools"), platform
+decisions ("Stay Mac-only, skip Windows"), temporary states, one-off creative
+work, and a few date forms, in English and Chinese. It resolves relative dates,
+skips near-duplicates and gates memory candidates.
+
+Connect a model (`anthropic`, `deepseek`, `openai-compatible`) for general
+understanding: arbitrary phrasing, multi-paragraph pastes, and inferences the
+rules do not cover. The capture receipt shows which provider produced the
+result, and the deterministic path stays available as the fallback.
+
+## What is *not* tested offline
+
+Live-model quality. `LLM_PROVIDER=deepseek` (or any OpenAI-compatible endpoint)
+is exercised manually; there is no CI job that depends on a paid key. When you
+change the understanding prompt, re-run the acceptance fixtures **and** capture
+a few real inputs with a live provider before merging.
+
+
+<!-- docs/POSITIONING.md -->
+
+# Positioning
+
+## The one-liner
+
+> **The auditable memory layer for AI applications.**
+>
+> A self-hosted runtime that turns free-form input into typed, explainable
+> objects — usable over MCP, over HTTP, or as a library.
+
+## What it is
+
+Aldus Palace turns free-form input into structured objects a program can act on —
+and keeps them honest over time.
+
+You speak or type. The runtime decides what it is (a thought, a commitment, a
+decision, something worth remembering), when it is due, whether you have said it
+before, and whether it contradicts something it already believes about you. It
+records all of it in a database you own.
+
+It is not a todo app, a calendar client, a note editor or a chatbot wrapper.
+Tasks and calendar entries are *projections* of deeper objects.
+
+## The three things worth telling someone about
+
+### 1. Delete "overdue" from your vocabulary
+
+Time is not an attribute of a task; it is the **result of scheduling**.
+
+Most tools model one field — `dueDate` — and then punish you with a red badge
+when it passes. Aldus Palace separates four different kinds of time:
+
+| Kind | Field | Meaning |
+|---|---|---|
+| Deadline | `deadline` | the world imposes this |
+| Availability window | `window_start` / `window_end` | it can happen any time in here |
+| AI-suggested slot | `ai_slot_start` / `ai_slot_end` | a suggestion, not a promise |
+| Nothing yet | — | unscheduled work, still visible |
+
+Statuses are `captured → planned → scheduled → completed`, with `risk` and
+`cancelled`. **There is no `overdue` state in the schema, because there is no
+such thing.** A missed date becomes a risk you can see and rearrange.
+
+*Proof:* `packages/core/src/db/schema.ts` (`commitments`), `services/today.ts`.
+
+### 2. Memory you can audit — and that knows when you changed your mind
+
+Assistant memory is usually a black box: something gets written, nobody knows
+why, and it stays as written.
+
+Here, every memory can explain itself and can be taken back:
+
+- **High-confidence memories take effect on capture.** Rules you state, and
+  inferences the system is confident about, start working at once. Everything
+  else waits as a candidate until you confirm it.
+- **Every row says why it is active.** `activation_note` distinguishes "stated by
+  you", "confirmed by you" and "inferred during a capture", with the confidence
+  and importance that decided it.
+- **Evidence on every row.** Each memory carries the excerpt it came from, a
+  confidence value, and the input id. Archive any of them, including one the
+  system stored on its own.
+- **Temporary states are rejected.** “I'm tired today” stays a mood; the gate
+  drops it before it reaches your profile.
+- **Duplicates collapse.** Different phrasings of the same principle normalise to
+  one key and merge.
+- **Contradictions surface.** Say the opposite of a confirmed belief and the
+  candidate is flagged with the memory it conflicts with.
+- **Replacing keeps history.** Confirming a replacement marks the old memory
+  `superseded` with a pointer and a reason. Nothing is deleted, so “why do you
+  think that about me?” has an answer.
+
+*Proof:* `services/memoryLifecycle.ts`, `services/memoryEvolution.ts`,
+`lib/memoryExtract.ts`, `test/memoryEvolution.test.ts`.
+
+### 3. The raw input stays as written
+
+Everything you say is stored verbatim in `raw_inputs`. Models
+only fill *derived* fields, and every write passes server-side gates:
+
+- one object mode per capture (a thought cannot become the same commitment twice)
+- near-duplicate commitments are skipped, not duplicated
+- relative dates (“next Wednesday”) are resolved on the server, not trusted to a prompt
+- a failed model pass leaves the deterministic result in place instead of an empty record
+
+That makes the AI layer **auditable**: you can diff what you said against
+what the system stored.
+
+*Proof:* `agent/understand.ts`, `eval/fixtures/`, `test/inputObjectClassification.test.ts`.
+
+## Two more that developers feel immediately
+
+**Background enrichment you can trust.** Waiting on a model is where products
+lose people. The runtime answers in milliseconds with a deterministic result,
+then lets the model replace it under a lease — so retries, concurrent clients and
+crashed workers cannot corrupt or duplicate anything. See
+[ADR 0003](adr/0003-progressive-capture-with-enrichment-leases.md).
+
+**An agent you can run in CI.** A deterministic provider plus
+replayable acceptance fixtures means the whole pipeline is testable offline, with
+no API key. `pnpm test && pnpm eval` is green in a fresh clone.
+
+## How it compares
+
+| | Aldus Palace | Todoist / Things | Notion / PKM | Claude / ChatGPT memory | Motion / Reclaim |
+|---|---|---|---|---|---|
+| Who structures your input | the runtime decides | you do | you do | assistant, conversationally | partially |
+| Time model | 4 kinds, held apart | one due date | free text | conversation only | calendar slots |
+| Memory | candidates, evidence, versioning | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
+| Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
+| Programmable | MCP · HTTP · library | API | API | in-app | calendar API |
+| Replayable offline | 17 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+
+## Who it is for
+
+- **Developers building an AI product** who need commitments, memory or planning
+  and would rather not invent a domain model, a memory gate and a scheduler.
+- **People who want their context to be theirs** — one SQLite file, portable,
+  inspectable, self-hosted, and shared across whatever assistant they happen to use.
+- **Teams that need AI-written data to be auditable** — evidence, provenance and
+  an action log on every change.
+
+## Current scope
+
+These are choices, not gaps:
+
+- **Single-user.** One person, one database, one bearer token. Multi-tenancy is
+  not a feature you can switch on; run one instance per person.
+- **Self-hosted.** Your SQLite file, or Cloudflare's edge. There is no hosted
+  service and no telemetry.
+- **No external side effects.** The runtime records intent and plans; it sends
+  no mail, posts nothing and pays nobody. It records intent and plans; acting on the world is your call.
+- **MCP-level clients.** The UI is yours to build. The integration surfaces are
+  MCP, HTTP and the library.
+
+
+<!-- docs/MAP.md -->
+
+# Map: capability → code → doc → test
+
+Use this instead of searching. Every capability names the file that implements
+it, the doc that explains it and the suite that pins it.
+
+| Capability | Code | Doc | Test |
+|---|---|---|---|
+| Schema & domain | `packages/core/src/db/schema.ts` | [01](capabilities/01-schema-and-domain.md) | `pnpm spec:check` |
+| Providers | `packages/core/src/providers/` | [02](capabilities/02-providers.md) | `packages/core/test/providers.test.ts` |
+| Understanding | `packages/core/src/agent/understand.ts` | [03](capabilities/03-understanding.md) | `inputObjectClassification.test.ts`, `relativeDay.test.ts`, `thoughtTitle.test.ts`, `projectMatch.test.ts` |
+| Progressive capture | `packages/core/src/services/enrichmentLease.ts` | [04](capabilities/04-progressive-capture.md) | `packages/core/test/enrichmentLease.test.ts` |
+| Memory | `lib/memoryExtract.ts`, `lib/memoryActivation.ts`, `services/memoryLifecycle.ts`, `services/memoryEvolution.ts` | [05](capabilities/05-memory.md) | `memoryActivation.test.ts`, `memoryEvolution.test.ts` |
+| Today & planning | `services/today.ts`, `services/planToday.ts`, `services/adaptivePlanning.ts` | [06](capabilities/06-today-and-planning.md) | `packages/core/test/adaptivePlanning.test.ts` |
+| Work streams | `services/workStreams.ts`, `services/commitmentClassification.ts` | [07](capabilities/07-work-streams.md) | `apps/server/test/commitmentClassification.test.ts` |
+| HTTP API | `apps/server/src/` | [08](capabilities/08-http-api.md) | `apps/server/test/` |
+| MCP server | `packages/mcp/src/` | [09](capabilities/09-mcp.md) | `packages/mcp/test/tools.test.ts` |
+| Text projections | `packages/core/src/lib/format.ts` | [EVALUATION](../EVALUATION.md) | `packages/core/test/format.test.ts` |
+| Acceptance fixtures | `eval/fixtures/` | [EVAL](EVAL.md) | `pnpm eval` |
+| The engine design | `docs/INTELLIGENCE.md` (design) | [INTELLIGENCE](INTELLIGENCE.md) | shipped parts above |
+
+## Where to start reading
+
+| Question | File |
+|---|---|
+| What does the product do? | [`README.md`](../README.md) |
+| How is the runtime put together? | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| What are the objects and invariants? | [`DOMAIN-SCHEMA.md`](DOMAIN-SCHEMA.md) |
+| Why is a decision the way it is? | [`adr/`](adr) |
+| What is planned, and what is not? | [`ROADMAP.md`](../ROADMAP.md) |
+| How do I verify a claim? | [`EVALUATION.md`](../EVALUATION.md) |
+| What does a word mean here? | [`GLOSSARY.md`](GLOSSARY.md) |
+
+## The runtime loop
+
+```
+raw input → understanding → thoughts / commitments / decisions / memory
+                │
+                ├─ Today (projection)
+                ├─ Work streams (projection)
+                └─ Memory lifecycle (candidate → active → superseded)
+```
+
+
+<!-- docs/GLOSSARY.md -->
+
+# Glossary
+
+The shared vocabulary. Planning-specific terms live in
+[`CONTEXT.md`](../CONTEXT.md).
+
+## Objects
+
+| Term | Meaning | Table |
+|---|---|---|
+| **Raw input** | the user's words, stored as written and never edited | `raw_inputs` |
+| **Thought** | something worth keeping that is not yet work: an idea, insight, observation, research note or decision candidate | `thoughts` |
+| **Commitment** | something the user intends to do; carries the four kinds of time and a status | `commitments` |
+| **Decision** | a choice, with the reasoning attached | `decisions` |
+| **Memory** | a durable belief about the user: preference, project context, principle, decision or experience | `memories` |
+| **Project** | a durable container that commitments and memories can point at | `projects` |
+| **Concept** | a reusable cognitive node (for example "simplicity") linked from memories | `concepts` |
+
+## Time and status
+
+| Term | Meaning |
+|---|---|
+| **Deadline** | the world imposes this time |
+| **Availability window** | the work can happen anywhere inside `window_start` / `window_end` |
+| **Suggested slot** | an agent proposal in `ai_slot_start` / `ai_slot_end`; not a promise |
+| **Unscheduled** | open work with no time attached; still visible |
+| **Risk** | the state that replaces `overdue`: a date that needs attention and can be moved |
+| **Status** | `captured → planned → scheduled → completed`, plus `risk` and `cancelled` |
+
+## Memory lifecycle
+
+| Term | Meaning |
+|---|---|
+| **Candidate** | a proposed memory waiting for confirmation |
+| **Active** | a memory in effect; `activation_note` says whether the user stated it, confirmed it, or the system inferred it |
+| **Superseded** | a replaced belief, kept readable in the version chain |
+| **Archived** | a memory the user removed from use |
+| **Evidence** | the excerpt, confidence and input id behind a memory |
+| **Activation gate** | `confidence >= 0.8` and `importance >= 0.8`; everything below waits as a candidate |
+
+## Runtime
+
+| Term | Meaning |
+|---|---|
+| **Understanding** | the capture front end: a sentence into typed objects, dates resolved, duplicates skipped |
+| **Progressive capture** | the local pass writes first; the model replaces derived fields under a lease |
+| **Enrichment lease** | the mechanism that makes "local first, model second" idempotent under retries |
+| **Action log** | an append-only row written on every mutation, with a reason |
+| **Storage port** | the async `SqlDatabase` interface; the only I/O boundary in `packages/core` |
+| **Projection** | a view rebuilt from the source of truth, never a second truth (Today, work streams) |
+
+## Documentation markers
+
+| Marker | Meaning |
+|---|---|
+| **Shipped today** | runs in the current `0.x` release |
+| **Designed** | the direction the system is being built toward; tracked in [`ROADMAP.md`](../ROADMAP.md) |
+
+
+<!-- docs/BENCHMARKS.md -->
+
+# Benchmarks
+
+Measured numbers for the **deterministic rule layer**. Reproduce with:
+
+```bash
+pnpm bench          # table
+pnpm bench --json   # machine-readable
+```
+
+## What this is, and what it is not
+
+- It is a curated, labeled corpus that ships in this repository
+  (`packages/core/bench/run.ts`), so every number is reproducible offline.
+- It is **not** a blind benchmark and **not** a model benchmark. It measures the
+  rules that run with no API key. Model quality is not measured here.
+- It is not LongMemEval or any retrieval leaderboard. The corpus is small and
+  authored alongside the rules; treat the numbers as regression evidence, not as
+  a claim of general quality.
+
+## Results (37 contract cases)
+
+| Suite | Pass | Accuracy | Precision | Recall |
+|---|---|---|---|---|
+| Relative dates (en/zh, fixed clock) | 8/8 | 1.000 | — | — |
+| Duplicate commitments | 6/6 | 1.000 | 1.000 | 1.000 |
+| Memory conflicts | 5/5 | 1.000 | 1.000 | 1.000 |
+| Memory activation | 6/6 | 1.000 | 1.000 | 1.000 |
+| Actionable work | 7/7 | 1.000 | 1.000 | 1.000 |
+| Object mode | 5/5 | 1.000 | — | — |
+
+A contract case that fails exits non-zero, so a rule regression fails
+`pnpm verify`.
+
+## Known gaps (measured, not enforced)
+
+Five cases are deliberately measured as limitations. They are reported on every
+run and are the honest edge of the rules today:
+
+| Gap | Today | Why it matters |
+|---|---|---|
+| `"Ship the onboarding page next week"` vs `"ship onboarding page next week"` | not a duplicate | English case-only rewordings are missed; exact repeats and CJK near-duplicates are caught |
+| `"Fix the notification bug"` vs `"Fix notification bug"` | not a duplicate | a dropped article is missed |
+| `"Start shipping iOS again"` vs `"Stay Mac-only"` | not a conflict | the rule needs an explicit negation on the existing side (`skip Windows`) to flip polarity |
+| `"下周把 onboarding 做完"` (raw rules) | not actionable | the offline provider supplies `intent`; the bare fallback misses this phrasing |
+| `"AI 产品太吵了，另外把定价页改一下"` | thought, not mixed | the mixed-clause fallback needs a stronger action clause |
+
+Connecting a model narrows some of these; the deterministic path stays the
+fallback.
+
+## Adding a case
+
+Add an entry to the matching corpus in `packages/core/bench/run.ts`. Mark it
+`known: true` only when it documents a limitation you are not fixing now; a
+contract case is a promise that must hold.
+
+
+<!-- ROADMAP.md -->
+
+# Roadmap
+
+This is a public summary. The design each item comes from — with what ships
+today marked against what does not — is in
+[`docs/INTELLIGENCE.md`](docs/INTELLIGENCE.md). Detailed design history lives in
+[`docs/design-archive`](docs/internal/design-archive).
+
+## v0.1 — public foundation (current)
+
+- [x] `@aldus-palace/core`: domain model, agent runtime, storage port, migrations
+- [x] Deterministic offline provider + provider-agnostic `LLMProvider`
+- [x] Progressive capture with enrichment leases
+- [x] Reference server: local SQLite **and** Cloudflare Durable Object adapters
+- [x] Two-tier tests: deterministic suites + acceptance fixtures (offline)
+- [x] `spec/schema.sql` generated from the canonical schema
+- [x] Two published packages (`@aldus-palace/core`, `@aldus-palace/mcp`)
+## v0.2 — ecosystem (current)
+
+- [x] Anthropic provider (Messages API) alongside DeepSeek / OpenAI-compatible
+- [x] `@aldus-palace/mcp` — capture, today, commitments and memory tools over stdio
+- [x] Local SQLite adapter published as `@aldus-palace/core/db/sqlite`
+- [x] [Technical write-up](docs/PROGRESSIVE-CAPTURE.md) on the enrichment lease
+- [x] `claude mcp add` / Claude Desktop integration documented and smoke-tested
+- [ ] Published to npm with a release pipeline
+- [ ] More acceptance fixtures contributed by users
+
+## Memory, deepened
+
+The shipped memory layer covers extraction, evaluation, activation, conflict
+detection, versioning and retrieval. The design extends it:
+
+- [ ] **A graded memory model.** The five shipped kinds grow into levels — raw
+  experience, observation, preference, principle, identity — where a higher level
+  carries more weight in future decisions.
+- [ ] **Memory decay.** A lifetime on each kind: identity holds, principle fades
+  with a long half-life, preference over months, habit over weeks, a current
+  state over days.
+- [ ] **A value score.** A candidate scored on explicitness, frequency, impact,
+  project coverage and future relevance, then gated on the total.
+- [ ] **More memory kinds.** Goal, relationship, knowledge, habit and episode
+  memories, each with its own lifetime and evidence rules.
+- [ ] **More extraction signals.** Impact on future decisions, and scope across
+  projects, alongside durability markers and repeated behaviour.
+
+## Planning, deepened
+
+The shipped planner covers four kinds of time, priority scoring, slot search,
+Today, risk, adaptive limits and a learned behaviour model. The design extends
+it:
+
+- [ ] **A richer constraint model** — hard, soft, preference and dependency
+  relationships, so the plan can respect how work depends on other work.
+- [ ] **A blended priority score** — impact, urgency, dependencies, goal
+  alignment and risk, alongside the current signals.
+- [x] **Duration estimation from history** — a stated estimate keeps the larger
+  weight and is calibrated against the median of completed work in the same
+  project (`lib/durationEstimate.ts`). Complexity is not read yet.
+- [ ] **Schedule optimization with context-switch cost** — maximize important
+  work completed, minimize switching, fit the user's rhythm and lower stress.
+- [ ] **An explicit morning plan** — classify the day into core, optional and
+  deferred.
+- [ ] **A scored Now** — priority × available time × energy match × context
+  match.
+- [ ] **Event-driven replanning** — react to a postponed meeting, a new task,
+  finishing early, or a change in state.
+- [ ] **Buffer management** — keep a share of the day free.
+- [ ] **Task migration** — flexible, unstarted work can move forward on its own,
+  and repeated deferrals surface for a decision.
+
+## Autonomy and models
+
+- [ ] **Trust and autonomy engine.** Risk, reversibility, visibility and an
+  accumulated trust score would decide what the system may do without asking.
+  Today the rule is fixed: capture lands on its own, and a stated principle takes
+  effect, while everything else waits for the user.
+- [ ] **Model orchestration.** One provider interface serves every call today.
+  The design routes work by task: a fast model for classification, a reasoning
+  model for planning and conflict, embeddings for memory retrieval, and a local
+  model for sensitive input.
+
+## Privacy & local intelligence
+
+The shipped runtime is local-first and single-user, and `SECURITY.md` records the
+current posture. The privacy architecture takes shape in these pieces:
+
+- [ ] **A Local Intelligence Layer** — input parsing, sensitive detection, Memory
+  indexing and basic planning stay on device.
+- [ ] **A Privacy Gateway** with redaction, so a cloud call receives only
+  temporary context (`input → sensitive detection → redaction → permission check
+  → cloud`).
+- [ ] **Local encrypted storage** for Memory — Keychain plus an encrypted
+  database on macOS, Secure Enclave plus encrypted storage on iOS.
+- [ ] **Progressive, fine-grained permissions** — calendar first, then mail, then
+  files; read / create / modify separated; Memory private by default.
+- [ ] **An Action Gate** with four risk levels (low automatic, medium notified,
+  high confirmed, critical confirmed again) and a viewable, revocable audit log.
+- [ ] **A delete policy** that reaches the local database, cloud sync and vector
+  indexes — deletion is real, not a flag.
+
+## Later
+
+- [ ] A SwiftUI reference client (`clients/` is a placeholder today)
+- [ ] Postgres adapter behind the existing async port (the port was designed for it)
+- [ ] Cognitive-map exploration UI
+- [ ] Planning engine beyond Today (horizon, dependencies, energy patterns)
+
+## Explicit non-goals
+
+- multi-tenant hosting of other people's personal data
+- autonomous external actions (sending mail, payments) without confirmation
+- becoming a project-management or note-taking suite
+
+See [AGENTS.md](AGENTS.md) for the product rules behind these.
