@@ -188,6 +188,10 @@ assert(
   activeRows.every((row) => row.activation_note.length > 0),
   "every memory explains why it is active"
 );
+assert(
+  activeRows.some((row) => row.id === stated!.id && row.activation === "auto"),
+  `a memory stored during a capture is marked auto, got ${JSON.stringify(activeRows.map((r) => [r.id, r.activation]))}`
+);
 
 // A weaker signal waits for confirmation.
 const candidateCapture = await client.callTool({

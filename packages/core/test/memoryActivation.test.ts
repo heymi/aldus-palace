@@ -163,4 +163,17 @@ assert(
   "a candidate explains why it is not active"
 );
 
+// Auto-activation must stay distinguishable from a human confirmation: only
+// `confirmMemory` sets confirmed_at.
+assert(
+  explainActivation({
+    status: "active",
+    source: "user_explicit",
+    confidence: 0.88,
+    importance: 0.85,
+    confirmed_at: null,
+  }) !== "confirmed by you",
+  "an automated activation never reports as a user confirmation"
+);
+
 console.log("memory activation tests passed.");

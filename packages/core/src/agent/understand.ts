@@ -1190,7 +1190,9 @@ export async function processRawInput(
 
     const activation: MemoryActivation =
       decision.activation === "active" ? "active" : "candidate";
-    const confirmedAt = activation === "active" ? t0 : null;
+    // `confirmed_at` records a human confirmation, so an automated activation
+    // leaves it empty — that is what separates `auto` from `confirmed`.
+    const confirmedAt = null;
     const activationReason = decision.reason;
 
     try {

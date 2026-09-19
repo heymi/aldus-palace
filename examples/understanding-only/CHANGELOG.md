@@ -1,5 +1,12 @@
 # @aldus-palace/example-understanding-only
 
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @aldus-palace/core@0.4.1
+
 ## 0.1.5
 
 ### Patch Changes

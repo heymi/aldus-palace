@@ -1,6 +1,6 @@
 {
   "name": "@aldus-palace/example-http-client",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "description": "Drive Aldus Palace over HTTP: the same capabilities without the library.",
   "license": "Apache-2.0",

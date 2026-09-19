@@ -1,5 +1,14 @@
 # @aldus-palace/core
 
+## 0.4.1
+
+### Patch Changes
+
+- An automated activation no longer records `confirmed_at`, so the memory list
+  reports it as `auto` and says "stated by you" / "inferred" in place of "confirmed
+  by you". Confirmation stays reserved for a human decision. Covered by tests in
+  the core and MCP suites.
+
 ## 0.4.0
 
 ### Minor Changes
