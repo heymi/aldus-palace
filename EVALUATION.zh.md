@@ -32,7 +32,7 @@ spec/schema.sql is up to date.
 | 主张 | 验证方式 | 预期 |
 |---|---|---|
 | 自由文本变成带类型的对象 | `pnpm demo` | `Captured · 1 commitment`，窗口已解析 |
-| 流水线可离线运行 | `pnpm verify` | 29 个套件与 11 个 fixture 无需 key 通过 |
+| 流水线可离线运行 | `pnpm verify` | 30 个套件与 11 个 fixture 无需 key 通过 |
 | `overdue` 没有可占据的状态 | `rg overdue packages/core/src/db/schema.ts` | 无匹配；状态为 `captured/planned/scheduled/completed/risk/cancelled` |
 | 记忆按唯一公开规则激活 | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | 情绪句不会变成记忆 | `pnpm eval` | fixture `S04` 通过 |
@@ -67,6 +67,8 @@ spec/schema.sql is up to date.
 | MCP 工具返回可读卡片 | `pnpm --filter @aldus-palace/mcp test` | 断言卡片文本，payload 在 `structuredContent` |
 | 规则层有实测数字 | `pnpm bench` | 见 [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) |
 | 系统按你的语言书写 | `packages/core/test/language.test.ts` | 确定性 provider 跟随输入语言；记忆措辞跟随用户语言 |
+| 模糊输入会先问而不是猜 | `packages/core/test/inputObjectClassification.test.ts`、`apps/server/test/reclassify.test.ts` | 灰区输入问「缺陷／要做／记录」，答案直接落对象 |
+| 纠正会被记住 | `packages/core/test/inputObjectClassification.test.ts` | 类似句子不再重复提问 |
 
 ## 给 agent 的入口
 

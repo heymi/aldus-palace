@@ -135,7 +135,7 @@ A real run of the offline provider. Relative dates resolve at capture time.
 | **What the daily view answers** | a list of everything | what to do now, what is at risk, what is unscheduled; a full day gets a rest suggestion |
 | **How many stores you have** | one per app | one record, reached by MCP, HTTP, a library and a typed client: Claude, Cursor, your own frontend, a script |
 | **Where the record sits** | a vendor cloud | a SQLite file you own, or a Cloudflare Worker; copy it, back it up, hand it on |
-| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 29 suites and 11 fixtures replay each run |
+| **How you verify it** | by using it | a deterministic provider runs the pipeline with no network and no API key; 30 suites and 11 fixtures replay each run |
 
 ## How you run it
 
@@ -318,7 +318,7 @@ personality from one remark. Replace the old record and the history disappears.
 | Privacy | a cloud call is redacted by data level and level 4 stays local; Memory is private until a scope is granted; deletion empties every table for the user | `services/privacyGateway.ts`, `services/permissions.ts`, `services/dataLifecycle.ts` |
 
 The pipeline runs offline: a deterministic provider implements the same interface
-as the model-backed ones, so 29 test suites and 11 acceptance fixtures replay
+as the model-backed ones, so 30 test suites and 11 acceptance fixtures replay
 with no key.
 
 ## See it run
@@ -327,7 +327,7 @@ with no key.
 git clone https://github.com/heymi/aldus-palace.git && cd aldus-palace
 pnpm install
 
-pnpm test     # 29 suites — deterministic, offline, no API key
+pnpm test     # 30 suites — deterministic, offline, no API key
 pnpm eval     # 11 acceptance fixtures — the behaviour this project promises
 
 pnpm --filter @aldus-palace/example-understanding-only start
@@ -445,7 +445,7 @@ If you cannot run the repository, the real output is committed:
 | Claim | Prove it | Expect |
 |---|---|---|
 | Free text becomes typed objects | `pnpm demo` | `Captured · 1 commitment`, with the window resolved |
-| The pipeline runs offline | `pnpm verify` | 29 suites and 11 fixtures pass with no key |
+| The pipeline runs offline | `pnpm verify` | 30 suites and 11 fixtures pass with no key |
 | `overdue` has no state to occupy | `rg overdue packages/core/src/db/schema.ts` | no matches; statuses are `captured/planned/scheduled/completed/risk/cancelled` |
 | Memory activates by one published rule | `sed -n '19,21p' packages/core/src/lib/memoryActivation.ts` | `MEMORY_ACTIVE_THRESHOLD = 0.8` |
 | A mood never becomes a memory | `pnpm eval` | fixture `S04` passes |
@@ -470,6 +470,8 @@ If you cannot run the repository, the real output is committed:
 | Memory retrieval is full-text, and CJK works | `packages/core/test/retriever.test.ts` | FTS5 with bm25; a Chinese substring is found |
 | Retrieval quality is measured | `pnpm bench:retrieval` | Recall@1/3/5 and MRR on a labeled corpus |
 | The system writes in your language | `packages/core/test/language.test.ts` | the deterministic provider follows the input; memory wording follows the user's language |
+| An ambiguous capture asks instead of guessing | `packages/core/test/inputObjectClassification.test.ts`, `apps/server/test/reclassify.test.ts` | a grey-zone input asks defect / work / note; the answer creates the object |
+| A correction is remembered | `packages/core/test/inputObjectClassification.test.ts` | a similar sentence is classified without asking again |
 | Memory is private until a scope is granted | `packages/core/test/privacy.test.ts` | the default scopes exclude memory; revoking works |
 | Deletion is real | `packages/core/test/privacy.test.ts` | the purge needs `confirm` and empties every table for the user |
 | A high-risk agent action waits for a decision | `packages/core/test/actionGate.test.ts` | critical needs two approvals; revocation is final |
@@ -647,6 +649,8 @@ The canonical DDL lives in [`packages/core/src/db/schema.ts`](../packages/core/s
 | `action_proposals` | the Action Gate: risk, status, decision and revocations for agent actions |
 | `autonomy_settings` | how far earned trust may widen autonomy (the ceiling) |
 | `permission_grants` | granted permission scopes; absence means not granted |
+| `classification_signals` | terms from inputs the user corrected, and the mode they chose; applied before asking (ADR 0012) |
+| `clarifications` | a pending question about a record (a relative day, or what an input is) |
 
 `commitments` also carries `deferral_count` and `migration_surfaced_at` for
 slipped flexible work (see [ADR 0008](adr/0008-daily-buffer-and-work-migration.md)).
@@ -1210,6 +1214,7 @@ offline by `tsx`. They cover the parts where a regression would be silent:
 | `format` | the locale-aware capture card and Today text projection |
 | `providers` | request shaping for Anthropic and OpenAI-compatible providers |
 | `language` | the dev provider follows the input script; rule memories follow the user's language |
+| `reclassify` (apps/server) | the reclassify API: ask, answer, correct, and learn |
 | `llm-config` | wrangler and code agree on the default model |
 | `mcp tools` (packages/mcp) | the tool surface and profiles run on the offline provider |
 
@@ -1399,7 +1404,7 @@ no API key. `pnpm verify` is green in a fresh clone.
 | Memory | a gate, candidates, evidence, versioning, levels and decay | saved views you maintain | documents you maintain | assistant memory, inside the app | learned preferences |
 | Data location | your SQLite file or your Worker | vendor cloud | vendor cloud | vendor cloud | vendor cloud |
 | Programmable | MCP · HTTP · library · typed client | API | API | in-app | calendar API |
-| Replayable offline | 29 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
+| Replayable offline | 30 suites and 11 fixtures, no key | n/a | n/a | requires the service | requires the service |
 
 ## Who it is for
 

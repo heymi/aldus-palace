@@ -22,6 +22,12 @@ quick-capture sheet from anywhere.
 section; `⌘↵` files, `Esc` closes. Selecting a row opens the inspector in the
 third column; selecting it again closes.
 
+When a capture is ambiguous — a work signal that is too weak to act on — the
+receipt asks **defect / work / note** instead of guessing. The answer creates the
+object, and the words are remembered, so a similar sentence is classified without
+asking. Any thought can be corrected from its inspector, which calls
+`POST /v1/inputs/:id/reclassify`.
+
 No framework, no build step, no dependencies: a static page plus a small host
 that proxies `/api/*` with the bearer token, so the token never reaches the
 browser. Node 18+ is required (for `fetch`).

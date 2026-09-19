@@ -38,6 +38,15 @@ const meta = {
   },
   "POST /v1/inputs/{id}/enrich": { summary: "Run the model pass under an enrichment lease", tag: "Inputs" },
   "POST /v1/inputs/{id}/process": { summary: "Process a raw input that is still pending", tag: "Inputs", response: "CaptureOutcome" },
+  "POST /v1/inputs/{id}/reclassify": {
+    summary: "Correct what an input became (bug / task / note), and learn from it",
+    tag: "Inputs",
+    request: {
+      type: "object",
+      required: ["mode"],
+      properties: { mode: { type: "string", enum: ["bug", "task", "note"] } },
+    },
+  },
   "GET /v1/inputs/{id}": { summary: "Read a raw input and its derived objects", tag: "Inputs" },
   "GET /v1/me": { summary: "The current user", tag: "Account" },
   "PATCH /v1/me": {

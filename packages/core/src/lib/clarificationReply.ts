@@ -53,6 +53,13 @@ export function matchClarificationReply(
     }
   }
 
+  // Object-mode answers: the user often answers "bug" / "要做的事" / "记录".
+  if (ids.has("bug") && ids.has("task") && ids.has("note")) {
+    if (/缺陷|故障|bug|defect|报错|坏了|不对/.test(raw)) return "bug";
+    if (/要做|待办|任务|一件.*事|task|todo|to-?do|work/.test(raw)) return "task";
+    if (/只是(记录|想法)|记录一下|笔记|note|just a note/.test(raw)) return "note";
+  }
+
   // option id typed directly
   if (ids.has(t)) return t;
 
@@ -82,6 +89,10 @@ export function looksLikeShortClarificationReply(text: string): boolean {
     ) &&
     t.length < 36
   ) {
+    return true;
+  }
+  // Object-mode answers are short by nature.
+  if (/^(是|选|我选|就)?(一条缺陷|缺陷|故障|要做的事|一件要做的事|只是记录|记录|bug|defect|task|todo|note)$/i.test(t)) {
     return true;
   }
   return false;

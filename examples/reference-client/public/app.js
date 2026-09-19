@@ -550,7 +550,17 @@ function renderInspector() {
       ])}
       <div class="inspector-actions">
         <button type="button" class="primary" data-act="convert" data-id="${esc(id)}">${esc(t("thoughts.convert"))}</button>
-      </div>`;
+      </div>
+      ${
+        thought.source_input_id
+          ? `<h3>${esc(t("reclassify.title"))}</h3>
+             <div class="inspector-actions">
+               <button type="button" class="ghost" data-act="reclassify" data-mode="bug" data-input="${esc(thought.source_input_id)}">${esc(t("reclassify.bug"))}</button>
+               <button type="button" class="ghost" data-act="reclassify" data-mode="task" data-input="${esc(thought.source_input_id)}">${esc(t("reclassify.task"))}</button>
+               <button type="button" class="ghost" data-act="reclassify" data-mode="note" data-input="${esc(thought.source_input_id)}">${esc(t("reclassify.note"))}</button>
+             </div>`
+          : ""
+      }`;
     return;
   }
 
@@ -741,6 +751,22 @@ function renderReceipt(card, noteKey) {
   if (thoughts.length) parts.push(plural(thoughts.length, "receipt.thought"));
   if (decisions.length) parts.push(plural(decisions.length, "receipt.decision"));
 
+  const clarifications = (card.clarifications ?? []).map(
+    (clar) => `
+      <div class="clarify" data-clarify="${esc(clar.id)}">
+        <p class="clarify-q">${esc(clar.prompt)}</p>
+        <div class="clarify-options">
+          ${(clar.options ?? [])
+            .map(
+              (option) =>
+                `<button type="button" class="ghost" data-clarify-id="${esc(clar.id)}"
+                   data-clarify-option="${esc(option.id)}">${esc(option.label)}</button>`
+            )
+            .join("")}
+        </div>
+      </div>`
+  );
+
   const links = [
     commitments.length ? `<a class="receipt-link" href="#home">${esc(t("receipt.seeHome"))}</a>` : "",
     memories.length ? `<a class="receipt-link" href="#memory">${esc(t("receipt.seeMemory"))}</a>` : "",
@@ -754,6 +780,7 @@ function renderReceipt(card, noteKey) {
     ${group(t("receipt.memories"), memories)}
     ${group(t("receipt.thoughts"), thoughts)}
     ${group(t("receipt.decisions"), decisions)}
+    ${clarifications.length ? `<div class="receipt-group"><span class="receipt-group-label">${esc(t("receipt.question"))}</span>${clarifications.join("")}</div>` : ""}
     ${(card.warnings ?? []).length ? `<p class="warn">${card.warnings.map(esc).join("<br />")}</p>` : ""}
     ${links ? `<p style="margin:8px 0 0">${links}</p>` : ""}`;
 }
@@ -848,6 +875,34 @@ $("panes").addEventListener("submit", (event) => {
 });
 
 document.addEventListener("click", async (event) => {
+  const clarify = event.target.closest("[data-clarify-option]");
+  if (clarify) {
+    clarify.disabled = true;
+    try {
+      await api(`/v1/clarifications/${encodeURIComponent(clarify.dataset.clarifyId)}/resolve`, {
+        method: "POST",
+        body: JSON.stringify({ option_id: clarify.dataset.clarifyOption }),
+      });
+      if (state.lastReceipt?.card) {
+        state.lastReceipt = {
+          card: { ...state.lastReceipt.card, clarifications: [] },
+          noteKey: "clarify.recorded",
+        };
+      }
+      await load(state.section);
+      await load("home");
+      render();
+      if (!$("sheet").hidden && state.lastReceipt) {
+        $("sheet-receipt").hidden = false;
+        $("sheet-receipt").innerHTML = renderReceipt(state.lastReceipt.card, state.lastReceipt.noteKey);
+      }
+    } catch (error) {
+      clarify.disabled = false;
+      clarify.textContent = error.message;
+    }
+    return;
+  }
+
   const button = event.target.closest("[data-act]");
   if (button) {
     const { act, id } = button.dataset;
@@ -861,6 +916,11 @@ document.addEventListener("click", async (event) => {
       else if (act === "reject") await api(`/v1/memories/${encodeURIComponent(id)}/reject`, { method: "POST" });
       else if (act === "convert")
         await api(`/v1/thoughts/${encodeURIComponent(id)}/convert-to-commitment`, { method: "POST" });
+      else if (act === "reclassify")
+        await api(`/v1/inputs/${encodeURIComponent(button.dataset.input)}/reclassify`, {
+          method: "POST",
+          body: JSON.stringify({ mode: button.dataset.mode }),
+        });
       else if (act === "approve")
         await api(`/v1/actions/${encodeURIComponent(id)}/decide`, {
           method: "POST",

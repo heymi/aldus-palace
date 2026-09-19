@@ -78,11 +78,24 @@ function build(locale: ActionLocale): Record<string, MsgFn> {
       return title ? `Created commitment: ${title}` : "Created commitment";
     },
     clarification_requested: (p) => {
+      if (p?.kind === "object_mode") {
+        return zh ? "需要确认这条输入属于哪种" : "Need to confirm what this input is";
+      }
       const token = p?.token ? String(p.token) : "";
       if (zh) return token ? `需要确认时间：${token}` : "需要确认时间";
       return token
         ? `Need confirmation for relative day: ${token}`
         : "Need confirmation";
+    },
+    input_reclassified: (p) => {
+      const choice = p?.choice ? String(p.choice) : "";
+      const labels: Record<string, [string, string]> = {
+        bug: ["a defect", "一条缺陷"],
+        task: ["work", "一件要做的事"],
+        note: ["a note", "只是记录"],
+      };
+      const label = labels[choice] ?? [choice, choice];
+      return zh ? `已改判为${label[1]}` : `Reclassified as ${label[0]}`;
     },
     clarification_resolved: (p) => {
       const label = p?.label ? String(p.label) : "";

@@ -25,6 +25,8 @@ The canonical DDL lives in [`packages/core/src/db/schema.ts`](../packages/core/s
 | `action_proposals` | the Action Gate: risk, status, decision and revocations for agent actions |
 | `autonomy_settings` | how far earned trust may widen autonomy (the ceiling) |
 | `permission_grants` | granted permission scopes; absence means not granted |
+| `classification_signals` | terms from inputs the user corrected, and the mode they chose; applied before asking (ADR 0012) |
+| `clarifications` | a pending question about a record (a relative day, or what an input is) |
 
 `commitments` also carries `deferral_count` and `migration_surfaced_at` for
 slipped flexible work (see [ADR 0008](adr/0008-daily-buffer-and-work-migration.md)).

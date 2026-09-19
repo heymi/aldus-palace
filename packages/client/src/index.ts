@@ -225,6 +225,17 @@ export class AldusClient {
     return this.request(`/v1/inputs/${encodeURIComponent(id)}/process`, { method: "POST" });
   }
 
+  /** Correct what an input became; the choice is learned for similar inputs. */
+  reclassifyInput(
+    id: string,
+    mode: "bug" | "task" | "note"
+  ): Promise<{ ok: boolean; choice: string; commitment: Record<string, unknown> | null }> {
+    return this.request(`/v1/inputs/${encodeURIComponent(id)}/reclassify`, {
+      method: "POST",
+      body: { mode },
+    });
+  }
+
   // --- thoughts ---------------------------------------------------------------
 
   thoughts(): Promise<Record<string, unknown>> {
